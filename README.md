@@ -1,2 +1,3 @@
 # mecRT
-a mobile edge comouting simulator for real-time applications
+a mobile edge computing simulator for real-time applications (previously known as vecSim, vehicular edge computing simulator)
+

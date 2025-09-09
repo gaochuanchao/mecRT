@@ -1,0 +1,3 @@
+package mec;
+
+@license(LGPL);
