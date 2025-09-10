@@ -1,4 +1,4 @@
 #!/bin/sh
 cd `dirname $0`
-../src/mecRT -n .:../src $*
-# for shared lib, use: opp_run -l ../src/mecRT -n .:../src $*
+../src/mecrt -n .:../src $*
+# for shared lib, use: opp_run -l ../src/mecrt -n .:../src $*

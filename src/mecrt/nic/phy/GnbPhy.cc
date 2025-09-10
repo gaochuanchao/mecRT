@@ -21,7 +21,10 @@ void GnbPhy::initialize(int stage)
 
     if (stage == inet::INITSTAGE_LOCAL)
     {
-        EV << "GnbPhy::initialize - MAC layer, stage INITSTAGE_LOCAL" << endl;
+        if (getSystemModule()->hasPar("enableInitDebug"))
+            enableInitDebug_ = getSystemModule()->par("enableInitDebug").boolValue();
+        if (enableInitDebug_)
+            std::cout << "GnbPhy::initialize - stage: INITSTAGE_LOCAL - begins" << std::endl;
 
         airFramePriority_ = -1; // smaller value means higher priority
 
@@ -66,10 +69,14 @@ void GnbPhy::initialize(int stage)
 
         resAllocateMode_ = par("resAllocateMode");  // default(true)
         WATCH(resAllocateMode_);
+
+        if (enableInitDebug_)
+            std::cout << "GnbPhy::initialize - stage: INITSTAGE_LOCAL - ends" << std::endl;
     }
     else if (stage == inet::INITSTAGE_NETWORK_INTERFACE_CONFIGURATION)  // stage == 1
     {
-        EV << "GnbPhy::initialize - MAC layer, stage INITSTAGE_NETWORK_INTERFACE_CONFIGURATION" << endl;
+        if (enableInitDebug_)
+            std::cout << "GnbPhy::initialize - stage: INITSTAGE_NETWORK_INTERFACE_CONFIGURATION - begins" << std::endl;
 
         // ========== LtePhyEnb ===========
         // ==== START initializeFeedbackComputation(); ====
@@ -120,10 +127,14 @@ void GnbPhy::initialize(int stage)
             bdcStarter_ = new cMessage("bdcStarter");
             scheduleAt(NOW, bdcStarter_);
         }
+
+        if (enableInitDebug_)
+            std::cout << "GnbPhy::initialize - stage: INITSTAGE_NETWORK_INTERFACE_CONFIGURATION - ends" << std::endl;
     }
     else if (stage == inet::INITSTAGE_PHYSICAL_LAYER)
     {
-        EV << "GnbPhy::initialize - MAC layer, stage INITSTAGE_PHYSICAL_LAYER" << endl;
+        if (enableInitDebug_)
+            std::cout << "GnbPhy::initialize - stage: INITSTAGE_PHYSICAL_LAYER - begins" << std::endl;
 
         // initializeChannelModel();
         // std::string moduleName = (strcmp(getFullName(), "nrPhy") == 0) ? "nrChannelModel" : "channelModel";
@@ -143,6 +154,9 @@ void GnbPhy::initialize(int stage)
             carrierFrequency = chanModel->getCarrierFrequency();
             channelModel_[carrierFrequency] = chanModel;
         }
+
+        if (enableInitDebug_)
+            std::cout << "GnbPhy::initialize - stage: INITSTAGE_PHYSICAL_LAYER - ends" << std::endl;
     }
 }
 

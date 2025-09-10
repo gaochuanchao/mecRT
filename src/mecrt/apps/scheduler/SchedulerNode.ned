@@ -15,11 +15,13 @@
 
 package mecRT.mecrt.apps.scheduler;
 
+import mecRT.mecrt.apps.scheduler.Scheduler;
+
 import inet.applications.contract.IApp;
 import inet.linklayer.ppp.PppInterface;
 import ned.IdealChannel;
 
-import simu5g.nodes.mecrt.UALCMP.UALCMPApp;
+import simu5g.nodes.mec.UALCMP.UALCMPApp;
 import inet.linklayer.ppp.PppInterface;
 import inet.networklayer.common.InterfaceTable;
 import inet.networklayer.ipv4.Ipv4RoutingTable;
@@ -34,7 +36,6 @@ import inet.applications.contract.IApp;
 import inet.node.ethernet.Eth10G;
 import inet.networklayer.common.InterfaceTable;
 
-import mecrt.apps.scheduler.Scheduler;
 
 module SchedulerNode
 {

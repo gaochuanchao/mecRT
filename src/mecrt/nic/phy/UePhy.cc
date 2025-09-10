@@ -17,6 +17,7 @@ UePhy::UePhy()
 {
     handoverStarter_ = nullptr;
     d2dDecodingTimer_ = nullptr;
+    enableInitDebug_ = false;
 }
 
 UePhy::~UePhy()
@@ -30,7 +31,10 @@ void UePhy::initialize(int stage)
 
     if (stage == inet::INITSTAGE_LOCAL)
     {
-        EV << "UePhy::initialize - MAC layer, stage INITSTAGE_LOCAL" << endl;
+        if (getSystemModule()->hasPar("enableInitDebug"))
+            enableInitDebug_ = getSystemModule()->par("enableInitDebug").boolValue();
+        if (enableInitDebug_)
+            std::cout << "UePhy::initialize - stage: INITSTAGE_LOCAL - begins" << std::endl;
 
         airFramePriority_ = -1; // smaller value means higher priority
 
@@ -116,10 +120,14 @@ void UePhy::initialize(int stage)
 
         WATCH_SET(grantedRsus_);
         WATCH(resAllocateMode_);
+
+        if (enableInitDebug_)
+            std::cout << "UePhy::initialize - stage: INITSTAGE_LOCAL - ends" << std::endl;
     }
     else if (stage == inet::INITSTAGE_PHYSICAL_ENVIRONMENT)
     {
-        EV << "UePhy::initialize - MAC layer, stage INITSTAGE_PHYSICAL_ENVIRONMENT" << endl;
+        if (enableInitDebug_)
+            std::cout << "UePhy::initialize - stage: INITSTAGE_PHYSICAL_ENVIRONMENT - begins" << std::endl;
 
         // ========= LtePhyUe ==========
         if (useBattery_)
@@ -172,10 +180,14 @@ void UePhy::initialize(int stage)
         // get the reference to band manager
         bandManager_ = check_and_cast<BandManager*>(getSimulation()->getModuleByPath("bandManager"));
         bandManager_->addUePhy(nodeId_, this, offloadPower_);
+
+        if (enableInitDebug_)
+            std::cout << "UePhy::initialize - stage: INITSTAGE_PHYSICAL_ENVIRONMENT - ends" << std::endl;
     }
     else if (stage == inet::INITSTAGE_PHYSICAL_LAYER)
     {
-        EV << "UePhy::initialize - MAC layer, stage INITSTAGE_PHYSICAL_LAYER" << endl;
+        if (enableInitDebug_)
+            std::cout << "UePhy::initialize - stage: INITSTAGE_PHYSICAL_LAYER - begins" << std::endl;
 
         // initializeChannelModel();
         // "nrChannelModel" - default("NRChannelModel_3GPP38_901")
@@ -291,10 +303,15 @@ void UePhy::initialize(int stage)
 
         das_->setMasterRuSet(masterId_);
         emit(servingCell_, (long)masterId_);
+
+        if (enableInitDebug_)
+            std::cout << "UePhy::initialize - stage: INITSTAGE_PHYSICAL_LAYER - ends" << std::endl;
     }
     else if (stage == inet::INITSTAGE_NETWORK_CONFIGURATION)
     {
-        EV << "UePhy::initialize - MAC layer, stage INITSTAGE_NETWORK_CONFIGURATION" << endl;
+        if (enableInitDebug_)
+            std::cout << "UePhy::initialize - stage: INITSTAGE_NETWORK_CONFIGURATION - begins" << std::endl;
+
         // ========= LtePhyUe ==========
         // get cellInfo at this stage because the next hop of the node is registered
         // in the IP2Nic module at the INITSTAGE_NETWORK_LAYER
@@ -334,19 +351,27 @@ void UePhy::initialize(int stage)
         }
         else
             cellInfo_ = nullptr;
+
+        if (enableInitDebug_)
+            std::cout << "UePhy::initialize - stage: INITSTAGE_NETWORK_CONFIGURATION - ends" << std::endl;
     }
     else if (stage == inet::INITSTAGE_LAST)
     {
-        EV << "UePhy::initialize - PHY layer, stage INITSTAGE_LAST" << endl;
+        if (enableInitDebug_)
+            std::cout << "UePhy::initialize - stage: INITSTAGE_LAST - begins" << std::endl;
+
         int fbTtiCount = getParentModule()->getSubmodule("nrDlFbGen")->par("fbPeriod");
         fbPeriod_ = fbTtiCount * TTI;   // convert to seconds
-        schedulePeriod_ = getSimulation()->getModuleByPath("scheduler")->getSubmodule("vecScheduler")->par("scheduleInterval");
+        schedulePeriod_ = getSimulation()->getModuleByPath("scheduler")->getSubmodule("scheduler")->par("scheduleInterval");
 
         MecMobility* mobilityModule = check_and_cast<MecMobility*>(getParentModule()->getParentModule()->getSubmodule("mobility"));
         moveStartTime_ = mobilityModule->getMoveStartTime();
         int count = floor(moveStartTime_.dbl() / schedulePeriod_) + 1;
         nextSchedulingTime_ = schedulePeriod_ * count;
         EV << "UePhy::initialize - nextSchedulingTime for broadcasting: " << nextSchedulingTime_ << endl;
+
+        if (enableInitDebug_)
+            std::cout << "UePhy::initialize - stage: INITSTAGE_LAST - ends" << std::endl;
     }
 }
 

@@ -35,6 +35,7 @@
 class UeApp : public omnetpp::cSimpleModule
 {
   protected:
+    bool enableInitDebug_;
     inet::UdpSocket socket;
     //has the sender been initialized?
     bool initialized_;

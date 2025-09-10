@@ -45,6 +45,7 @@ class Database : public omnetpp::cSimpleModule
 {
 
   protected:
+    bool enableInitDebug_;
     double serverExeScale_; // the scale for the server execution time, default is 1.0
 
     // store the data related to the application execution profiling

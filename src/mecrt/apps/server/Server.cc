@@ -22,6 +22,7 @@ using namespace inet;
 Server::Server()
 {
     srvInitComplete_ = nullptr;
+    enableInitDebug_ = false;
 }
 
 Server::~Server()
@@ -33,10 +34,14 @@ Server::~Server()
 void Server::initialize(int stage)
 {
     cSimpleModule::initialize(stage);
-    EV << "Server::initialize - VEC RSU Server initialize: stage " << stage << endl;
 
     if (stage == INITSTAGE_LOCAL)
     {
+        if (getSystemModule()->hasPar("enableInitDebug"))
+            enableInitDebug_ = getSystemModule()->par("enableInitDebug").boolValue();
+        if (enableInitDebug_)
+            std::cout << "Server::initialize - stage: INITSTAGE_LOCAL - begins" << std::endl;
+
         //filterOut_ = gate("filterOut");
         localPort_ = par("localPort");
         schedulerPort_ = par("schedulerPort");
@@ -56,9 +61,15 @@ void Server::initialize(int stage)
         meetDlPktSignal_ = registerSignal("meetDlPkt");
         failedSrvDownSignal_ = registerSignal("failedSrvDownPkt");
         missDlPktSignal_ = registerSignal("missDlPkt");
+
+        if (enableInitDebug_)
+            std::cout << "Server::initialize - stage: INITSTAGE_LOCAL - ends" << std::endl;
     }
     else if (stage == INITSTAGE_APPLICATION_LAYER)
     {
+        if (enableInitDebug_)
+            std::cout << "Server::initialize - stage: INITSTAGE_APPLICATION_LAYER - begins" << std::endl;
+
         EV << "Server::initialize - binding to port: local:" << localPort_ << endl;
         if (localPort_ != -1)
         {
@@ -92,6 +103,9 @@ void Server::initialize(int stage)
 
         WATCH_VECTOR(srvInInitVector_);
         WATCH_MAP(srvInitCompleteTime_);
+
+        if (enableInitDebug_)
+            std::cout << "Server::initialize - stage: INITSTAGE_APPLICATION_LAYER - ends" << std::endl;
     }
 }
 

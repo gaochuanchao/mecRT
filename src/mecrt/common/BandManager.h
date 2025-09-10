@@ -24,6 +24,7 @@ class BandManager : public omnetpp::cSimpleModule
 {
 
   protected:
+	bool enableInitDebug_;
     Binder* binder_;
 	Remote antenna_;
 	Direction dir_;

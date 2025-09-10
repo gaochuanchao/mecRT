@@ -1,3 +1,3 @@
-package mec;
+package mecRT;
 
 @license(LGPL);

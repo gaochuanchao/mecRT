@@ -53,7 +53,7 @@ module MecRlc
         }
 
         // UM Module        
-        um: VecRlcUm {
+        um: MecRlcUm {
             @display("p=200,100;");
         }
 
@@ -95,10 +95,10 @@ module MecRlc
 // 
 // UM Module for the RLC layer of LTE Stack (with D2D).
 //
-simple VecRlcUm extends LteRlcUmD2D
+simple MecRlcUm extends LteRlcUmD2D
 {
     parameters:
-        @class("VecRlcUm");
+        @class("MecRlcUm");
 
 }
 

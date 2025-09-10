@@ -54,6 +54,7 @@ class Scheduler : public omnetpp::cSimpleModule
     double fairFactor_; // the fairness factor for scheduling scheme with forwarding, default is 1.0
 
   protected:
+    bool enableInitDebug_;
     inet::UdpSocket socket_;
 
     omnetpp::simsignal_t vecSchedulingTimeSignal_;

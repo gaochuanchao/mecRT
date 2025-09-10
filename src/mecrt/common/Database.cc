@@ -17,6 +17,7 @@ Database::~Database()
 {
     vehExeData_.clear();
     rsuExeTime_.clear();
+    enableInitDebug_ = false;
 }
 
 
@@ -24,6 +25,11 @@ void Database::initialize(int stage)
 {
     if (stage == inet::INITSTAGE_LOCAL)
     {
+        if (getSystemModule()->hasPar("enableInitDebug"))
+            enableInitDebug_ = getSystemModule()->par("enableInitDebug").boolValue();
+        if (enableInitDebug_)
+            std::cout << "Database::initialize - stage: INITSTAGE_LOCAL - begins" << std::endl;
+
         vehExeDataPath_ = par("vehExeDataPath").stringValue();
         rsuExeDataPath_ = par("rsuExeDataPath").stringValue();
         rsuPosDataPath_ = par("rsuPosDataPath").stringValue();
@@ -41,6 +47,9 @@ void Database::initialize(int stage)
         // WATCH_MAP(rsuExeTime_);
         WATCH_MAP(rsuIndex2NodeId_);
         WATCH_MAP(rsuNodeId2Index_);
+
+        if (enableInitDebug_)
+            std::cout << "Database::initialize - stage: INITSTAGE_LOCAL - ends" << std::endl;
     }
 }
 

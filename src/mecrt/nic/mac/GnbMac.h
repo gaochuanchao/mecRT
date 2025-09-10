@@ -75,6 +75,8 @@ class GnbMac : public NRMacGnb
     // ================================
     // ========= Newly Added ==========
     // ================================
+    bool enableInitDebug_; // whether to enable debug info during initialization
+
     /// Vec AMC module
     MecNRAmc *amc_;
 	  std::vector<cPacket*> grantList_;	// the list of new grant packets sent by RSU

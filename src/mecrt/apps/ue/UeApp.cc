@@ -38,6 +38,8 @@ UeApp::UeApp()
 
     MAX_UDP_CHUNK = 65527;  // 65535 - 8
     MAX_IPv4_CHUNK = 1480;  // 1500 - 20
+
+    enableInitDebug_ = false;
 }
 
 UeApp::~UeApp()
@@ -53,10 +55,14 @@ void UeApp::initialize(int stage)
 {
 
     cSimpleModule::initialize(stage);
-    EV << "VEC Application initialize: stage " << stage << " - initialize=" << initialized_ << endl;
 
     if (stage == INITSTAGE_LOCAL)
     {
+        if (getSystemModule()->hasPar("enableInitDebug"))
+            enableInitDebug_ = getSystemModule()->par("enableInitDebug").boolValue();
+        if (enableInitDebug_)
+            std::cout << "UeApp::initialize - stage: INITSTAGE_LOCAL - begins" << std::endl;
+
         nframes_ = 0;
         nframesTmp_ = 0;
         iDframe_ = 0;
@@ -80,8 +86,14 @@ void UeApp::initialize(int stage)
         savedEnergySignal_ = registerSignal("vehSavedEnergy");
         energyConsumedIfLocalSignal_ = registerSignal("vehEnergyConsumedIfLocal");
         dlScale_ = par("dlScale");
+
+        if (enableInitDebug_)
+            std::cout << "UeApp::initialize - stage: INITSTAGE_LOCAL - ends" << std::endl;
     }
     else if (stage == INITSTAGE_LAST){
+        if (enableInitDebug_)
+            std::cout << "UeApp::initialize - stage: INITSTAGE_LAST - begins" << std::endl;
+
         EV << "VEC Application initialize: stage " << stage << endl;
 
         mac_ = check_and_cast<UeMac *>(
@@ -131,6 +143,9 @@ void UeApp::initialize(int stage)
         WATCH(period_);
         WATCH(offloadPower_);
         WATCH(serviceGranted_);
+
+        if (enableInitDebug_)
+            std::cout << "UeApp::initialize - stage: INITSTAGE_LAST - ends" << std::endl;
     }
 }
 

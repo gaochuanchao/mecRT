@@ -33,6 +33,7 @@ class GnbPhy : public LtePhyEnbD2D
     friend class DasFilter;
 
   protected:
+    bool enableInitDebug_;
     bool resAllocateMode_;  // whether considering resource allocation mode
 
     // ========= LtePhyEnbD2D ==========
@@ -43,7 +44,7 @@ class GnbPhy : public LtePhyEnbD2D
     /**
      * Constructor
      */
-    GnbPhy() {};
+    GnbPhy() {  enableInitDebug_ = false; };
 
     /**
      * Destructor

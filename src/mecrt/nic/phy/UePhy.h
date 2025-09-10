@@ -51,7 +51,7 @@ class UePhy : public NRPhyUe
 	virtual void removeGrantedRsu(MacNodeId id) { grantedRsus_.erase(id); }
 
   protected:
-
+    bool enableInitDebug_;
     bool resAllocateMode_;  // whether considering resource allocation mode
     bool srsDistanceCheck_;  // whether checking the distance for SRS transmission
     // the distance for SRS transmission, if srsDistanceCheck_ is true, the SRS will only be sent to RSUs within this distance

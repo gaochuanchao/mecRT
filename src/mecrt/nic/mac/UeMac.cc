@@ -37,6 +37,7 @@ using namespace inet;
 UeMac::UeMac() 
 { 
     ttiTick_ = nullptr; 
+    enableInitDebug_ = false;
 }
 
 UeMac::~UeMac()
@@ -50,7 +51,10 @@ void UeMac::initialize(int stage)
 {
     if (stage == inet::INITSTAGE_LOCAL)
     {
-        EV << "UeMac::initialize - MAC layer, stage INITSTAGE_LOCAL" << endl;
+        if (getSystemModule()->hasPar("enableInitDebug"))
+            enableInitDebug_ = getSystemModule()->par("enableInitDebug").boolValue();
+        if (enableInitDebug_)
+            std::cout << "UeMac::initialize - stage: INITSTAGE_LOCAL - begins" << std::endl;
 
         /* Gates initialization */
         up_[IN_GATE] = gate("RLC_to_MAC");
@@ -148,9 +152,15 @@ void UeMac::initialize(int stage)
             throw cRuntimeError("UeMac::initialize - %s module found, must be LtePdcpRrcUeD2D or NRPdcpRrcUe. Aborting", pdcpType.c_str());
 
         rcvdD2DModeSwitchNotification_ = registerSignal("rcvdD2DModeSwitchNotification");
+
+        if (enableInitDebug_)
+            std::cout << "UeMac::initialize - stage: INITSTAGE_LOCAL - ends" << std::endl;
     }
     else if (stage == INITSTAGE_LINK_LAYER)
     {
+        if (enableInitDebug_)
+            std::cout << "UeMac::initialize - stage: INITSTAGE_LINK_LAYER - begins" << std::endl;
+        
         // =========== LteMacUe ===========
         EV << "UeMac::initialize - MAC layer, stage INITSTAGE_LINK_LAYER" << endl;
 
@@ -165,10 +175,14 @@ void UeMac::initialize(int stage)
             cellId_ = getAncestorPar("nrMasterId");
         else
             cellId_ = getAncestorPar("masterId");
+
+        if (enableInitDebug_)
+            std::cout << "UeMac::initialize - stage: INITSTAGE_LINK_LAYER - ends" << std::endl;
     }
     else if (stage == INITSTAGE_NETWORK_LAYER)
     {
-        EV << "UeMac::initialize - MAC layer, stage INITSTAGE_NETWORK_LAYER" << endl;
+        if (enableInitDebug_)
+            std::cout << "UeMac::initialize - stage: INITSTAGE_NETWORK_LAYER - begins" << std::endl;
 
         // =========== LteMacUe ===========
         /***
@@ -244,10 +258,14 @@ void UeMac::initialize(int stage)
         }
         else
             enb_ = NULL;
+
+        if (enableInitDebug_)
+            std::cout << "UeMac::initialize - stage: INITSTAGE_NETWORK_LAYER - ends" << std::endl;
     }
     else if (stage == inet::INITSTAGE_TRANSPORT_LAYER)
     {
-        EV << "UeMac::initialize - MAC layer, stage INITSTAGE_TRANSPORT_LAYER" << endl;
+        if (enableInitDebug_)
+            std::cout << "UeMac::initialize - stage: INITSTAGE_TRANSPORT_LAYER - begins" << std::endl;
 
         // =========== LteMacUe ===========
         const std::map<double, LteChannelModel*>* channelModels = phy_->getChannelModels();
@@ -256,10 +274,14 @@ void UeMac::initialize(int stage)
         {
             lcgScheduler_[it->first] = new LteSchedulerUeUl(this, it->first);
         }
+
+        if (enableInitDebug_)
+            std::cout << "UeMac::initialize - stage: INITSTAGE_TRANSPORT_LAYER - ends" << std::endl;
     }
     else if (stage == inet::INITSTAGE_LAST)
     {
-        EV << "UeMac::initialize - MAC layer, stage INITSTAGE_LAST" << endl;
+        if (enableInitDebug_)
+            std::cout << "UeMac::initialize - stage: INITSTAGE_LAST - begins" << std::endl;
 
         // =========== LteMacUe ===========
         /* Start TTI tick */
@@ -296,7 +318,8 @@ void UeMac::initialize(int stage)
         moveStartTime_ = mobility_->getMoveStartTime();
         moveStoptime_ = mobility_->getMoveStopTime();
 
-        EV << "UeMac::initialize - macNodeId  " << nodeId_ << ", macCellId " << cellId_  << endl;
+        if (enableInitDebug_)
+            std::cout << "UeMac::initialize - stage: INITSTAGE_LAST - ends" << std::endl;
     }
 }
 

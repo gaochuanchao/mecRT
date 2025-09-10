@@ -15,6 +15,8 @@
 
 package mecRT.mecrt.apps.server;
 
+import mecRT.mecrt.apps.server.Server;
+
 import inet.applications.contract.IApp;
 import inet.linklayer.ppp.PppInterface;
 import ned.IdealChannel;
@@ -34,7 +36,6 @@ import inet.applications.contract.IApp;
 import inet.node.ethernet.Eth10G;
 import inet.networklayer.common.InterfaceTable;
 
-import mecRT.mecRT.apps.server.Server;
 
 module ServerNode
 {
@@ -65,17 +66,17 @@ module ServerNode
         //#
         //# ppp modules
         //#
-        //        pppIf[sizeof(ppp)]: PppInterface {
-        //            @display("p=550,508");
-        //        }
-        pppIf: PppInterface {
-            @display("p=446.832,506.688");
+        pppIf[sizeof(ppp)]: PppInterface {
+            @display("p=418.992,506.688");
         }
+        // pppIf: PppInterface {
+        //     @display("p=446.832,506.688");
+        // }
 
         // ethernet interface used for communicating with external applications in emulation mode
         extEth[numExtEthInterfaces]: <default("ExtLowerEthernetInterface")> like IEthernetInterface {
             parameters:
-                @display("p=641.712,506.688,row,150;q=txQueue");
+                @display("p=680.688,506.688,row,150;q=txQueue");
         }
 
         //#
@@ -159,15 +160,15 @@ module ServerNode
         ipv6.transportIn <-- tn.out++ if hasIpv6;
         ipv6.transportOut --> tn.in++ if hasIpv6;
         //
-        //        for i=0..sizeof(ppp)-1 {
-        //            pppIf[i].upperLayerOut --> nl.in++;
-        //            pppIf[i].upperLayerIn <-- nl.out++;
-        //            pppIf[i].phys <--> gtpEndpoint.pppg++;
-        //        }
+        for i=0..sizeof(ppp)-1 {
+            pppIf[i].upperLayerOut --> nl.in++;
+            pppIf[i].upperLayerIn <-- nl.out++;
+            pppIf[i].phys <--> ppp++;
+        }
 
-        pppIf.upperLayerOut --> nl.in++;
-        pppIf.upperLayerIn <-- nl.out++;
-        pppIf.phys <--> ppp++;
+        // pppIf.upperLayerOut --> nl.in++;
+        // pppIf.upperLayerIn <-- nl.out++;
+        // pppIf.phys <--> ppp++;
 
         for i=0..numExtEthInterfaces-1 {
             extEth[i].upperLayerOut --> nl.in++;

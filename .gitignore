@@ -3,3 +3,4 @@ src/libmecRT.so
 src/out/
 src/libmecrt_dbg.so
 src/libmecrt.so
+simulations/vec/results/

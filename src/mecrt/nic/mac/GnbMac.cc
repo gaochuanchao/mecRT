@@ -45,6 +45,7 @@ GnbMac::GnbMac()
 {
     ttiTick_ = nullptr;
     flushAppPduList_ = nullptr;
+    enableInitDebug_ = false;
 }
 
 GnbMac::~GnbMac()
@@ -61,7 +62,10 @@ void GnbMac::initialize(int stage)
 {
     if (stage == inet::INITSTAGE_LOCAL)
     {
-        EV << "GnbMac::initialize - MAC layer, stage INITSTAGE_LOCAL" << endl;
+        if (getSystemModule()->hasPar("enableInitDebug"))
+            enableInitDebug_ = getSystemModule()->par("enableInitDebug").boolValue();
+        if (enableInitDebug_)
+            std::cout << "GnbMac::initialize - stage: INITSTAGE_LOCAL - begins" << std::endl;
 
         /* Gates initialization */
         up_[IN_GATE] = gate("RLC_to_MAC");
@@ -149,10 +153,14 @@ void GnbMac::initialize(int stage)
         //bool rlcD2dCapable = rlc->par("d2dCapable").boolValue();
         //if (rlcUmType.compare("LteRlcUm") != 0 || !rlcD2dCapable)
             //throw cRuntimeError("GnbMac::initialize - %s module found, must be LteRlcUmD2D. Aborting", rlcUmType.c_str());
+
+        if (enableInitDebug_)
+            std::cout << "GnbMac::initialize - stage: INITSTAGE_LOCAL - ends" << std::endl;
     }
     else if (stage == inet::INITSTAGE_PHYSICAL_ENVIRONMENT)
     {
-        EV << "GnbMac::initialize - MAC layer, stage INITSTAGE_PHYSICAL_ENVIRONMENT" << endl;
+        if (enableInitDebug_)
+            std::cout << "GnbMac::initialize - stage: INITSTAGE_PHYSICAL_ENVIRONMENT - begins" << std::endl;
 
         // ========= LteMacEnb ===========
         /* Create and initialize AMC module */
@@ -208,10 +216,14 @@ void GnbMac::initialize(int stage)
 
         msHarqInterrupt_ = par("msHarqInterrupt").boolValue();  // ms: mode switch, default(true)
         msClearRlcBuffer_ = par("msClearRlcBuffer").boolValue();    // default(true)
+
+        if (enableInitDebug_)
+            std::cout << "GnbMac::initialize - stage: INITSTAGE_PHYSICAL_ENVIRONMENT - ends" << std::endl;
     }
     else if (stage == inet::INITSTAGE_LINK_LAYER)
     {
-        EV << "GnbMac::initialize - MAC layer, stage INITSTAGE_LINK_LAYER" << endl;
+        if (enableInitDebug_)
+            std::cout << "GnbMac::initialize - stage: INITSTAGE_LINK_LAYER - begins" << std::endl;
 
         // ========= NEW UPDATE ===========
         /**
@@ -219,7 +231,7 @@ void GnbMac::initialize(int stage)
          */
         
         resAllocateMode_ = par("resAllocateMode");
-        serverPort_ = getParentModule()->getParentModule()->getSubmodule("rsuServer")->par("localPort");
+        serverPort_ = getParentModule()->getParentModule()->getSubmodule("server")->par("localPort");
         // std::cout << "server port: " << serverPort_ << endl;
         rbPerBand_ = par("numRbPerBand");
         EV << "GnbMac::initialize - number of resource blocks per Band " << rbPerBand_ << endl;
@@ -256,10 +268,14 @@ void GnbMac::initialize(int stage)
             bgTrafficManager_[carrierFrequency] = check_and_cast<BackgroundTrafficManager*>(getParentModule()->getSubmodule("bgTrafficGenerator",i)->getSubmodule("manager"));
             bgTrafficManager_[carrierFrequency]->setCarrierFrequency(carrierFrequency);
         }
+
+        if (enableInitDebug_)
+            std::cout << "GnbMac::initialize - stage: INITSTAGE_LINK_LAYER - ends" << std::endl;
     }
     else if (stage == INITSTAGE_LAST)  // after all UEs have been initialized
     {
-        EV << "GnbMac::initialize - MAC layer, stage INITSTAGE_LAST" << endl;
+        if (enableInitDebug_)
+            std::cout << "GnbMac::initialize - stage: INITSTAGE_LAST - begins" << std::endl;
 
         gnbAddress_ = inet::L3AddressResolver().resolve(getParentModule()->getParentModule()->getFullName());
         EV << "GnbMac::initialize - gNB address " << gnbAddress_.toIpv4().str() << ", gNB MacNodeId " << nodeId_ << endl;
@@ -348,6 +364,9 @@ void GnbMac::initialize(int stage)
 
         flushAppPduList_ = new cMessage("flushAppPduList");
         flushAppPduList_->setSchedulingPriority(1);        // after other messages
+
+        if (enableInitDebug_)
+            std::cout << "GnbMac::initialize - stage: INITSTAGE_LAST - ends" << std::endl;
     }
 }
 

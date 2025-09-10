@@ -39,6 +39,7 @@ class UeMac : public NRMacUe
 
   protected:
 
+    bool enableInitDebug_;
     std::map<AppId, inet::IntrusivePtr<const Grant2Veh>> vecGrant_;
     std::set<AppId> grantedApp_;
     std::map<AppId, double> grantFrequency_;

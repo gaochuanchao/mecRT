@@ -31,6 +31,7 @@ class MecMobility : public MobilityBase
     };
 
   protected:
+    bool enableInitDebug_;
     int vehIndex_;	// the index of the vehicle in the ini file
 
     simtime_t moveStartTime_;	// the start time of the provided file, start moving

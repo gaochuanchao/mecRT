@@ -24,6 +24,7 @@ MecMobility::MecMobility()
     lastVelocity_ = Coord::ZERO;
     nextChange_ = -1;
     faceForward_ = false;
+    enableInitDebug_ = false;
 }
 
 MecMobility::~MecMobility()
@@ -39,7 +40,11 @@ void MecMobility::initialize(int stage)
 {
     cSimpleModule::initialize(stage);
     if (stage == INITSTAGE_LOCAL) {
-        EV << "MecMobility::initialize - initializing MecMobility stage INITSTAGE_LOCAL (" << stage << ")" << endl;
+        if (getSystemModule()->hasPar("enableInitDebug"))
+            enableInitDebug_ = getSystemModule()->par("enableInitDebug").boolValue();
+        if (enableInitDebug_)
+            std::cout << "MecMobility::initialize - stage: INITSTAGE_LOCAL - begins" << std::endl;
+
         // ==== MobilityBase::initialize ====
         constraintAreaMin.x = par("constraintAreaMinX");
         constraintAreaMin.y = par("constraintAreaMinY");
@@ -67,9 +72,13 @@ void MecMobility::initialize(int stage)
         maxSpeed_ = par("maxSpeed");
         targetPointIndex_ = 0;
         ground_ = findModuleFromPar<IGround>(par("groundModule"), this);
+
+        if (enableInitDebug_)
+            std::cout << "MecMobility::initialize - stage: INITSTAGE_LOCAL - ends" << std::endl;
     }
     else if (stage == INITSTAGE_SINGLE_MOBILITY) {
-        EV << "MecMobility::initialize - initializing MecMobility stage INITSTAGE_SINGLE_MOBILITY (" << stage << ")" << endl;
+        if (enableInitDebug_)
+            std::cout << "MecMobility::initialize - stage: INITSTAGE_SINGLE_MOBILITY - begins" << std::endl;
 
         vehIndex_ = getParentModule()->getIndex();
         std::string filePath = "./path/" + std::to_string(vehIndex_) + ".txt";
@@ -78,15 +87,23 @@ void MecMobility::initialize(int stage)
 
         initializeOrientation();
         initializePosition();
+
+        if (enableInitDebug_)
+            std::cout << "MecMobility::initialize - stage: INITSTAGE_SINGLE_MOBILITY - ends" << std::endl;
     }
     else if (stage == INITSTAGE_LAST) {
-        EV << "MecMobility::initialize - initializing MecMobility stage INITSTAGE_LAST (" << stage << ")" << endl;
+        if (enableInitDebug_)
+            std::cout << "MecMobility::initialize - stage: INITSTAGE_LAST - begins" << std::endl;
+
         // hide the vehicle until the start time (make the icon small)
         getParentModule()->getDisplayString().setTagArg("i", 0, "invisible");
 
         // set a timer to show the vehicle at the start time
         showVehicle_ = new cMessage("showVehicle");
         scheduleAt(moveStartTime_, showVehicle_);
+
+        if (enableInitDebug_)
+            std::cout << "MecMobility::initialize - stage: INITSTAGE_LAST - ends" << std::endl;
     }
 }
 

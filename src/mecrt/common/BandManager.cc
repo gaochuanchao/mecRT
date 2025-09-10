@@ -12,6 +12,7 @@ Define_Module(BandManager);
 BandManager::BandManager()
 {
     updateTick_ = nullptr;
+    enableInitDebug_ = false;
 }
 
 BandManager::~BandManager()
@@ -24,7 +25,10 @@ void BandManager::initialize(int stage)
 {
     if (stage == inet::INITSTAGE_LOCAL)
     {
-        EV << "BandManager::initialize - initializing BandManager stage INITSTAGE_LOCAL (" << stage << ")" << endl;
+        if (getSystemModule()->hasPar("enableInitDebug"))
+            enableInitDebug_ = getSystemModule()->par("enableInitDebug").boolValue();
+        if (enableInitDebug_)
+            std::cout << "BandManager::initialize - stage: INITSTAGE_LOCAL - begins" << std::endl;
 
         antenna_ = MACRO;
         dir_ = UL;
@@ -41,10 +45,14 @@ void BandManager::initialize(int stage)
         WATCH(dir_);
         WATCH(frequency_);
         WATCH(ttiPeriod_);
+
+        if (enableInitDebug_)
+            std::cout << "BandManager::initialize - stage: INITSTAGE_LOCAL - ends" << std::endl;
     }
     else if (stage == inet::INITSTAGE_LAST)
     {
-        EV << "BandManager::initialize - initializing BandManager stage INITSTAGE_LAST (" << stage << ")" << endl;
+        if (enableInitDebug_)
+            std::cout << "BandManager::initialize - stage: INITSTAGE_LAST - begins" << std::endl;
 
         binder_ = getBinder();
         /***
@@ -58,6 +66,9 @@ void BandManager::initialize(int stage)
         updateTick_ = new omnetpp::cMessage("updateTick");
         updateTick_->setSchedulingPriority(2);  // after the flushAppMsg in UeMac
         scheduleAt(simTime() + ttiPeriod_, updateTick_);
+
+        if (enableInitDebug_)
+            std::cout << "BandManager::initialize - stage: INITSTAGE_LAST - ends" << std::endl;
     }
 }
 

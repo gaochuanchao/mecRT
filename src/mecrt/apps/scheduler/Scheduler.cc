@@ -29,6 +29,7 @@ Scheduler::Scheduler()
     schedStarter_ = nullptr;
     schedComplete_ = nullptr;
     preSchedCheck_ = nullptr;
+    enableInitDebug_ = false;
 }
 
 Scheduler::~Scheduler()
@@ -49,6 +50,11 @@ void Scheduler::initialize(int stage)
 
     if (stage == INITSTAGE_LOCAL)
     {
+        if (getSystemModule()->hasPar("enableInitDebug"))
+            enableInitDebug_ = getSystemModule()->par("enableInitDebug").boolValue();
+        if (enableInitDebug_)
+            std::cout << "Scheduler::initialize - stage: INITSTAGE_LOCAL - begins" << std::endl;
+        
         periodicScheduling_ = par("periodicScheduling");
 
         schedulingInterval_ = par("scheduleInterval");
@@ -74,9 +80,15 @@ void Scheduler::initialize(int stage)
         vecSavedEnergySignal_ = registerSignal("savedEnergy");
         vecPendingAppCountSignal_ = registerSignal("pendingAppCount");
         vecGrantedAppCountSignal_ = registerSignal("grantedAppCount");
+
+        if (enableInitDebug_)
+            std::cout << "Scheduler::initialize - stage: INITSTAGE_LOCAL - ends" << std::endl;
     }
     else if (stage == INITSTAGE_APPLICATION_LAYER)
     {
+        if (enableInitDebug_)
+            std::cout << "Scheduler::initialize - stage: INITSTAGE_APPLICATION_LAYER - begins" << std::endl;
+        
         int port = par("localPort");
         EV << "vecReceiver::initialize - binding to port: local:" << port << endl;
         if (port != -1)
@@ -88,8 +100,14 @@ void Scheduler::initialize(int stage)
         db_ = check_and_cast<Database*>(getSimulation()->getModuleByPath("database"));
         if (db_ == nullptr)
             throw cRuntimeError("VecApp::initTraffic - the database module is not found");
+
+        if (enableInitDebug_)
+            std::cout << "Scheduler::initialize - stage: INITSTAGE_APPLICATION_LAYER - ends" << std::endl;
     }
     else if (stage == INITSTAGE_LAST){
+        if (enableInitDebug_)
+            std::cout << "Scheduler::initialize - stage: INITSTAGE_LAST - begins" << std::endl;
+
         binder_ = getBinder();
         NumerologyIndex numerologyIndex = par("numerologyIndex");
         ttiPeriod_ = binder_->getSlotDurationFromNumerologyIndex(numerologyIndex);
@@ -149,6 +167,9 @@ void Scheduler::initialize(int stage)
         WATCH(cuStep_);
         WATCH(rbStep_);
         WATCH(fairFactor_);
+
+        if (enableInitDebug_)
+            std::cout << "Scheduler::initialize - stage: INITSTAGE_LAST - ends" << std::endl;
     }
 }
 

@@ -30,6 +30,7 @@ class Server : public omnetpp::cSimpleModule
     friend class GnbMac;
 
   protected:
+    bool enableInitDebug_ = false;
     inet::UdpSocket socket;
     int localPort_;
     int schedulerPort_;

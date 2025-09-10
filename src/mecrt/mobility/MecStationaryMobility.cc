@@ -12,7 +12,10 @@ void MecStationaryMobility::initialize(int stage)
 {
     cSimpleModule::initialize(stage);
     if (stage == INITSTAGE_LOCAL) {
-        EV << "initializing MecStationaryMobility stage " << stage << endl;
+        if (getSystemModule()->hasPar("enableInitDebug"))
+            enableInitDebug_ = getSystemModule()->par("enableInitDebug").boolValue();
+        if (enableInitDebug_)
+            std::cout << "MecStationaryMobility::initialize - stage: INITSTAGE_LOCAL - begins" << std::endl;
 
         constraintAreaMin.x = par("constraintAreaMinX");
         constraintAreaMin.y = par("constraintAreaMinY");
@@ -33,15 +36,22 @@ void MecStationaryMobility::initialize(int stage)
 
         updateFromDisplayString = par("updateFromDisplayString");
         nodeVectorIdx_ = getParentModule()->getIndex();
+
+        if (enableInitDebug_)
+            std::cout << "MecStationaryMobility::initialize - stage: INITSTAGE_LOCAL - ends" << std::endl;
     }
     else if (stage == INITSTAGE_SINGLE_MOBILITY) {
-        EV << "initializing MecStationaryMobility stage " << stage << endl;
+        if (enableInitDebug_)
+            std::cout << "MecStationaryMobility::initialize - stage: INITSTAGE_SINGLE_MOBILITY - begins" << std::endl;
 
         initializeOrientation();
         initializePosition();
 
         unsigned short nodeId = getAncestorPar("macNodeId");
         database_->setRsuNodeId2Index(nodeId, nodeVectorIdx_);
+
+        if (enableInitDebug_)
+            std::cout << "MecStationaryMobility::initialize - stage: INITSTAGE_SINGLE_MOBILITY - ends" << std::endl;
     }
 }
 

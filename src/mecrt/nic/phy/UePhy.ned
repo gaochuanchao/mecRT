@@ -50,7 +50,7 @@ simple UePhy like LtePhy
         // ================================
         // if true, get minRssi from PhyPisaData
         bool minRssiDefault = default(true);
-         
+        
         // configurable minimum threshold RSSI for attaching to an eNB (meaningful only if minRssiDefault==false)
         double minRssi @unit("dB")= default(-99.0dB);
         
@@ -66,13 +66,13 @@ simple UePhy like LtePhy
         
         //# CQI statistics
         @signal[averageCqiDl];
-        @statistic[averageCqiDl](title="Average Cqi reported in DL"; unit="cqi"; source="averageCqiDl"; record=mean,count,vector);
+        @statistic[averageCqiDl](title="Average Cqi reported in DL"; unit="cqi"; source="averageCqiDl"; record=mean);
         @signal[averageCqiUl];
-        @statistic[averageCqiUl](title="Average Cqi reported in UL"; unit="cqi"; source="averageCqiUl"; record=mean,count,vector);
+        @statistic[averageCqiUl](title="Average Cqi reported in UL"; unit="cqi"; source="averageCqiUl"; record=mean);
         
         //# D2D CQI statistic
         @signal[averageCqiD2D];
-        @statistic[averageCqiD2D](title="Average Cqi reported in D2D"; unit="cqi"; source="averageCqiD2D"; record=mean,vector);
+        @statistic[averageCqiD2D](title="Average Cqi reported in D2D"; unit="cqi"; source="averageCqiD2D"; record=mean);
              
     gates:
         input upperGateIn;       // from upper layer
