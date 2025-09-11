@@ -1,5 +1,18 @@
 //
-// a single layer of NRMacGnb module in simu5g
+//  Project: mecRT – Mobile Edge Computing Simulator for Real-Time Applications
+//  File:    GnbMac.cc / GnbMac.h
+//
+//  Description:
+//    This file implements the MAC layer for the gNB in the MEC context.
+//    Compared to the original NRMacGnb, we add the control logic for data offloading,
+//    including interaction with the RSU server and the global scheduler, and a 
+//    adaptive offloading control mechanism based on the real-time SRS feedback from UEs.
+//
+//  Author:  Gao Chuanchao (Nanyang Technological University)
+//  Date:    2025-09-01
+//
+//  License: Academic Public License -- NOT FOR COMMERCIAL USE
+//S
 // simulate the MAC stack of the NIC module of gNB
 // LteMacBase --> LteMacEnb --> LteMacEnbD2D --> NRMacGnb
 //

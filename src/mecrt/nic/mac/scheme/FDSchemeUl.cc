@@ -1,9 +1,15 @@
 //
-//                  simple5G
-// Authors: Gao Chuanchao (Nanyang Technological University)
+//  Project: mecRT – Mobile Edge Computing Simulator for Real-Time Applications
+//  File:    FDSchemeUl.cc / FDSchemeUl.h
 //
-// a single layer of LteMaxCi class in simu5g
-// LteScheduler --> LteMaxCi
+//  Description:
+//    This file implements the uplink scheduling scheme for the gNB in the MEC.
+//    This scheme prioritizes the UE with the best CQI in each time slot.
+//
+//  Author:  Gao Chuanchao (Nanyang Technological University)
+//  Date:    2025-09-01
+//
+//  License: Academic Public License -- NOT FOR COMMERCIAL USE
 //
 
 #include "mecrt/nic/mac/scheme/FDSchemeUl.h"

@@ -1,8 +1,21 @@
 //
-//                  VecSim
-// Authors: Gao Chuanchao (Nanyang Technological University)
+//  Project: mecRT – Mobile Edge Computing Simulator for Real-Time Applications
+//  File:    SchemeFastLR.cc / SchemeFastLR.h
 //
-// the QuickLR scheduling scheme in resource scheduling
+//  Description:
+//    This file implements the FastLR scheduling scheme in the Mobile Edge Computing System.
+//    The FastLR scheme is a linear time approximation algorithm for the multi-resource scheduling problem,
+//    which categorizes all candidate service instances into two groups based on their resource demands,
+//    and prioritizes the light instances (with resource demand no more than half) over the heavy instances.
+//     [Scheme Source: Chuanchao Gao and Arvind Easwaran. 2025. Local Ratio based Real-time Job Offloading 
+//      and Resource Allocation in Mobile Edge Computing. In Proceedings of the 4th International Workshop 
+//      on Real-time and IntelliGent Edge computing (RAGE '25). Association for Computing Machinery, New York, 
+//      NY, USA, Article 6, 1–6. https://doi.org/10.1145/3722567.3727843]
+//
+//  Author:  Gao Chuanchao (Nanyang Technological University)
+//  Date:    2025-09-01
+//
+//  License: Academic Public License -- NOT FOR COMMERCIAL USE
 //
 
 #include "mecrt/apps/scheduler/SchemeFastLR.h"

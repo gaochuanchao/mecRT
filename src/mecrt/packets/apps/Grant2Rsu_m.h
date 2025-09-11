@@ -22,7 +22,7 @@ class Grant2Rsu;
 #include "inet/common/packet/chunk/Chunk_m.h" // import inet.common.packet.chunk.Chunk
 
 /**
- * Class generated from <tt>mecrt/packets/apps/Grant2Rsu.msg:21</tt> by opp_msgtool.
+ * Class generated from <tt>mecrt/packets/apps/Grant2Rsu.msg:20</tt> by opp_msgtool.
  * <pre>
  * class Grant2Rsu extends inet::FieldsChunk
  * {

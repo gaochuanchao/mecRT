@@ -1,6 +1,19 @@
 //
-//                  simple5G
-// Authors: Gao Chuanchao (Nanyang Technological University)
+//  Project: mecRT – Mobile Edge Computing Simulator for Real-Time Applications
+//  File:    Grant2Veh.msg
+//
+//  Description:
+//    This file implements message Grant2Veh, which is sent from the 5G NIC module of an ES (RSU)
+//	  to users for task offloading related information:
+//		- start/suspend/stop offloading
+//		- bandwidth allocation
+//		- data rate
+//    This extended message is mainly to pass the resource block allocation information.
+//
+//  Author:  Gao Chuanchao (Nanyang Technological University)
+//  Date:    2025-09-01
+//
+//  License: Academic Public License -- NOT FOR COMMERCIAL USE
 //
 
 #include "mecrt/packets/apps/Grant2Veh.h"

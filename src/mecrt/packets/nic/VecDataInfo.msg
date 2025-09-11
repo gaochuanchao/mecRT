@@ -1,16 +1,16 @@
 //
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-// 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
-// 
-// You should have received a copy of the GNU Lesser General Public License
-// along with this program.  If not, see http://www.gnu.org/licenses/.
+//  Project: mecRT – Mobile Edge Computing Simulator for Real-Time Applications
+//  File:    VecDataInfo.msg
+//
+//  Description:
+//    This file implements message tag VecDataInfo.
+//    Used by the UE MAC layer.
+//	  This tag is used to tell the UE physical layer how long the current data transmission will last.
+//
+//  Author:  Gao Chuanchao (Nanyang Technological University)
+//  Date:    2025-09-01
+//
+//  License: Academic Public License -- NOT FOR COMMERCIAL USE
 //
 import inet.common.INETDefs;
 import inet.common.TagBase;

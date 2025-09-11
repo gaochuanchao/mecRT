@@ -1,8 +1,16 @@
 //
-//                  simple5G
-// Authors: Gao Chuanchao (Nanyang Technological University)
+//  Project: mecRT – Mobile Edge Computing Simulator for Real-Time Applications
+//  File:    Scheduler.cc / Scheduler.h
 //
-// the global scheduler in the Vehicular Edge Computing System
+//  Description:
+//    This file implements the global scheduler in the Mobile Edge Computing System.
+//    The scheduler collects the vehicle requests and RSU status information,
+//    and makes the scheduling decision periodically based on the implemented scheduling scheme.
+//
+//  Author:  Gao Chuanchao (Nanyang Technological University)
+//  Date:    2025-09-01
+//
+//  License: Academic Public License -- NOT FOR COMMERCIAL USE
 //
 
 #ifndef _MECRT_SCHEDULER_H_

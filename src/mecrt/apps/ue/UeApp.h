@@ -1,8 +1,16 @@
 //
-//                  simple5G
-// Authors: Gao Chuanchao (Nanyang Technological University)
+//  Project: mecRT – Mobile Edge Computing Simulator for Real-Time Applications
+//  File:    UeApp.cc / UeApp.h
 //
-// the task generator in the Vehicular Edge Computing System
+//  Description:
+//    This file implements the user equipment (UE) application in the MEC system.
+//    The UE application is responsible for generating and sending tasks to the ES (RSU),
+//    as well as receiving and processing responses from the ES (RSU).
+//
+//  Author:  Gao Chuanchao (Nanyang Technological University)
+//  Date:    2025-09-01
+//
+//  License: Academic Public License -- NOT FOR COMMERCIAL USE
 //
 // notes regarding to different init stages
 // INITSTAGE_LOCAL 0

@@ -1,7 +1,19 @@
 //
-// Copyright (C) 2015 OpenSim Ltd.
+//  Project: mecRT – Mobile Edge Computing Simulator for Real-Time Applications
+//  File:    MecMobility.cc / MecMobility.h
 //
-// SPDX-License-Identifier: LGPL-3.0-or-later
+//  Description:
+//    This file implements the mobility functionality in the MEC system.
+//    The MecMobility class is responsible for managing the movement of
+//    vehicles within the simulation environment, including position updates
+//    and trajectory management.
+//    This module can directly read vehicle position at different timestamps, and compute
+//    the real-time position of the vehicle by linear interpolation.
+//
+//  Author:  Gao Chuanchao (Nanyang Technological University)
+//  Date:    2025-09-01
+//
+//  License: Academic Public License -- NOT FOR COMMERCIAL USE
 //
 
 

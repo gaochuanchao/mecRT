@@ -1,16 +1,18 @@
 //
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-// 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
-// 
-// You should have received a copy of the GNU Lesser General Public License
-// along with this program.  If not, see http://www.gnu.org/licenses/.
+//  Project: mecRT – Mobile Edge Computing Simulator for Real-Time Applications
+//  File:    ServiceStatus.msg
+//
+//  Description:
+//    This file implements message ServiceStatus, which is sent from the ES (RSU) to scheduler.
+//	  When a service initialize/terminate command is sent from the scheduler to the ES (RSU),
+//    The server module first initialize/terminate the service, and inform the 5G NIC module to
+//    update bandwidth allocation. After the 5G NIC module updates the bandwidth allocation,
+//    the server module sends the ServiceStatus message to the scheduler to update its record.
+//
+//  Author:  Gao Chuanchao (Nanyang Technological University)
+//  Date:    2025-09-01
+//
+//  License: Academic Public License -- NOT FOR COMMERCIAL USE
 //
 
 import inet.common.INETDefs;

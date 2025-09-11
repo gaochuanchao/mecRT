@@ -1,8 +1,16 @@
 //
-//                  simple5G
-// Authors: Gao Chuanchao (Nanyang Technological University)
+//  Project: mecRT – Mobile Edge Computing Simulator for Real-Time Applications
+//  File:    Server.cc / Server.h
 //
-// the server in the RSU unit in the Vehicular Edge Computing System
+//  Description:
+//    This file implements the server in the edge server (RSU) in MEC.
+//    The server handles the service initialization and termination, maintains resource status,
+//    and communicates with the scheduler and the 5G NIC module.
+//
+//  Author:  Gao Chuanchao (Nanyang Technological University)
+//  Date:    2025-09-01
+//
+//  License: Academic Public License -- NOT FOR COMMERCIAL USE
 //
 
 #include "mecrt/apps/server/Server.h"

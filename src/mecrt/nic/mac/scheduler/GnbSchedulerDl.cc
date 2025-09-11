@@ -1,10 +1,17 @@
 //
-//                  simple5G
-// Authors: Gao Chuanchao (Nanyang Technological University)
+//  Project: mecRT – Mobile Edge Computing Simulator for Real-Time Applications
+//  File:    GnbSchedulerDl.cc / GnbSchedulerDl.h
 //
-// a single layer of LteSchedulerEnbDl module in simu5g
-// simulate the MAC stack of the NIC module of gNB
-// LteSchedulerEnb --> LteSchedulerEnbDl
+//  Description:
+//    This file implements the downlink scheduler for the gNB in the MEC.
+//    The scheduler divides the bandwidth in the time dimension.
+//    It simulates the MAC stack of the NIC module of gNB
+//    LteSchedulerEnb --> LteSchedulerEnbDl
+//
+//  Author:  Gao Chuanchao (Nanyang Technological University)
+//  Date:    2025-09-01
+//
+//  License: Academic Public License -- NOT FOR COMMERCIAL USE
 //
 
 #include "mecrt/nic/mac/scheduler/GnbSchedulerDl.h"

@@ -1,7 +1,15 @@
 //
-//                  simple5G
-// Authors: Gao Chuanchao (Nanyang Technological University)
-// the resource block manager for the uplink of NR
+//  Project: mecRT – Mobile Edge Computing Simulator for Real-Time Applications
+//  File:    RbManagerUl.cc / RbManagerUl.h
+//
+//  Description:
+//    This file implements the resource block manager for the uplink of NR in the MEC.
+//    Currently only frequency division resource allocation is supported.
+//
+//  Author:  Gao Chuanchao (Nanyang Technological University)
+//  Date:    2025-09-01
+//
+//  License: Academic Public License -- NOT FOR COMMERCIAL USE
 //
 
 #include "mecrt/nic/mac/scheduler/RbManagerUl.h"

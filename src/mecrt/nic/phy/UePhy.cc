@@ -362,7 +362,7 @@ void UePhy::initialize(int stage)
 
         int fbTtiCount = getParentModule()->getSubmodule("nrDlFbGen")->par("fbPeriod");
         fbPeriod_ = fbTtiCount * TTI;   // convert to seconds
-        schedulePeriod_ = getSimulation()->getModuleByPath("scheduler")->getSubmodule("scheduler")->par("scheduleInterval");
+        schedulePeriod_ = getSimulation()->getModuleByPath("schedulerHost")->getSubmodule("scheduler")->par("scheduleInterval");
 
         MecMobility* mobilityModule = check_and_cast<MecMobility*>(getParentModule()->getParentModule()->getSubmodule("mobility"));
         moveStartTime_ = mobilityModule->getMoveStartTime();

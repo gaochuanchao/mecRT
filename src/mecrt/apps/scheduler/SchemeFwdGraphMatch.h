@@ -1,9 +1,19 @@
 //
-//                  VecSim
-// Authors: Gao Chuanchao (Nanyang Technological University)
+//  Project: mecRT – Mobile Edge Computing Simulator for Real-Time Applications
+//  File:    SchemeFwdGraphMatch.cc / SchemeFwdGraphMatch.h
 //
-// the scheduling scheme in the Vehicular Edge Computing System with Backhaul Network
-// the scheme is based on tripartite graph matching
+//  Description:
+//    This file implements the Graph Matching based scheduling scheme in the Mobile Edge Computing System with
+//    backhaul network support.
+//    The Graph Matching scheduling scheme transform the resource allocation problem into a maximum weight
+//    three-dimensional matching problem.
+//      [scheme source: C. Gao and A. Easwaran, "Energy-Efficient Joint Offloading and Resource Allocation
+//      for Deadline-Constrained Tasks in Multi-Access Edge Computing", RTCSA 2025]
+//
+//  Author:  Gao Chuanchao (Nanyang Technological University)
+//  Date:    2025-09-01
+//
+//  License: Academic Public License -- NOT FOR COMMERCIAL USE
 //
 
 #ifndef _MECRT_SCHEDULER_SCHEME_FWD_GRAPH_MATCH_H_

@@ -1,6 +1,22 @@
 //
-//                  simple5G
-// Authors: Gao Chuanchao (Nanyang Technological University)
+//  Project: mecRT – Mobile Edge Computing Simulator for Real-Time Applications
+//  File:    MecGtpUser.cc / MecGtpUser.h
+//
+//  Description:
+//    This file implements the GTP user functionality in the MEC system.
+//    The MecGtpUser is responsible for handling the communication between
+//    the RSU and the scheduler, encapsulating IP datagrams in GTP-U packets
+//    and managing the data tunnels between GTP peers.
+//
+//  Original code from Simu5G (https://github.com/Unipisa/Simu5G/blob/master/src/corenetwork/gtp/GtpUser.h)
+//
+//  Adjustment:
+//    - Ensuring data packets routing between ES and scheduler via GTP tunneling.
+//
+//  Author:  Gao Chuanchao (Nanyang Technological University)
+//  Date:    2025-09-01
+//
+//  License: Academic Public License -- NOT FOR COMMERCIAL USE
 //
 
 #ifndef __MECRT_GTP_USER_H_

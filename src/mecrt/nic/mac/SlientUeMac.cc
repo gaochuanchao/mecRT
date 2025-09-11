@@ -1,12 +1,19 @@
 //
-//                  Simu5G
+//  Project: mecRT – Mobile Edge Computing Simulator for Real-Time Applications
+//  File:    SlientUeMac.cc / SlientUeMac.h
 //
-// Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
+//  Description:
+//    This file implements the MAC layer for the UE in the MEC context.
+//    Some UEs may have unused MAC module, which still needs to be checked in each TTI
+//    To avoid unnecessary computation, we implement a "silent" MAC module that does nothing
 //
-// This file is part of a software released under the license included in file
-// "license.pdf". Please read LICENSE and README files before using it.
-// The above files and the present reference are part of the software itself,
-// and cannot be removed from it.
+//  Author:  Gao Chuanchao (Nanyang Technological University)
+//  Date:    2025-09-01
+//
+//  License: Academic Public License -- NOT FOR COMMERCIAL USE
+//
+// simulate the MAC stack of the NIC module of gNB
+// LteMacBase --> LteMacUe --> SlientUeMac
 //
 
 #include "mecrt/nic/mac/SlientUeMac.h"

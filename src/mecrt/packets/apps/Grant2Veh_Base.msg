@@ -1,16 +1,18 @@
 //
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-// 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
-// 
-// You should have received a copy of the GNU Lesser General Public License
-// along with this program.  If not, see http://www.gnu.org/licenses/.
+//  Project: mecRT – Mobile Edge Computing Simulator for Real-Time Applications
+//  File:    Grant2Veh_Base.msg
+//
+//  Description:
+//    This file implements message Grant2Veh_Base, which is sent from the 5G NIC module of an ES (RSU)
+//	  to users for task offloading related information:
+//		- start/suspend/stop offloading
+//		- bandwidth allocation
+//		- data rate
+//
+//  Author:  Gao Chuanchao (Nanyang Technological University)
+//  Date:    2025-09-01
+//
+//  License: Academic Public License -- NOT FOR COMMERCIAL USE
 //
 
 import inet.common.INETDefs;

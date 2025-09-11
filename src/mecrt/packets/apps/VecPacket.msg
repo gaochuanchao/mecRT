@@ -1,15 +1,20 @@
-// 
-//                  simple5G
-// Authors: Gao Chuanchao (Nanyang Technological University)
-// 
-// 
+//
+//  Project: mecRT – Mobile Edge Computing Simulator for Real-Time Applications
+//  File:    VecPacket.msg
+//
+//  Description:
+//    This file implements message JobPacket and VecRequest.
+//	  The JobPacket is used to carry the offloading data from UE to gNB, and then from gNB to the server app.
+//    The VecRequest is used to carry the offloading request from UE to the scheduler.
+//
+//  Author:  Gao Chuanchao (Nanyang Technological University)
+//  Date:    2025-09-01
+//
+//  License: Academic Public License -- NOT FOR COMMERCIAL USE
+//
 
 import inet.common.INETDefs;
 import inet.common.packet.chunk.Chunk;
-
-//cplusplus {{
-//#include "NR/common/VecCommon.h"
-//}}
 
 
 class JobPacket extends inet::FieldsChunk {

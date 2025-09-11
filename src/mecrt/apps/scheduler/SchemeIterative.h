@@ -1,13 +1,17 @@
 //
-//                  VecSim
-// Authors: Gao Chuanchao (Nanyang Technological University)
+//  Project: mecRT – Mobile Edge Computing Simulator for Real-Time Applications
+//  File:    SchemeIterative.cc / SchemeIterative.h
 //
-// the Iterative scheduling scheme in resource scheduling
+//  Description:
+//    This file implements the Iterative based scheduling scheme in the Mobile Edge Computing System.
+//    The Iterative scheduling scheme is an approach for resource scheduling that decomposes the task mapping
+//    and resource allocation problem into two subproblems: task mapping and resource allocation. Then, the two
+//    subproblems are solved iteratively until convergence.
 //
-// the task mapping and resouce allocation problem is decomposed into two subproblems:
-// 1. task mapping problem: determine where the service is deployed
-// 2. resource allocation problem: determine how much resources are allocated to the service
-// the two subproblems are solved iteratively until convergence
+//  Author:  Gao Chuanchao (Nanyang Technological University)
+//  Date:    2025-09-01
+//
+//  License: Academic Public License -- NOT FOR COMMERCIAL USE
 //
 
 #ifndef _MECRT_SCHEDULER_SCHEME_ITERATIVE_H_

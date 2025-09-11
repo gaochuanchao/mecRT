@@ -1,12 +1,16 @@
 //
-//                  Simu5G
+//  Project: mecRT – Mobile Edge Computing Simulator for Real-Time Applications
+//  File:    GnbAllocationModule.cc / GnbAllocationModule.h
 //
-// Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
+//  Description:
+//    This file implements the bandwidth resource block allocation module for the gNB in the MEC.
+//    update the original Allocator Module such that one band can contains multiple RBs.
+//    original file: simu5g - "stack/mac/allocator/LteAllocationModule.h"
 //
-// This file is part of a software released under the license included in file
-// "license.pdf". Please read LICENSE and README files before using it.
-// The above files and the present reference are part of the software itself,
-// and cannot be removed from it.
+//  Author:  Gao Chuanchao (Nanyang Technological University)
+//  Date:    2025-09-01
+//
+//  License: Academic Public License -- NOT FOR COMMERCIAL USE
 //
 
 #include "mecrt/nic/mac/allocator/GnbAllocationModule.h"

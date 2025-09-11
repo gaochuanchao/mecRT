@@ -1,6 +1,18 @@
 //
-//                  simple5G
-// Authors: Gao Chuanchao (Nanyang Technological University)
+//  Project: mecRT – Mobile Edge Computing Simulator for Real-Time Applications
+//  File:    MecNRAmc.cc / MecNRAmc.h
+//
+//  Description:
+//    This file implements the NR AMC module for the MEC environment.
+//    Original file: simu5g - "stack/mac/amc/NRAmc.h"
+//    The original AMC module is designed for 1 RB per band, which is not efficient for SRS feedback.
+//    We update the AMC module such that one band can contains multiple RBs, allowing users to decide the
+//    the bandwidth resource granularity more flexibly.
+//
+//  Author:  Gao Chuanchao (Nanyang Technological University)
+//  Date:    2025-09-01
+//
+//  License: Academic Public License -- NOT FOR COMMERCIAL USE
 //
 #include "mecrt/nic/mac/amc/MecNRAmc.h"
 #include "mecrt/nic/mac/amc/MecPilot.h"

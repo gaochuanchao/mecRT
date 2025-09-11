@@ -1,12 +1,16 @@
 //
-//                  Simu5G
+//  Project: mecRT – Mobile Edge Computing Simulator for Real-Time Applications
+//  File:    UeApp.cc / UeApp.h
 //
-// Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
+//  Description:
+//    This file implements the user equipment (UE) application in the MEC system.
+//    The UE application is responsible for generating and sending tasks to the ES (RSU),
+//    as well as receiving and processing responses from the ES (RSU).
 //
-// This file is part of a software released under the license included in file
-// "license.pdf". Please read LICENSE and README files before using it.
-// The above files and the present reference are part of the software itself,
-// and cannot be removed from it.
+//  Author:  Gao Chuanchao (Nanyang Technological University)
+//  Date:    2025-09-01
+//
+//  License: Academic Public License -- NOT FOR COMMERCIAL USE
 //
 
 #include <cmath>

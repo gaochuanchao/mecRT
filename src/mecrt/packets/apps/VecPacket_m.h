@@ -23,7 +23,7 @@ class VecRequest;
 #include "inet/common/packet/chunk/Chunk_m.h" // import inet.common.packet.chunk.Chunk
 
 /**
- * Class generated from <tt>mecrt/packets/apps/VecPacket.msg:15</tt> by opp_msgtool.
+ * Class generated from <tt>mecrt/packets/apps/VecPacket.msg:20</tt> by opp_msgtool.
  * <pre>
  * class JobPacket extends inet::FieldsChunk
  * {
@@ -89,7 +89,7 @@ inline void doParsimPacking(omnetpp::cCommBuffer *b, const JobPacket& obj) {obj.
 inline void doParsimUnpacking(omnetpp::cCommBuffer *b, JobPacket& obj) {obj.parsimUnpack(b);}
 
 /**
- * Class generated from <tt>mecrt/packets/apps/VecPacket.msg:25</tt> by opp_msgtool.
+ * Class generated from <tt>mecrt/packets/apps/VecPacket.msg:30</tt> by opp_msgtool.
  * <pre>
  * class VecRequest extends inet::FieldsChunk
  * {

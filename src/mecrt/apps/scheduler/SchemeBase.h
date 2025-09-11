@@ -1,9 +1,19 @@
 //
-//                  VecSim
-// Authors: Gao Chuanchao (Nanyang Technological University)
+//  Project: mecRT – Mobile Edge Computing Simulator for Real-Time Applications
+//  File:    SchemeBase.cc / SchemeBase.h
 //
-// the basic scheduling scheme in the Vehicular Edge Computing System
-// the greedy scheduling strategy is used in the basic scheduling scheme
+//  Description:
+//    This file implements the basic scheduling scheme in the Mobile Edge Computing System.
+//    The SchemeBase class provides common functionalities for different scheduling schemes,
+//    such as data initialization, service instance generation, and utility computation.
+//    By default, a greedy scheduling scheme is implemented.
+//      [scheme source: C. Gao, A. Shaan and A. Easwaran, "Deadline-constrained Multi-resource Task Mapping 
+//      and Allocation for Edge-Cloud Systems," GLOBECOM 2022, doi: 10.1109/GLOBECOM48099.2022.10001137.]
+//
+//  Author:  Gao Chuanchao (Nanyang Technological University)
+//  Date:    2025-09-01
+//
+//  License: Academic Public License -- NOT FOR COMMERCIAL USE
 //
 
 #ifndef _MECRT_SCHEDULER_SCHEME_BASE_H_

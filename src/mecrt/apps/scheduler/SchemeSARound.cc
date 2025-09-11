@@ -1,8 +1,19 @@
 //
-//                  VecSim
-// Authors: Gao Chuanchao (Nanyang Technological University)
+//  Project: mecRT – Mobile Edge Computing Simulator for Real-Time Applications
+//  File:    SchemeSARound.cc / SchemeSARound.h
 //
-// the SARound scheduling scheme in resource scheduling
+//  Description:
+//    This file implements a SARound scheduling scheme in the Mobile Edge Computing System.
+//    The SARound scheduling scheme determines the service instance packing for each ES (RSU) one by one.
+//    For each ES, it solves a linear programming (LP) relaxation of the original integer linear programming (ILP) problem.
+//    Then, it applies a floor rounding technique to convert the fractional solution of the LP into an integer solution.
+//      [scheme source: C. Gao and A. Easwaran, "Real-Time Service Subscription and Adaptive Offloading Control in
+//       Vehicular Edge Computing", RTSS 2025]
+//
+//  Author:  Gao Chuanchao (Nanyang Technological University)
+//  Date:    2025-09-01
+//
+//  License: Academic Public License -- NOT FOR COMMERCIAL USE
 //
 
 #include "mecrt/apps/scheduler/SchemeSARound.h"

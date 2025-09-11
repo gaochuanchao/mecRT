@@ -1,7 +1,21 @@
 //
-//                  simple5G
-// Authors: Gao Chuanchao (Nanyang Technological University)
+//  Project: mecRT – Mobile Edge Computing Simulator for Real-Time Applications
+//  File:    MecDlFeedbackGenerator.cc / MecDlFeedbackGenerator.h
 //
+//  Description:
+//    This file implements the downlink feedback generator functionality in the MEC system.
+//    The UE sends the souding reference signals (SRS) to the RSU periodically for RSU to estimate
+//    the uplink channel quality. The RSU then decides the uplink resource allocation and feedbacks to the UE.
+//
+//  Original code from Simu5G (https://github.com/Unipisa/Simu5G/blob/master/src/stack/phy/feedback/LteDlFeedbackGenerator.h)
+//
+//  Adjustment:
+//    - Add periodic feedback generation function.
+//
+//  Author:  Gao Chuanchao (Nanyang Technological University)
+//  Date:    2025-09-01
+//
+//  License: Academic Public License -- NOT FOR COMMERCIAL USE
 //
 
 #ifndef _MECRT_DLFBGENERATOR_H_

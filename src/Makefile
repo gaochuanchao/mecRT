@@ -23,8 +23,8 @@ EXTRA_OBJS =
 LIBS = $(LDFLAG_LIBPATH)../../inet4.5/src $(LDFLAG_LIBPATH)../../simu5g/src $(LDFLAG_LIBPATH)/home/chuanchao/gurobi1203/linux64/lib  -lINET -lsimu5g -lgurobi_c++ -lgurobi120
 
 # Output directory
-PROJECT_OUTPUT_DIR = out
-PROJECTRELATIVE_PATH =
+PROJECT_OUTPUT_DIR = ../out
+PROJECTRELATIVE_PATH = src
 O = $(PROJECT_OUTPUT_DIR)/$(CONFIGNAME)/$(PROJECTRELATIVE_PATH)
 
 # Object files for local .cc, .msg and .sm files
@@ -57,7 +57,6 @@ OBJS = \
     $O/mecrt/nic/mac/scheduler/GnbSchedulerDl.o \
     $O/mecrt/nic/mac/scheduler/GnbSchedulerUl.o \
     $O/mecrt/nic/mac/scheduler/RbManagerUl.o \
-    $O/mecrt/nic/mac/scheduler/ResAllocatorUl.o \
     $O/mecrt/nic/mac/scheme/FDSchemeDl.o \
     $O/mecrt/nic/mac/scheme/FDSchemeUl.o \
     $O/mecrt/nic/pdcp_rrc/MecPdcpRrcEnb.o \

@@ -1,9 +1,16 @@
 //
-//                  VecSim
-// Authors: Gao Chuanchao (Nanyang Technological University)
+//  Project: mecRT – Mobile Edge Computing Simulator for Real-Time Applications
+//  File:    SchemeFwdGameTheory.cc / SchemeFwdGameTheory.h
 //
-// the non-cooperative game theory scheduling scheme in resource scheduling
-// consider task forwarding in the backhaul network
+//  Description:
+//    This file implements the Game Theory based scheduling scheme in the Mobile Edge Computing System.
+//    The Game scheduling scheme is a non-cooperative game theory-based approach for resource scheduling,
+//    which considers task forwarding in the backhaul network.
+//
+//  Author:  Gao Chuanchao (Nanyang Technological University)
+//  Date:    2025-09-01
+//
+//  License: Academic Public License -- NOT FOR COMMERCIAL USE
 //
 
 #ifndef _MECRT_SCHEDULER_SCHEME_FWD_GAME_THEORY_H_

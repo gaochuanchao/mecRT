@@ -1,7 +1,15 @@
 //
-// Copyright (C) 2006 OpenSim Ltd.
+//  Project: mecRT – Mobile Edge Computing Simulator for Real-Time Applications
+//  File:    MecStationaryMobility.cc / MecStationaryMobility.h
 //
-// SPDX-License-Identifier: LGPL-3.0-or-later
+//  Description:
+//    This file implements the stationary mobility functionality in the MEC system.
+//    The MecStationaryMobility module provides static position for ES (RSU).
+//
+//  Author:  Gao Chuanchao (Nanyang Technological University)
+//  Date:    2025-09-01
+//
+//  License: Academic Public License -- NOT FOR COMMERCIAL USE
 //
 
 #include "mecrt/mobility/MecStationaryMobility.h"

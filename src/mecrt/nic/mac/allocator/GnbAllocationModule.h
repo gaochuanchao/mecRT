@@ -1,9 +1,16 @@
 //
-//                  simple5G
-// Authors: Gao Chuanchao (Nanyang Technological University)
+//  Project: mecRT – Mobile Edge Computing Simulator for Real-Time Applications
+//  File:    GnbAllocationModule.cc / GnbAllocationModule.h
 //
-// update the original Allocator Module such that one band can contains multiple RBs
-// original file: simu5g - "stack/mac/allocator/LteAllocationModule.h"
+//  Description:
+//    This file implements the bandwidth resource block allocation module for the gNB in the MEC.
+//    update the original Allocator Module such that one band can contains multiple RBs.
+//    original file: simu5g - "stack/mac/allocator/LteAllocationModule.h"
+//
+//  Author:  Gao Chuanchao (Nanyang Technological University)
+//  Date:    2025-09-01
+//
+//  License: Academic Public License -- NOT FOR COMMERCIAL USE
 //
 
 #ifndef _MECRT_ALLOCATIONMODULE_H_

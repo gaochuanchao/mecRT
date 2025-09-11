@@ -1,8 +1,19 @@
 //
-//                  VecSim
-// Authors: Gao Chuanchao (Nanyang Technological University)
+//  Project: mecRT – Mobile Edge Computing Simulator for Real-Time Applications
+//  File:    SchemeFwdBase.cc / SchemeFwdBase.h
 //
-// the base scheduling scheme in the Vehicular Edge Computing System with Backhaul Network
+//  Description:
+//    This file implements the basic scheduling scheme in the Mobile Edge Computing System with
+//    backhaul network support, where tasks can be forwarded among RSUs after being offloaded to the access RSU.
+//    The SchemeFwdBase class provides common functionalities for different scheduling schemes that support task forwarding.
+//    By default, a greedy scheduling scheme is implemented.
+//      [scheme source: C. Gao, A. Shaan and A. Easwaran, "Deadline-constrained Multi-resource Task Mapping 
+//      and Allocation for Edge-Cloud Systems," GLOBECOM 2022, doi: 10.1109/GLOBECOM48099.2022.10001137.]
+//
+//  Author:  Gao Chuanchao (Nanyang Technological University)
+//  Date:    2025-09-01
+//
+//  License: Academic Public License -- NOT FOR COMMERCIAL USE
 //
 
 #include "mecrt/apps/scheduler/SchemeFwdBase.h"

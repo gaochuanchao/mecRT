@@ -1,8 +1,17 @@
 //
-//                  simple5G
-// Authors: Gao Chuanchao (Nanyang Technological University)
+//  Project: mecRT – Mobile Edge Computing Simulator for Real-Time Applications
+//  File:    Database.cc / Database.h
 //
-// store data related to application execution profiling
+//  Description:
+//    This file implements the database functionality in the MEC system.
+//    The Database is responsible for storing and managing the data related to
+//    the application execution profiling, including the vehicle and RSU execution
+//    data, as well as the vehicle GPS trace.
+//
+//  Author:  Gao Chuanchao (Nanyang Technological University)
+//  Date:    2025-09-01
+//
+//  License: Academic Public License -- NOT FOR COMMERCIAL USE
 //
 #ifndef _VEC_DATABASE_H_
 #define _VEC_DATABASE_H_

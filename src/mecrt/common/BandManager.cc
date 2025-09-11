@@ -1,10 +1,20 @@
 //
-//                  simple5G
-// Authors: Gao Chuanchao (Nanyang Technological University)
+//  Project: mecRT – Mobile Edge Computing Simulator for Real-Time Applications
+//  File:    BandManager.cc / BandManager.h
 //
-// store data related to application execution profiling
+//  Description:
+//    This file implements the bandwidth management functionality in the MEC system.
+//    The BandManager is responsible for managing the radio resources and
+//    scheduling the transmission of data between the user equipment (UE) and the
+//    edge server (ES). This is suppose to be performed in the physical layer (PHY) of each UE.
+//	  We use one BandManager module to manage the bandwidth for all UEs to reduce the simulation complexity i.e.,
+//    to accelerate the simulation.
 //
-
+//  Author:  Gao Chuanchao (Nanyang Technological University)
+//  Date:    2025-09-01
+//
+//  License: Academic Public License -- NOT FOR COMMERCIAL USE
+//
 #include "mecrt/common/BandManager.h"
 
 Define_Module(BandManager);

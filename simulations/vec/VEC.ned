@@ -18,7 +18,7 @@ import inet.networklayer.configurator.ipv4.Ipv4NetworkConfigurator;
 import inet.networklayer.ipv4.RoutingTableRecorder;
 import inet.node.ethernet.Eth100G;
 import mecRT.mecrt.NRUe;
-import mecRT.mecrt.apps.scheduler.SchedulerNode;
+import mecRT.mecrt.apps.scheduler.SchedulerHost;
 import mecRT.mecrt.common.BandManager;
 import mecRT.mecrt.common.Database;
 import mecRT.mecrt.gNodeB;
@@ -72,7 +72,7 @@ network VEC
             // @display("i=misc/car3;p=642.56,771.07196;is=n;or");
             @display("i=misc/car3;p=642.56,771.07196");
         }
-        scheduler: SchedulerNode {
+        schedulerHost: SchedulerHost {
             @display("p=664.224,44.88");
         }
         upf: MecUpf {
@@ -83,6 +83,6 @@ network VEC
             gnb[i].ppp <--> Eth100G <--> upf.pppg++;
         }
 
-        upf.filterGate <--> Eth100G <--> scheduler.ppp++;
+        upf.filterGate <--> Eth100G <--> schedulerHost.ppp++;
 
 }

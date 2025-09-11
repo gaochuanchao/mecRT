@@ -15,29 +15,18 @@
 
 package mecRT.mecrt.apps.scheduler;
 
-import mecRT.mecrt.apps.scheduler.Scheduler;
-
-import inet.applications.contract.IApp;
-import inet.linklayer.ppp.PppInterface;
-import ned.IdealChannel;
-
-import simu5g.nodes.mec.UALCMP.UALCMPApp;
-import inet.linklayer.ppp.PppInterface;
-import inet.networklayer.common.InterfaceTable;
-import inet.networklayer.ipv4.Ipv4RoutingTable;
-import inet.networklayer.contract.IRoutingTable;
-import inet.networklayer.contract.INetworkLayer;
-import inet.applications.contract.IApp;
-import inet.transportlayer.udp.Udp;
-import inet.transportlayer.tcp.Tcp;
 import inet.common.MessageDispatcher;
 import inet.linklayer.contract.IEthernetInterface;
-import inet.applications.contract.IApp;
-import inet.node.ethernet.Eth10G;
+import inet.linklayer.ppp.PppInterface;
 import inet.networklayer.common.InterfaceTable;
+import inet.networklayer.ipv4.Ipv4NetworkLayer;
+import inet.networklayer.ipv6.Ipv6NetworkLayer;
+import inet.transportlayer.tcp.Tcp;
+import inet.transportlayer.udp.Udp;
+import mecRT.mecrt.apps.scheduler.Scheduler;
 
 
-module SchedulerNode
+module SchedulerHost
 {
     parameters:
         @networkNode();
@@ -66,9 +55,9 @@ module SchedulerNode
         //#
         //# ppp modules
         //#
-        //        pppIf[sizeof(ppp)]: PppInterface {
-        //            @display("p=550,508");
-        //        }
+        //  pppIf[sizeof(ppp)]: PppInterface {
+        //      @display("p=550,508");
+        //  }
         pppIf: PppInterface {
             @display("p=446.832,506.688");
         }
@@ -82,11 +71,11 @@ module SchedulerNode
         //#
         //# Network layer module
         //#
-        ipv4: <default("Ipv4NetworkLayer")> like INetworkLayer if hasIpv4 {
+        ipv4: Ipv4NetworkLayer if hasIpv4 {    //  like INetworkLayer
             parameters:
                 @display("p=420.28,372.88;q=queue");
         }
-        ipv6: <default("Ipv6NetworkLayer")> like INetworkLayer if hasIpv6 {
+        ipv6: Ipv6NetworkLayer if hasIpv6 {
             parameters:
                 @display("p=657.28,374.46;q=queue");
         }
@@ -160,11 +149,11 @@ module SchedulerNode
         ipv6.transportIn <-- tn.out++ if hasIpv6;
         ipv6.transportOut --> tn.in++ if hasIpv6;
         //
-        //        for i=0..sizeof(ppp)-1 {
-        //            pppIf[i].upperLayerOut --> nl.in++;
-        //            pppIf[i].upperLayerIn <-- nl.out++;
-        //            pppIf[i].phys <--> gtpEndpoint.pppg++;
-        //        }
+        //  for i=0..sizeof(ppp)-1 {
+        //      pppIf[i].upperLayerOut --> nl.in++;
+        //      pppIf[i].upperLayerIn <-- nl.out++;
+        //      pppIf[i].phys <--> gtpEndpoint.pppg++;
+        //  }
 
         pppIf.upperLayerOut --> nl.in++;
         pppIf.upperLayerIn <-- nl.out++;

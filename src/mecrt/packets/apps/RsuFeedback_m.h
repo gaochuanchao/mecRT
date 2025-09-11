@@ -22,7 +22,7 @@ class RsuFeedback;
 #include "inet/common/packet/chunk/Chunk_m.h" // import inet.common.packet.chunk.Chunk
 
 /**
- * Class generated from <tt>mecrt/packets/apps/RsuFeedback.msg:18</tt> by opp_msgtool.
+ * Class generated from <tt>mecrt/packets/apps/RsuFeedback.msg:19</tt> by opp_msgtool.
  * <pre>
  * class RsuFeedback extends inet::FieldsChunk
  * {

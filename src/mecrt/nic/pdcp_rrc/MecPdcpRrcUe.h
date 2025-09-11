@@ -1,10 +1,18 @@
 //
-//                  simple5G
-// Authors: Gao Chuanchao (Nanyang Technological University)
+//  Project: mecRT – Mobile Edge Computing Simulator for Real-Time Applications
+//  File:    MecPdcpRrcUe.cc / MecPdcpRrcUe.h
 //
-// a single layer of NRMacGnb module in simu5g
-// simulate the MAC stack of the NIC module of UE
-// ... --> LtePdcpRrcUeD2D --> NRPdcpRrcUe --> GnbPdcpRrcUe
+//  Description:
+//    This file implements the PDCP/RRC layer for NR (New Radio) in the UE (User Equipment).
+//    Original file: simu5g - "stack/pdcp_rrc/layer/NRPdcpRrcUe.h"
+//    We add the control logic for MEC service subscription.
+//
+//    ... --> LtePdcpRrcUeD2D --> NRPdcpRrcUe --> GnbPdcpRrcUe
+//
+//  Author:  Gao Chuanchao (Nanyang Technological University)
+//  Date:    2025-09-01
+//
+//  License: Academic Public License -- NOT FOR COMMERCIAL USE
 //
 
 #ifndef _MECRT_GNB_PDCPRRCUE_H_

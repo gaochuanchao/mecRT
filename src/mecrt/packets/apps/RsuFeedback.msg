@@ -1,16 +1,17 @@
 //
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-// 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
-// 
-// You should have received a copy of the GNU Lesser General Public License
-// along with this program.  If not, see http://www.gnu.org/licenses/.
+//  Project: mecRT – Mobile Edge Computing Simulator for Real-Time Applications
+//  File:    RsuFeedback.msg
+//
+//  Description:
+//    This file implements message RsuFeedback, which is sent from the ES (RSU) to scheduler
+//	  Before each scheduling cycle starts, UEs broadcast the SRS to nearby RSUs, and RSUs collects
+//    the channel status together with its bandwidth information and computing resource information,
+//    and then send the RsuFeedback message to the scheduler.
+//
+//  Author:  Gao Chuanchao (Nanyang Technological University)
+//  Date:    2025-09-01
+//
+//  License: Academic Public License -- NOT FOR COMMERCIAL USE
 //
 import inet.common.INETDefs;
 import inet.common.packet.chunk.Chunk;

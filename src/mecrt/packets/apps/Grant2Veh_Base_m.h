@@ -22,7 +22,7 @@ class Grant2Veh_Base;
 #include "inet/common/packet/chunk/Chunk_m.h" // import inet.common.packet.chunk.Chunk
 
 /**
- * Class generated from <tt>mecrt/packets/apps/Grant2Veh_Base.msg:20</tt> by opp_msgtool.
+ * Class generated from <tt>mecrt/packets/apps/Grant2Veh_Base.msg:22</tt> by opp_msgtool.
  * <pre>
  * class Grant2Veh_Base extends inet::FieldsChunk
  * {

@@ -1,8 +1,17 @@
 //
-//                  simple5G
-// Authors: Gao Chuanchao (Nanyang Technological University)
+//  Project: mecRT – Mobile Edge Computing Simulator for Real-Time Applications
+//  File:    MecIP2Nic.cc / MecIP2Nic.h
 //
-// in order to send data to the APP (the RSU server)
+//  Description:
+//    This file implements the IP to NIC interface. It extends the Simu5G IP2Nic module
+//    to ensure data can be tranferred from the NIC module of an ES to its server module.
+//    The original IP2Nic module in Simu5G does not allow data to be transferred to an unit
+//    within the 5G core network.
+//
+//  Author:  Gao Chuanchao (Nanyang Technological University)
+//  Date:    2025-09-01
+//
+//  License: Academic Public License -- NOT FOR COMMERCIAL USE
 //
 
 
@@ -25,16 +34,36 @@ void MecIP2Nic::initialize(int stage)
 
     if (stage == INITSTAGE_LOCAL)
     {
+        if (getSystemModule()->hasPar("enableInitDebug"))
+            enableInitDebug_ = getSystemModule()->par("enableInitDebug").boolValue();
+        if (enableInitDebug_)
+            std::cout << "MecIP2Nic::initialize - stage: INITSTAGE_LOCAL - begins" << std::endl;
+            
         nodeType_ = aToNodeType(par("nodeType").stdstringValue());
+
+        if (enableInitDebug_)
+            std::cout << "MecIP2Nic::initialize - nodeType_: " << nodeType_ << std::endl;
     }
     else if (stage == INITSTAGE_PHYSICAL_ENVIRONMENT)
     {
+        if (enableInitDebug_)
+            std::cout << "MecIP2Nic::initialize - stage: INITSTAGE_PHYSICAL_ENVIRONMENT - begins" << std::endl;
+        
         registerInterface();
+
+        if (enableInitDebug_)
+            std::cout << "MecIP2Nic::initialize - registerInterface() done." << std::endl;
     }
     else if (stage == INITSTAGE_APPLICATION_LAYER)
     {
+        if (enableInitDebug_)
+            std::cout << "MecIP2Nic::initialize - stage: INITSTAGE_APPLICATION_LAYER - begins" << std::endl;
+
         gnbAddress_ = inet::L3AddressResolver().resolve(getParentModule()->getParentModule()->getFullName());
         EV << "MecIP2Nic::initialize - local gNB IP " << gnbAddress_.toIpv4() << endl;
+
+        if (enableInitDebug_)
+            std::cout << "MecIP2Nic::initialize - stage: INITSTAGE_APPLICATION_LAYER - ends." << std::endl;
     }
 }
 

@@ -22,7 +22,7 @@ class ServiceStatus;
 #include "inet/common/packet/chunk/Chunk_m.h" // import inet.common.packet.chunk.Chunk
 
 /**
- * Class generated from <tt>mecrt/packets/apps/ServiceStatus.msg:21</tt> by opp_msgtool.
+ * Class generated from <tt>mecrt/packets/apps/ServiceStatus.msg:23</tt> by opp_msgtool.
  * <pre>
  * class ServiceStatus extends inet::FieldsChunk
  * {

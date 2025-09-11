@@ -1,8 +1,16 @@
 //
-//                  simple5G
-// Authors: Gao Chuanchao (Nanyang Technological University)
+//  Project: mecRT – Mobile Edge Computing Simulator for Real-Time Applications
+//  File:    UeMac.cc / UeMac.h
 //
-// a single layer of NRMacGnb module in simu5g
+//  Description:
+//    This file implements the MAC layer for the UE in the MEC context.
+//    Compared to the original NRMacUe, we add the control logic for data offloading.
+//
+//  Author:  Gao Chuanchao (Nanyang Technological University)
+//  Date:    2025-09-01
+//
+//  License: Academic Public License -- NOT FOR COMMERCIAL USE
+//
 // simulate the MAC stack of the NIC module of UE
 // LteMac --> LteMacBase --> LteMacUe --> LteMacUeD2D --> NRMacUe
 //

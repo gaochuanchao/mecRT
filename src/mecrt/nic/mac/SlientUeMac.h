@@ -1,9 +1,19 @@
 //
-//                  simple5G
-// Authors: Gao Chuanchao (Nanyang Technological University)
+//  Project: mecRT – Mobile Edge Computing Simulator for Real-Time Applications
+//  File:    SlientUeMac.cc / SlientUeMac.h
 //
-// the lte mac stack of the UE. Avoid the message ttiTick_ is trigger for every TTI, 
-// consider to remove this module in the future
+//  Description:
+//    This file implements the MAC layer for the UE in the MEC context.
+//    Some UEs may have unused MAC module, which still needs to be checked in each TTI
+//    To avoid unnecessary computation, we implement a "silent" MAC module that does nothing
+//
+//  Author:  Gao Chuanchao (Nanyang Technological University)
+//  Date:    2025-09-01
+//
+//  License: Academic Public License -- NOT FOR COMMERCIAL USE
+//
+// simulate the MAC stack of the NIC module of gNB
+// LteMacBase --> LteMacUe --> SlientUeMac
 //
 
 #ifndef _MECRT_SLIENTUEMAC_H_
