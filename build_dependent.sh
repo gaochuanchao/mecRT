@@ -1,6 +1,6 @@
 #!/bin/bash
-source ~/omnetpp-6.0.3/setenv
-cd ~/simulator
+source ${OMNETPP_ROOT}/setenv
+cd ${MEC_WORKSPACE}
 
 echo "Building INET..."
 make -C inet4.5 MODE=release -j$(nproc)

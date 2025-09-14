@@ -1,0 +1,22 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${default}",
+                "${workspaceFolder}/simu5g/src/**",
+                "${workspaceFolder}/inet4.5/src/**",
+                "${workspaceFolder}/mecRT/src/**",
+                "../omnetpp-6.0.3/src/**",
+                "../omnetpp-6.0.3/include/**",
+                "../gurobi1203/linux64/include/**"
+            ],
+            "defines": [],
+            "compilerPath": "/usr/bin/clang++",
+            "intelliSenseMode": "linux-clang-x64",
+            "cStandard": "gnu11",
+            "cppStandard": "gnu++11"
+        }
+    ],
+    "version": 4
+}

@@ -1,12 +1,12 @@
 #!/bin/bash
-cd /home/gao/vec_simulator/vec/simulations/vec
+cd ${MEC_WORKSPACE}/mecRT/simulations/vec
 
 # for i in {0..31}; do  # 32 configurations
 #   echo "=============================="
 #   echo "Running configuration $i"
 #   echo "=============================="
 
-#   /home/gao/omnetpp-6.0.3/bin/opp_run \
+#   ${OMNETPP_ROOT}/bin/opp_run \
 #     -r $i \
 #     -m -u Cmdenv \
 #     -c Full-Test-MEC-2 \
@@ -27,7 +27,7 @@ cd /home/gao/vec_simulator/vec/simulations/vec
 #   echo "Running configuration $i"
 #   echo "=============================="
 
-#   /home/gao/omnetpp-6.0.3/bin/opp_run \
+#   ${OMNETPP_ROOT}/bin/opp_run \
 #     -r $i \
 #     -m -u Cmdenv \
 #     -c Full-Test-MEC-2-05 \
@@ -48,7 +48,7 @@ for i in {0..3}; do  # 12 configurations
   echo "Running configuration $i"
   echo "=============================="
 
-  /home/gao/omnetpp-6.0.3/bin/opp_run \
+  ${OMNETPP_ROOT}/bin/opp_run \
     -r $i \
     -m -u Cmdenv \
     -c AppCount-Test-MEC-2 \

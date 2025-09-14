@@ -11,7 +11,6 @@ cleanall: checkmakefiles
 
 INET_PROJ=../../inet4.5
 SIMU5G_PROJ=../../simu5g
-GUROBI_HOME?=$(HOME)/gurobi1203/linux64
 GUROBI_INC=$(GUROBI_HOME)/include
 GUROBI_LIB=$(GUROBI_HOME)/lib
 GUROBI_VER=120

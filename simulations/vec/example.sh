@@ -5,13 +5,13 @@ export DISPLAY="${DISPLAY}"
 export LIBGL_ALWAYS_INDIRECT=1
 
 # Change to working directory
-cd ~/simulator/mecRT/simulations/vec
+cd ${MEC_WORKSPACE}/mecRT/simulations/vec
 
 # Run the simulation
 # -r 0: run the simulation for 0 iterations
 # -u Qtenv: "Qtenv" for GUI mode, use "Cmdenv" for command line mode
 # -c Uploading: specify the configuration to use
-~/omnetpp-6.0.3/bin/opp_run \
+${OMNETPP_ROOT}/bin/opp_run \
   -r 0 \
   -m \
   -u Qtenv \

@@ -5,10 +5,10 @@ export DISPLAY="${DISPLAY}"
 export LIBGL_ALWAYS_INDIRECT=1
 
 # Change to working directory
-cd ~/simulator/simu5g/simulations/NR/tutorial
+cd ${MEC_WORKSPACE}/simu5g/simulations/NR/tutorial
 
 # Run the simulation
-~/omnetpp-6.0.3/bin/opp_run \
+${OMNETPP_ROOT}/bin/opp_run \
   -m \
   -u Qtenv \
   -c Single-UE \

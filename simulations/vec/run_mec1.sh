@@ -1,12 +1,12 @@
 #!/bin/bash
-cd /home/gao/vec_simulator/vec/simulations/vec
+cd ${MEC_WORKSPACE}/mecRT/simulations/vec
 
 for i in {0..59}; do  # 60 configurations
   echo "=============================="
   echo "Running configuration $i"
   echo "=============================="
 
-  /home/gao/omnetpp-6.0.3/bin/opp_run \
+  ${OMNETPP_ROOT}/bin/opp_run \
     -r $i \
     -m -u Cmdenv \
     -c Full-Test-MEC-1 \
