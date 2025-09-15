@@ -3,45 +3,56 @@
 **mecRT** is an open-source simulator for **Mobile Edge Computing (MEC)** scenarios (previously known as vecSim - vehicular edge computing simulator). It provides a comprehensive framework for modeling **task offloading** and **resource allocation** in heterogeneous 5G-enabled environments. By integrating realistic wireless communication (via **Simu5G**) with edge computing models, mecRT enables researchers to evaluate scheduling strategies for latency-sensitive applications under resource and deadline constraints.  
 
 <center>
-<img src="./doc/assets/architecture.png" alt="architecture" style="zoom:30%;" />
+<img src="./doc/assets/architecture.png" alt="architecture" style="zoom:25%;" />
 </center>
 
 ---
 
 ## 🔍 Why mecRT?  
 
-Existing MEC simulators have limitations:  
+Limitations of existing MEC simulators for real-time applications:  
 
 - **iFogSim / EdgeCloudSim**: Good for resource modeling, but **lack 5G network support** and cannot capture real-time channel quality feedback.  
 - **Simu5G / Fogbed**: Offer fine-grained 5G network modeling, but **do not support integrated offloading frameworks** that jointly optimize bandwidth and computational resources under deadline constraints.  
 
-**mecRT bridges this gap** by combining realistic **5G-based communication** with a **deadline-aware scheduling framework**. This enables evaluation of adaptive offloading strategies in dynamic MEC environments.  
+**mecRT bridges this gap** by combining realistic **5G-based communication** with a **deadline-aware scheduling framework**. This enables evaluation of various resource management strategies and adaptive offloading control strategies in dynamic MEC environments for real-time applications.  
 
 ---
 
 ## ✨ Key Features  
 
-- **Integrated Task Offloading & Resource Allocation**  
-  - Joint optimization of bandwidth and computational resources.  
-  - Online offloading control mechanisms with real-time channel feedback.  
+- **Task Life Cycle Management**  
+  - Service request registration when UEs enter the MEC coverage area.
+  - Service deployment on Edge Servers (ESs).
+  - Task offloading, execution, and result retrieval with deadline monitoring.
+  - Request deregistration upon UE exit.
+
+- **Real-World Data Integration**  
+  - Support real-world application executiuon profiling (e.g., execution time, energy consumption). 
+  - Configurable application profiles: task type, period, deadline, data size.  
+  - Support for **real traffic GPS traces** or synthetic trajectories (e.g., via **SUMO**).  
+
+- **Joint Bandwidth and Computational Resource Optimization**  
+
+- **Adaptive Offloading Control**
+  - Enable/Terminate offloading based on service deployment and resource management.
+  - Suspend/Resume offloading based on real-time channel quality feedback (i.e., via SRS).
+  - Support customizable offloading control policies.
 
 - **5G-Based Communication**  
-  - Built on **Simu5G** for realistic URLLC network modeling.  
-  - UEs transmit **Sounding Reference Signals (SRS)** for channel estimation.  
+  - Built on **Simu5G** for realistic 5G-URLLC network modeling.  
 
-- **Realistic Workloads & Traces**  
-  - Support for **periodic MEC tasks** (e.g., object detection, sensor data analytics).  
-  - Configurable application profiles: task type, period, deadline, data size.  
-  - Integration with **real traces** or synthetic trajectories (via **SUMO**).  
+- **Customizable Scheduling Policies**  
+  - Easily implement, evaluate, and benchmark different scheduling algorithms.
+  - Support various scheduling modes:
+    - Schedule all requests periodically or only schedule pending requests.
+    - Enable/Disable Task Forwarding in wired backhaul network after task being offloaded to ES.
+    - Consider/Ignore scheduling overhead.
 
-- **Modular Architecture**  
-  - **UE module**: application, mobility, and 5G NIC submodules.  
-  - **Edge Server (ES) module**: wireless bandwidth allocation + server resource management.  
-  - **Scheduler module**: customizable scheduling algorithms + system monitoring.  
-
-- **Extensible Scheduling Framework**  
-  - Plug in custom scheduling algorithms.  
-  - Evaluate deadline-aware, adaptive, or approximation-based strategies.  
+- **Easy Data Collection and Analysis**  
+  - Configurable experiment parameters via one `.ini` file.
+  - Easy parameter data logging.
+  - Provides scripts for simulation result fetching and analysis.
 
 ---
 

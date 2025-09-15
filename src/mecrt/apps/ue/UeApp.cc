@@ -68,9 +68,7 @@ void UeApp::initialize(int stage)
             std::cout << "UeApp::initialize - stage: INITSTAGE_LOCAL - begins" << std::endl;
 
         nframes_ = 0;
-        nframesTmp_ = 0;
         iDframe_ = 0;
-        timestamp_ = 0;
         localPort_ = par("localPort");
         schedulerPort_ = par("schedulerPort");
 
@@ -171,7 +169,7 @@ void UeApp::handleMessage(cMessage *msg)
         }
         else if(!strcmp(msg->getName(), "initRequest"))
         {
-            EV << "UeApp::handleMessage - now[" << simTime() << "] <= finish[" << finishTime_ <<"]" <<endl;
+            EV << "UeApp::handleMessage - now[" << simTime() << "] <= finish[" << moveStoptime_ <<"]" <<endl;
             sendServiceRequest();
             scheduleAt(omnetpp::simTime() + startOffset_, selfSender_);
         }

@@ -54,14 +54,9 @@ class UeApp : public omnetpp::cSimpleModule
     //sender
     int nframes_;
     int iDframe_;
-    int nframesTmp_;
-    omnetpp::simtime_t startTime_;
-    omnetpp::simtime_t finishTime_;
-
     int txBytes_;
     // ----------------------------
 
-    omnetpp::simtime_t timestamp_;
     int localPort_;
     int destPort_;  // the port of processing RSU server
     inet::L3Address destAddress_; // the address of processing RSU server

@@ -142,7 +142,11 @@ $ tar xvfz gurobi12.0.3_linux64.tar.gz
 
 #### 3.1 License
 
-##### 3.1.1 using WSL2 on window
+##### 3.1.1 if you are using normal Linux system
+
+download the single machine individual Gurobi License
+
+##### 3.1.2 if you are using WSL2 on window
 
 > [How do I set up Gurobi in WSL2 (Windows Subsystem for Linux)? – Gurobi Help Center](https://support.gurobi.com/hc/en-us/articles/7367019222929-How-do-I-set-up-Gurobi-in-WSL2-Windows-Subsystem-for-Linux)
 
@@ -158,9 +162,6 @@ $ tar xvfz gurobi12.0.3_linux64.tar.gz
   $ chmod 644 gurobi.lic
   ```
 
-##### 3.1.2 using normal Linux system
-
-download the single machine individual Gurobi License
 
 #### 3.2 Add into Path
 
