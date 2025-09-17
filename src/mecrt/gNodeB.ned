@@ -63,6 +63,7 @@ module gNodeB
         int macCellId @mutable = default(0);  // TODO: this is not a real parameter
         double txPower @unit(mw) = default(100mw);
         string nicType = default("GnbNic");	// default("NRNicEnb"); default("GnbNic"); default("LteNicEnb");
+        bool hasGtpX2 = default(false); // whether to enable GTP for X2 interface (true)
 
         //# Network Layer specs
         bool hasIpv4 = default(true);
@@ -78,10 +79,11 @@ module gNodeB
 
         //# Transport layer
         bool hasUdp = true;
-        bool hasTcp = default(firstAvailableOrEmpty("Tcp", "TcpLwip", "TcpNsc") != "");
-        bool hasSctp = true;
+        bool hasTcp = default(false);  // default(firstAvailableOrEmpty("Tcp", "TcpLwip", "TcpNsc") != "");
+        bool hasSctp = default(false);
 
         //# MEC support	
+        bool enableMecHost = default(false);
         string mecHost = default("");		// symbolic name of the connected MEHost in the Network
 
         //# @author Alessandro Noferi
@@ -130,6 +132,10 @@ module gNodeB
                 nodeType = parent.nodeType;
         }
 
+        // pppIf[sizeof(ppp)]: PppInterface {
+        //     parameters:
+        //         @display("p=824.76,519.82");
+        // }
         pppIf: PppInterface {
             parameters:
                 @display("p=824.76,519.82");
@@ -143,7 +149,7 @@ module gNodeB
         //#
         //# Mec interface	
         //#
-        pppMEHostIf: PppInterface {
+        pppMEHostIf: PppInterface if enableMecHost {
             @display("p=657.28,519.82");
         }
 
@@ -185,7 +191,7 @@ module gNodeB
             parameters:
                 @display("p=371.30002,75.840004,row");
         }
-        sctp: Sctp {
+        sctp: Sctp if hasSctp {
             parameters:
                 @display("p=494.54,211.72");
         }
@@ -220,7 +226,7 @@ module gNodeB
                 ipOutInterface = "cellular";
         }
 
-        gtpUserX2: GtpUserX2 {
+        gtpUserX2: GtpUserX2 if hasGtpX2 {
             parameters:
                 @display("p=900.60004,372.88");
         }
@@ -234,7 +240,12 @@ module gNodeB
 
         //#
         //# Ppp interface to network layer connections
-        //#    
+        //#
+        // for i=0..sizeof(ppp)-1 {
+        //     pppIf[i].phys <--> ppp[i];
+        //     pppIf[i].upperLayerOut --> nl.in++;
+        //     pppIf[i].upperLayerIn <-- nl.out++;
+        // }    
         pppIf.phys <--> ppp;
         pppIf.upperLayerOut --> nl.in++;
         pppIf.upperLayerIn <-- nl.out++;
@@ -258,10 +269,10 @@ module gNodeB
         gtpUser.socketIn <-- at.out++;
 
 	    //# GTPUserX2 connections
-        gtpUserX2.lteStackOut --> cellularNic.x2$i++;
-        gtpUserX2.lteStackIn <-- cellularNic.x2$o++;
-        gtpUserX2.socketOut --> at.in++;
-        gtpUserX2.socketIn <-- at.out++;
+        gtpUserX2.lteStackOut --> cellularNic.x2$i++ if hasGtpX2;
+        gtpUserX2.lteStackIn <-- cellularNic.x2$o++ if hasGtpX2;
+        gtpUserX2.socketOut --> at.in++ if hasGtpX2;
+        gtpUserX2.socketIn <-- at.out++ if hasGtpX2;
 
         //# X2 apps connections        
         for i=0..numX2Apps-1 {
@@ -331,7 +342,7 @@ module gNodeB
         //#
         //# MEC support	
         //#
-        pppMEHostIf.upperLayerIn <-- nl.out++;
-        pppMEHostIf.upperLayerOut --> nl.in++;
-        pppMEHost <--> pppMEHostIf.phys;
+        pppMEHostIf.upperLayerIn <-- nl.out++ if enableMecHost;
+        pppMEHostIf.upperLayerOut --> nl.in++ if enableMecHost;
+        pppMEHost <--> pppMEHostIf.phys if enableMecHost;
 }

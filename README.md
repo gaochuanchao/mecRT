@@ -110,6 +110,6 @@ If you use mecRT in your research, please cite:
 ---
 
 ## 🙏 Acknowledgements
-
+- This project is supported by the [MoE Tier-2 grant](https://cps-research-group.github.io/cloud/) MOE-T2EP20221-0006, Singapore.
 - Built on [**OMNeT++**](https://github.com/omnetpp/omnetpp), [**INET**](https://github.com/inet-framework/inet), and [**Simu5G**](https://github.com/Unipisa/Simu5G).
 
