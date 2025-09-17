@@ -38,7 +38,11 @@ module SchedulerHost
         bool hasIpv4 = default(true);
         bool hasIpv6 = default(false);
         *.interfaceTableModule = default(absPath(".interfaceTable"));
+        
+        //# Transport layer
+        bool hasTcp = default(false);
 
+		
         int numExtEthInterfaces = default(0); //
 
     gates:
@@ -92,7 +96,7 @@ module SchedulerHost
             @display("p=459,217");
         }
 
-        tcp: Tcp {
+        tcp: Tcp if hasTcp {
             @display("p=627,217");
         }
 
@@ -123,8 +127,8 @@ module SchedulerHost
         at.out++ --> udp.appIn;
         at.in++ <-- udp.appOut;
 
-        at.out++ --> tcp.appIn;
-        at.in++ <-- tcp.appOut;
+        at.out++ --> tcp.appIn if hasTcp;
+        at.in++ <-- tcp.appOut if hasTcp;
 
 
         //# 
@@ -133,8 +137,8 @@ module SchedulerHost
         udp.ipOut --> tn.in++;
         udp.ipIn <-- tn.out++;
 
-        tcp.ipOut --> tn.in++;
-        tcp.ipIn <-- tn.out++;
+        tcp.ipOut --> tn.in++ if hasTcp;
+        tcp.ipIn <-- tn.out++ if hasTcp;
 
 
         ipv4.ifIn <-- nl.out++ if hasIpv4;

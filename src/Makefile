@@ -43,6 +43,7 @@ OBJS = \
     $O/mecrt/apps/ue/UeApp.o \
     $O/mecrt/common/BandManager.o \
     $O/mecrt/common/Database.o \
+    $O/mecrt/common/NetTopology.o \
     $O/mecrt/coreNetwork/MecGtpUser.o \
     $O/mecrt/feedback/MecDlFeedbackGenerator.o \
     $O/mecrt/mobility/MecMobility.o \

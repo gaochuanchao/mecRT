@@ -13,7 +13,7 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-package mecRT.simulations.vec;
+package mecRT.mecrt.coreNetwork;
 
 import inet.common.MessageDispatcher;
 import inet.linklayer.ppp.PppInterface;

@@ -12,7 +12,7 @@
 // 
 
 
-package mecRT.simulations.vec;
+package mecRT.simulations.decentralized;
 
 import inet.networklayer.configurator.ipv4.Ipv4NetworkConfigurator;
 import inet.networklayer.ipv4.RoutingTableRecorder;
@@ -21,6 +21,7 @@ import mecRT.mecrt.NRUe;
 import mecRT.mecrt.apps.scheduler.SchedulerHost;
 import mecRT.mecrt.common.BandManager;
 import mecRT.mecrt.common.Database;
+import mecRT.mecrt.common.NetTopology;
 import mecRT.mecrt.coreNetwork.MecUpf;
 import mecRT.mecrt.gNodeB;
 import simu5g.common.binder.Binder;
@@ -32,7 +33,7 @@ import simu5g.world.radio.LteChannelControl;
 //
 // This network represents the deployment option 3 in 3GPP 38.801
 //
-network VEC
+network DeMEC
 {
     parameters:
         int numUe = default(1);
@@ -51,11 +52,15 @@ network VEC
         configurator: Ipv4NetworkConfigurator {
             @display("p=1214.004,226.64401;is=s");
         }
+
         binder: Binder {
             @display("p=1214.004,329.868;is=s");
         }
         carrierAggregation: CarrierAggregation {
             @display("p=1214.004,426.36002;is=s");
+        }
+        topologyGen: NetTopology {
+            @display("p=1214.004,742.76404;is=s");
         }
         database: Database {
             @display("p=1214.004,534.072;is=s");
@@ -65,6 +70,9 @@ network VEC
         }
         gnb[numGnb]: gNodeB {
             @display("p=642.56,536.136;is=l");
+        }
+        gnbUpf[numGnb]: MecUpf {
+            @display("is=s");
         }
         bgCell[numBgCells]: BackgroundCell {
             @display("p=1014.04,702.8;is=l");
@@ -81,8 +89,9 @@ network VEC
         }
     connections:
         for i=0..numGnb-1 {
-            gnb[i].ppp <--> Eth100G <--> upf.pppg++;
+            gnb[i].ppp <--> Eth100G <--> gnbUpf[i].pppg++;
         }
+        gnbUpf[0].pppg++ <--> Eth100G <--> upf.pppg++;
 
         upf.filterGate <--> Eth100G <--> schedulerHost.ppp++;
 
