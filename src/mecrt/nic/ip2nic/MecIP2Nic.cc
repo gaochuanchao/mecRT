@@ -61,7 +61,12 @@ void MecIP2Nic::initialize(int stage)
 
         gnbAddress_ = inet::L3AddressResolver().resolve(getParentModule()->getParentModule()->getFullName());
         EV << "MecIP2Nic::initialize - local gNB IP " << gnbAddress_.toIpv4() << endl;
-
+        if (nodeType_ == ENODEB || nodeType_ == GNODEB)
+        {
+            auto interfaceTable = check_and_cast<inet::IInterfaceTable *>(getParentModule()->getParentModule()->getSubmodule("interfaceTable"));
+            pppIfInterfaceId_ = interfaceTable->findInterfaceByName("pppIf")->getInterfaceId();
+        }
+        
         if (enableInitDebug_)
             std::cout << "MecIP2Nic::initialize - stage: INITSTAGE_APPLICATION_LAYER - ends." << std::endl;
     }
@@ -87,7 +92,10 @@ void MecIP2Nic::handleMessage(cMessage *msg)
                 networkProtocolInd->setProtocol(&Protocol::ipv4);
                 networkProtocolInd->setNetworkProtocolHeader(ipHeader);
                 // change protocol from LteProtocol::ipv4uu to Protocol::ipv4 such that the message will be delived to the RSU server
-                prepareForIpv4(pkt, &Protocol::ipv4); 
+                pkt->addTagIfAbsent<DispatchProtocolReq>()->setProtocol(&Protocol::ipv4);
+                pkt->addTagIfAbsent<PacketProtocolTag>()->setProtocol(&Protocol::ipv4);
+                // add Interface-Indication to indicate which interface this packet was received from
+                pkt->addTagIfAbsent<InterfaceInd>()->setInterfaceId(networkIf->getInterfaceId());
                 send(pkt,ipGateOut_);
             }
             else    // IP2Nic::handleMessage - message from stack: send to peer
@@ -97,7 +105,12 @@ void MecIP2Nic::handleMessage(cMessage *msg)
                 pkt->removeTagIfPresent<SocketInd>();
                 removeAllSimu5GTags(pkt);
                 
-                toIpBs(pkt);
+                // toIpBs(pkt);
+                pkt->addTagIfAbsent<InterfaceReq>()->setInterfaceId(pppIfInterfaceId_);
+                // add Interface-Indication to indicate which interface this packet was received from
+                pkt->addTagIfAbsent<InterfaceInd>()->setInterfaceId(networkIf->getInterfaceId());
+                EV << "IP2Nic::toIpBs - message from stack: send to pppInterface" << endl;
+                send(pkt,ipGateOut_);
             }
         }
         else if (msg->getArrivalGate()->isName("upperLayerIn"))

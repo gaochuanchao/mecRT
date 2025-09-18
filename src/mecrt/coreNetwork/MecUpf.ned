@@ -48,7 +48,7 @@ module MecUpf extends NetworkLayerNodeBase
     gates:
         // this gate is used for the UPF connected to the external data network
         // it must be left unconnected for intermediate UPFs 
-        inout filterGate @loose @labels(PppFrame-conn);
+        inout filterGate @loose @labels(PppFrame-conn) @allowUnconnected;
 
     submodules:
         pppIf: PppInterface {
@@ -77,7 +77,7 @@ module MecUpf extends NetworkLayerNodeBase
                 @display("p=750,146;b=1000,5,,,,1");
         }
 
-    connections:
+    connections allowunconnected:
 
         gtp_user.socketOut --> at.in++;
         gtp_user.socketIn <-- at.out++;

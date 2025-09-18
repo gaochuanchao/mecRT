@@ -37,7 +37,7 @@ network DeMEC
 {
     parameters:
         int numUe = default(1);
-        int numGnb = default(1);
+        int numGnb = default(15);
         int numBgCells = default(0);
         bool enableInitDebug = default(false); // enable debug info during initialization
 
@@ -87,11 +87,36 @@ network DeMEC
         upf: MecUpf {
             @display("p=664.224,175.032;is=s");
         }
-    connections:
+    connections allowunconnected:
         for i=0..numGnb-1 {
-            gnb[i].ppp <--> Eth100G <--> gnbUpf[i].pppg++;
+            gnb[i].ppp <--> Eth100G <--> gnbUpf[i].filterGate;
         }
         gnbUpf[0].pppg++ <--> Eth100G <--> upf.pppg++;
+        gnbUpf[0].pppg++ <--> Eth100G <--> gnbUpf[1].pppg++;
+        gnbUpf[0].pppg++ <--> Eth100G <--> gnbUpf[3].pppg++;
+        gnbUpf[1].pppg++ <--> Eth100G <--> gnbUpf[2].pppg++;
+        gnbUpf[1].pppg++ <--> Eth100G <--> gnbUpf[3].pppg++;
+        gnbUpf[1].pppg++ <--> Eth100G <--> gnbUpf[4].pppg++;
+        gnbUpf[2].pppg++ <--> Eth100G <--> gnbUpf[4].pppg++;
+        gnbUpf[3].pppg++ <--> Eth100G <--> gnbUpf[4].pppg++;
+        gnbUpf[3].pppg++ <--> Eth100G <--> gnbUpf[6].pppg++;
+        gnbUpf[4].pppg++ <--> Eth100G <--> gnbUpf[5].pppg++;
+        gnbUpf[4].pppg++ <--> Eth100G <--> gnbUpf[6].pppg++;
+        gnbUpf[5].pppg++ <--> Eth100G <--> gnbUpf[6].pppg++;
+        gnbUpf[5].pppg++ <--> Eth100G <--> gnbUpf[9].pppg++;
+        gnbUpf[6].pppg++ <--> Eth100G <--> gnbUpf[7].pppg++;
+        gnbUpf[6].pppg++ <--> Eth100G <--> gnbUpf[8].pppg++;
+        gnbUpf[6].pppg++ <--> Eth100G <--> gnbUpf[10].pppg++;
+        gnbUpf[7].pppg++ <--> Eth100G <--> gnbUpf[8].pppg++;
+        gnbUpf[8].pppg++ <--> Eth100G <--> gnbUpf[10].pppg++;
+        gnbUpf[9].pppg++ <--> Eth100G <--> gnbUpf[10].pppg++;
+        gnbUpf[9].pppg++ <--> Eth100G <--> gnbUpf[13].pppg++;
+        gnbUpf[10].pppg++ <--> Eth100G <--> gnbUpf[11].pppg++;
+        gnbUpf[10].pppg++ <--> Eth100G <--> gnbUpf[12].pppg++;
+        gnbUpf[10].pppg++ <--> Eth100G <--> gnbUpf[14].pppg++;
+        gnbUpf[11].pppg++ <--> Eth100G <--> gnbUpf[12].pppg++;
+        gnbUpf[12].pppg++ <--> Eth100G <--> gnbUpf[14].pppg++;
+        gnbUpf[13].pppg++ <--> Eth100G <--> gnbUpf[14].pppg++;
 
         upf.filterGate <--> Eth100G <--> schedulerHost.ppp++;
 
