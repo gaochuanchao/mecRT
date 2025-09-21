@@ -105,6 +105,8 @@ class Server : public omnetpp::cSimpleModule
 
     virtual void sendGrant2Vehicle(AppId appId, bool isStop);
 
+    virtual void forwardGrant2Vehicle(omnetpp::cMessage *msg);
+
     virtual void initializeService(inet::Ptr<const Grant2Rsu> pkt);
 
     virtual void stopService(AppId appId);

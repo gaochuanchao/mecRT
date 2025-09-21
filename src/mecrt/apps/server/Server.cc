@@ -171,6 +171,11 @@ void Server::handleMessage(cMessage *msg)
     else if(!strcmp(msg->getName(), "SrvFD")){
         updateServiceStatus(msg);
     }
+    else if(!strcmp(msg->getName(), "VehGrant"))
+    {
+        // current gnb is the offloading gnb, forward the grant to the vehicle
+        forwardGrant2Vehicle(msg);
+    }
     else
     {
         auto pkt = check_and_cast<Packet *>(msg);
@@ -224,9 +229,10 @@ void Server::updateRsuFeedback(omnetpp::cMessage *msg)
     pkt->insertAtFront(rsuFd);
 
     auto vehAddr = binder_->getIPv4Address(rsuFd->getVehId());
-    addHeaders(pkt, schedulerAddr_, schedulerPort_, vehAddr);
 
-    socket.sendTo(pkt, gwAddress_, tunnelPeerPort_);
+    // addHeaders(pkt, schedulerAddr_, schedulerPort_, vehAddr);
+    // socket.sendTo(pkt, gwAddress_, tunnelPeerPort_);
+    socket.sendTo(pkt, schedulerAddr_, schedulerPort_);
 }
 
 void Server::updateServiceStatus(omnetpp::cMessage *msg)
@@ -269,8 +275,9 @@ void Server::updateServiceStatus(omnetpp::cMessage *msg)
     srvStatus->setProcessGnbCuUpdateTime(simTime());
     pkt->insertAtFront(srvStatus);
 
-    addHeaders(pkt, schedulerAddr_, schedulerPort_, serverAddr_.toIpv4());
-    socket.sendTo(pkt, gwAddress_, tunnelPeerPort_);
+    // addHeaders(pkt, schedulerAddr_, schedulerPort_, serverAddr_.toIpv4());
+    // socket.sendTo(pkt, gwAddress_, tunnelPeerPort_);
+    socket.sendTo(pkt, schedulerAddr_, schedulerPort_);
 }
 
 void Server::sendGrant2Vehicle(AppId appId, bool isStop)
@@ -311,16 +318,54 @@ void Server::sendGrant2Vehicle(AppId appId, bool isStop)
         EV << "Server::sendGrant2Vehicle - offloading gNodeB " << srv.offloadGnbId 
            << " is different from processing gNodeB " << srv.processGnbId << ", forward grant to offloading gNodeB" << endl;
 
-        // add headers to the packet, destination address is the vehicle address
-        addHeaders(packet, vehAddr, appPort, serverAddr_.toIpv4());
-        // get offloading gNodeB address
-        L3Address offloadGnbAddr = L3AddressResolver().resolve(binder_->getModuleNameByMacNodeId(srv.offloadGnbId)).toIpv4();
-        EV << "Server::sendGrant2Vehicle - offloading gNodeB address " << offloadGnbAddr.toIpv4().str() << endl;
+        // get the offloading gNodeB module by its MacNodeId
+        cModule *offloadGnb = binder_->getModuleByMacNodeId(srv.offloadGnbId);
+        if (offloadGnb == nullptr)
+        {
+            std::stringstream errorMsg;
+            errorMsg << "Time: " << NOW << " Server::sendGrant2Vehicle - cannot find the offloading gNodeB module by its MacNodeId " << srv.offloadGnbId;
+            throw cRuntimeError("%s", errorMsg.str().c_str());
+        }
+        // get the offloading gNodeB address and its server port
+        L3Address offloadGnbAddr = L3AddressResolver().resolve(offloadGnb->getFullName()).toIpv4();
+        int offloadGnbPort = check_and_cast<Server*>(offloadGnb->getSubmodule("server"))->getServerPort();
+        EV << "Server::sendGrant2Vehicle - offloading gNodeB address " << offloadGnbAddr.toIpv4().str() 
+           << ", offloading gNodeB server port " << offloadGnbPort << endl;
         packet->addTagIfAbsent<InterfaceReq>()->setInterfaceId(pppIfInterfaceId_);
-        socket.sendTo(packet, offloadGnbAddr, tunnelPeerPort_);
-        // socket.sendTo(pkt, gwAddress_, tunnelPeerPort_);
+        socket.sendTo(packet, offloadGnbAddr, offloadGnbPort);
     }
 }
+
+
+void Server::forwardGrant2Vehicle(omnetpp::cMessage *msg)
+{
+    EV << "Server::forwardGrant2Vehicle - forward grant to the vehicle " << endl;
+
+    auto pkt = check_and_cast<Packet *>(msg);
+    pkt->trim();
+    pkt->clearTags();
+    auto grant = pkt->peekAtFront<Grant2Veh>();
+
+    // check if the curerent gNodeB is the offloading gNodeB and is not the processing gNodeB
+    if (grant->getOffloadGnbId() != gnbId_)
+    {
+        // throw error
+        std::stringstream errorMsg;
+        errorMsg << "Time: " << NOW << " Server::forwardGrant2Vehicle - current gNodeB " << gnbId_ 
+                 << " is not the offloading gNodeB " << grant->getOffloadGnbId();
+        throw cRuntimeError("%s", errorMsg.str().c_str());
+    }
+
+    AppId appId = grant->getAppId();
+    // find the NIC interface id of the gNodeB
+    pkt->addTagIfAbsent<InterfaceReq>()->setInterfaceId(nicInterfaceId_);
+
+    MacNodeId vehId = MacCidToNodeId(appId);
+    auto vehAddr = binder_->getIPv4Address(vehId);
+    int appPort = MacCidToLcid(appId);
+    socket.sendTo(pkt, vehAddr, appPort);
+}
+
 
 void Server::addHeaders(Packet* packet, const inet::L3Address& destAddr, int destPort, const inet::Ipv4Address& srcAddr)
 {
@@ -341,10 +386,11 @@ void Server::addHeaders(Packet* packet, const inet::L3Address& destAddr, int des
     packet->insertAtFront(ipv4Header);
 
     // create a new GtpUserMessage and encapsulate the datagram within the GtpUserMessage
-    inet::Ptr<GtpUserMsg> gtpHeader = makeShared<GtpUserMsg>();
-    gtpHeader->setTeid(0);
-    gtpHeader->setChunkLength(B(8));
-    packet->insertAtFront(gtpHeader);
+    // this is only needed when Gtp is in use, in decentralized scenarios, we do not rely on Gtp
+    // inet::Ptr<GtpUserMsg> gtpHeader = makeShared<GtpUserMsg>();
+    // gtpHeader->setTeid(0);
+    // gtpHeader->setChunkLength(B(8));
+    // packet->insertAtFront(gtpHeader);
 }
 
 void Server::initializeService(inet::Ptr<const Grant2Rsu> pkt)

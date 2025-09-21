@@ -24,6 +24,7 @@ import mecRT.mecrt.common.Database;
 import mecRT.mecrt.common.NetTopology;
 import mecRT.mecrt.coreNetwork.MecUpf;
 import mecRT.mecrt.gNodeB;
+import mecRT.mecrt.routing.MecRouter;
 import simu5g.common.binder.Binder;
 import simu5g.common.carrierAggregation.CarrierAggregation;
 import simu5g.nodes.backgroundCell.BackgroundCell;
@@ -71,7 +72,7 @@ network DeMEC
         gnb[numGnb]: gNodeB {
             @display("p=642.56,536.136;is=l");
         }
-        gnbUpf[numGnb]: MecUpf {
+        gnbRouter[numGnb]: MecRouter {
             @display("is=s");
         }
         bgCell[numBgCells]: BackgroundCell {
@@ -84,40 +85,40 @@ network DeMEC
         schedulerHost: SchedulerHost {
             @display("p=664.224,44.88");
         }
-        upf: MecUpf {
+        upf: MecRouter {
             @display("p=664.224,175.032;is=s");
         }
     connections allowunconnected:
         for i=0..numGnb-1 {
-            gnb[i].ppp <--> Eth100G <--> gnbUpf[i].filterGate;
+            gnb[i].ppp <--> Eth100G <--> gnbRouter[i].pppg++;
         }
-        gnbUpf[0].pppg++ <--> Eth100G <--> upf.pppg++;
-        gnbUpf[0].pppg++ <--> Eth100G <--> gnbUpf[1].pppg++;
-        gnbUpf[0].pppg++ <--> Eth100G <--> gnbUpf[3].pppg++;
-        gnbUpf[1].pppg++ <--> Eth100G <--> gnbUpf[2].pppg++;
-        gnbUpf[1].pppg++ <--> Eth100G <--> gnbUpf[3].pppg++;
-        gnbUpf[1].pppg++ <--> Eth100G <--> gnbUpf[4].pppg++;
-        gnbUpf[2].pppg++ <--> Eth100G <--> gnbUpf[4].pppg++;
-        gnbUpf[3].pppg++ <--> Eth100G <--> gnbUpf[4].pppg++;
-        gnbUpf[3].pppg++ <--> Eth100G <--> gnbUpf[6].pppg++;
-        gnbUpf[4].pppg++ <--> Eth100G <--> gnbUpf[5].pppg++;
-        gnbUpf[4].pppg++ <--> Eth100G <--> gnbUpf[6].pppg++;
-        gnbUpf[5].pppg++ <--> Eth100G <--> gnbUpf[6].pppg++;
-        gnbUpf[5].pppg++ <--> Eth100G <--> gnbUpf[9].pppg++;
-        gnbUpf[6].pppg++ <--> Eth100G <--> gnbUpf[7].pppg++;
-        gnbUpf[6].pppg++ <--> Eth100G <--> gnbUpf[8].pppg++;
-        gnbUpf[6].pppg++ <--> Eth100G <--> gnbUpf[10].pppg++;
-        gnbUpf[7].pppg++ <--> Eth100G <--> gnbUpf[8].pppg++;
-        gnbUpf[8].pppg++ <--> Eth100G <--> gnbUpf[10].pppg++;
-        gnbUpf[9].pppg++ <--> Eth100G <--> gnbUpf[10].pppg++;
-        gnbUpf[9].pppg++ <--> Eth100G <--> gnbUpf[13].pppg++;
-        gnbUpf[10].pppg++ <--> Eth100G <--> gnbUpf[11].pppg++;
-        gnbUpf[10].pppg++ <--> Eth100G <--> gnbUpf[12].pppg++;
-        gnbUpf[10].pppg++ <--> Eth100G <--> gnbUpf[14].pppg++;
-        gnbUpf[11].pppg++ <--> Eth100G <--> gnbUpf[12].pppg++;
-        gnbUpf[12].pppg++ <--> Eth100G <--> gnbUpf[14].pppg++;
-        gnbUpf[13].pppg++ <--> Eth100G <--> gnbUpf[14].pppg++;
 
-        upf.filterGate <--> Eth100G <--> schedulerHost.ppp++;
+        gnbRouter[0].pppg++ <--> Eth100G <--> gnbRouter[1].pppg++;
+        gnbRouter[0].pppg++ <--> Eth100G <--> gnbRouter[3].pppg++;
+        gnbRouter[1].pppg++ <--> Eth100G <--> gnbRouter[2].pppg++;
+        gnbRouter[1].pppg++ <--> Eth100G <--> gnbRouter[3].pppg++;
+        gnbRouter[1].pppg++ <--> Eth100G <--> gnbRouter[4].pppg++;
+        gnbRouter[2].pppg++ <--> Eth100G <--> gnbRouter[4].pppg++;
+        gnbRouter[3].pppg++ <--> Eth100G <--> gnbRouter[4].pppg++;
+        gnbRouter[3].pppg++ <--> Eth100G <--> gnbRouter[6].pppg++;
+        gnbRouter[4].pppg++ <--> Eth100G <--> gnbRouter[5].pppg++;
+        gnbRouter[4].pppg++ <--> Eth100G <--> gnbRouter[6].pppg++;
+        gnbRouter[5].pppg++ <--> Eth100G <--> gnbRouter[6].pppg++;
+        gnbRouter[5].pppg++ <--> Eth100G <--> gnbRouter[9].pppg++;
+        gnbRouter[6].pppg++ <--> Eth100G <--> gnbRouter[7].pppg++;
+        gnbRouter[6].pppg++ <--> Eth100G <--> gnbRouter[8].pppg++;
+        gnbRouter[6].pppg++ <--> Eth100G <--> gnbRouter[10].pppg++;
+        gnbRouter[7].pppg++ <--> Eth100G <--> gnbRouter[8].pppg++;
+        gnbRouter[8].pppg++ <--> Eth100G <--> gnbRouter[10].pppg++;
+        gnbRouter[9].pppg++ <--> Eth100G <--> gnbRouter[10].pppg++;
+        gnbRouter[9].pppg++ <--> Eth100G <--> gnbRouter[13].pppg++;
+        gnbRouter[10].pppg++ <--> Eth100G <--> gnbRouter[11].pppg++;
+        gnbRouter[10].pppg++ <--> Eth100G <--> gnbRouter[12].pppg++;
+        gnbRouter[10].pppg++ <--> Eth100G <--> gnbRouter[14].pppg++;
+        gnbRouter[11].pppg++ <--> Eth100G <--> gnbRouter[12].pppg++;
+        gnbRouter[12].pppg++ <--> Eth100G <--> gnbRouter[14].pppg++;
+        gnbRouter[13].pppg++ <--> Eth100G <--> gnbRouter[14].pppg++;
 
+        gnbRouter[0].pppg++ <--> Eth100G <--> upf.pppg++;
+        upf.pppg++ <--> Eth100G <--> schedulerHost.ppp++;
 }

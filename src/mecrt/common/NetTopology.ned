@@ -25,7 +25,10 @@ simple NetTopology
         // the link type to connect nodes
         string linkType = default("inet.node.ethernet.Eth100G");
 
-        // display offset between gnb and gnbUpf
+        // data routing device
+        string deviceName = default("gnbRouter");
+
+        // display offset between gnb and gnbRouter
         int displayOffsetX = default(30);
         int displayOffsetY = default(20);
 

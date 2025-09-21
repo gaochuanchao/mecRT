@@ -24,17 +24,20 @@ void NetTopology::initialize(int stage)
 		if (enableInitDebug_)
 			std::cout << "NetTopology::initialize - stage: INITSTAGE_LAST - begins" << std::endl;
 
+		EV << "NetTopology::initialize - stage: INITSTAGE_LAST - adjust gnbRouter position" << std::endl;
+
 		cModule *net = getParentModule();
 		// get the actual number of UPFs in the current configuration
 		numGnb_ = net->par("numGnb").intValue();
+		std::string deviceName = par("deviceName").stdstringValue();
 
 		int displayOffsetX = par("displayOffsetX");
 		int displayOffsetY = par("displayOffsetY");
 
-		// adjust the display positions of the gnbUpf
+		// adjust the display positions of the gnbRouter
 		for (int i = 0; i < numGnb_; i++) {
 			auto *gnb = getModuleByPath(("gnb[" + std::to_string(i) + "]").c_str());
-			auto *upf = getModuleByPath(("gnbUpf[" + std::to_string(i) + "]").c_str());
+			auto *router = getModuleByPath((deviceName +"[" + std::to_string(i) + "]").c_str());
 
 			// Get gnb position from its display string
 			cDisplayString& gnbDisp = gnb->getDisplayString();
@@ -42,10 +45,10 @@ void NetTopology::initialize(int stage)
 			double x = strtod(gnbDisp.getTagArg("p", 0), &end);
 			double y = strtod(gnbDisp.getTagArg("p", 1), &end);
 
-			// Place the gnbUpf a fixed offset to the right (say +100 in x direction)
-			cDisplayString& upfDisp = upf->getDisplayString();
-			upfDisp.setTagArg("p", 0, x + displayOffsetX);  // new x
-			upfDisp.setTagArg("p", 1, y + displayOffsetY);  // new y
+			// Place the gnbRouter a fixed offset to the right (say +100 in x direction)
+			cDisplayString& routerDisp = router->getDisplayString();
+			routerDisp.setTagArg("p", 0, x + displayOffsetX);  // new x
+			routerDisp.setTagArg("p", 1, y + displayOffsetY);  // new y
 		}
 
 		if (enableInitDebug_)

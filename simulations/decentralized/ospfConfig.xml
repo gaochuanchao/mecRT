@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<OSPFASConfig>
+    <!-- Match the router by full module path or pattern; adapt "name" if needed -->
+    <Router name="DeMEC.upf" RFC1583Compatible="true">
+      <BroadcastInterface ifName='eth[*]' areaID='0.0.0.0' interfaceOutputCost='0' />
+      <PointToPointInterface ifName='ppp[*]' areaID='0.0.0.0' interfaceOutputCost='0' />
+      <!-- Explicitly declare the host/stub network reachable at the interface
+          (advertise scheduler's address). Adjust ifName to the ppp index that
+          connects to scheduler; linkID is the network identifier (host ip).
+          linkData is the mask (255.255.255.255 for host). -->
+      <HostInterface ifName="ppp[1]" linkID="10.0.42.1" linkData="255.255.255.255" linkCost="0" attachedHost="schedulerHost"/>
+      <!-- OR advertise a /24: -->
+      <!-- <HostInterface ifName="ppp[1]" linkID="10.0.42.0" linkData="255.255.255.0" linkCost="0" attachedHost="schedulerHost"/> -->
+      
+    </Router>
+</OSPFASConfig>
+

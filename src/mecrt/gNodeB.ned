@@ -64,6 +64,7 @@ module gNodeB
         double txPower @unit(mw) = default(100mw);
         string nicType = default("GnbNic");	// default("NRNicEnb"); default("GnbNic"); default("LteNicEnb");
         bool hasGtpX2 = default(false); // whether to enable GTP for X2 interface (true)
+        bool hasGtp = default(true);
 
         //# Network Layer specs
         bool hasIpv4 = default(true);
@@ -128,7 +129,7 @@ module gNodeB
         //#
         cellularNic: GnbNic {
             parameters:
-                @display("p=433.54,520.4525");
+                @display("p=494.54,519.82");
                 nodeType = parent.nodeType;
         }
 
@@ -179,7 +180,7 @@ module gNodeB
         }
         udp: MecUdp {
             parameters:
-                @display("p=682.0075,212.68001");
+                @display("p=494.54,211.72");
         }
         tcp: Tcp if hasTcp {
             parameters:
@@ -193,7 +194,7 @@ module gNodeB
         }
         sctp: Sctp if hasSctp {
             parameters:
-                @display("p=494.54,211.72");
+                @display("p=680.98,211.72");
         }
 
 	    // message dispatcher for SAP between application and transport layer
@@ -215,12 +216,12 @@ module gNodeB
         //# 
         //# Modules for connecting to the core network and X2
         //# 
-        trafficFlowFilter: TrafficFlowFilter {
+        trafficFlowFilter: TrafficFlowFilter if hasGtp {
             parameters:
                 @display("p=1172.36,372.88");
                 ownerType = parent.nodeType;
         }
-        gtpUser: MecGtpUser {
+        gtpUser: MecGtpUser if hasGtp {
             parameters:
                 @display("p=1041.22,372.88");
                 ipOutInterface = "cellular";
@@ -262,11 +263,11 @@ module gNodeB
         //#
         //# Connections to the core network
         //#  
-        nl.in++ <-- gtpUser.pppGate;
-        trafficFlowFilter.gtpUserGateOut --> gtpUser.trafficFlowFilterGate;
-        trafficFlowFilter.internetFilterGateIn <-- nl.out++;
-        gtpUser.socketOut --> at.in++;
-        gtpUser.socketIn <-- at.out++;
+        nl.in++ <-- gtpUser.pppGate if hasGtp;
+        trafficFlowFilter.gtpUserGateOut --> gtpUser.trafficFlowFilterGate if hasGtp;
+        trafficFlowFilter.internetFilterGateIn <-- nl.out++ if hasGtp;
+        gtpUser.socketOut --> at.in++ if hasGtp;
+        gtpUser.socketIn <-- at.out++ if hasGtp;
 
 	    //# GTPUserX2 connections
         gtpUserX2.lteStackOut --> cellularNic.x2$i++ if hasGtpX2;
