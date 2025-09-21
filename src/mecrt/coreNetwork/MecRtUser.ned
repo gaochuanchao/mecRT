@@ -16,15 +16,14 @@
 package mecRT.mecrt.coreNetwork;
 
 //
-// Implements a simplified version of the GTP-U protocol
+// Implements a simple routing-to-user module
+// when data is routing in the backhaul network, it is sent to this module of a gnb
+// if the destination is the user device
 //
-simple MecGtpUser
+simple MecRtUser
 {
     parameters:
         string interfaceTableModule;            // path to the InterfaceTable module
-        int localPort = default(31);
-        int tunnelPeerPort = default(31);
-        bool filter = default(true);
         
         @display("i=block/tunnel");
 
@@ -32,6 +31,5 @@ simple MecGtpUser
         output socketOut;
         input socketIn;
 
-        input trafficFlowFilterGate;
         output pppGate;
 }

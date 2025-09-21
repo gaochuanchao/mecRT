@@ -87,7 +87,7 @@ void MecGtpUser::initialize(int stage)
 NetworkInterface* MecGtpUser::detectInterface()
 {
     IInterfaceTable *ift = getModuleFromPar<IInterfaceTable>(par("interfaceTableModule"), this);
-    const char *interfaceName = par("ipOutInterface");
+    const char *interfaceName = getAncestorPar("cellularNicName");
     NetworkInterface *ie = nullptr;
 
     if (strlen(interfaceName) > 0) {

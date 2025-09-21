@@ -101,8 +101,8 @@ class GnbMac : public NRMacGnb
 
     std::map<AppId, inet::Packet *> appPduList_;  // received data packets from vehicle applications
 
-    std::map<AppId, inet::Ptr<inet::Ipv4Header>> appIpv4Header_;
-    std::map<AppId, inet::Ptr<inet::UdpHeader>> appUdpHeader_;
+    // std::map<AppId, inet::Ptr<inet::Ipv4Header>> appIpv4Header_;
+    // std::map<AppId, inet::Ptr<inet::UdpHeader>> appUdpHeader_;
 
     omnetpp::cMessage * flushAppPduList_;  // flush the app pdu list
     bool srsDistanceCheck_;  // whether to check the distance for SRS transmission

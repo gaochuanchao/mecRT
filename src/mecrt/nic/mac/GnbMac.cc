@@ -1149,8 +1149,8 @@ void GnbMac::terminateService(AppId appId)
     vecSendGrantToVeh(appId, false, false, true, false);    // isNewGrant, isUpdate, isStop, isPause
 
     rbManagerUl_->removeAppGrantInfo(appId);
-    appUdpHeader_.erase(appId);
-    appIpv4Header_.erase(appId);
+    // appUdpHeader_.erase(appId);
+    // appIpv4Header_.erase(appId);
 }
 
 
@@ -1245,8 +1245,8 @@ void GnbMac::handleUpperMessage(cPacket* pktAux)
 void GnbMac::vecHandleGrantFromRsu(omnetpp::cPacket* pktAux)
 {
     auto pkt = check_and_cast<Packet *>(pktAux);
-    auto ipv4Header = pkt->removeAtFront<Ipv4Header>();
-    auto udpHeader = pkt->removeAtFront<UdpHeader>();
+    // auto ipv4Header = pkt->removeAtFront<Ipv4Header>();
+    // auto udpHeader = pkt->removeAtFront<UdpHeader>();
     auto grant = pkt->peekAtFront<Grant2Veh>();
     AppId appId = grant->getAppId();
     MacNodeId vehId = MacCidToNodeId(appId);
@@ -1268,8 +1268,8 @@ void GnbMac::vecHandleGrantFromRsu(omnetpp::cPacket* pktAux)
         vecSendGrantToVeh(appId, false, false, true, false);    // isNewGrant, isUpdate, isStop, isPause
 
         rbManagerUl_->removeAppGrantInfo(appId);
-        appIpv4Header_.erase(appId);
-        appUdpHeader_.erase(appId);
+        // appIpv4Header_.erase(appId);
+        // appUdpHeader_.erase(appId);
         return;
     }
 
@@ -1289,18 +1289,20 @@ void GnbMac::vecHandleGrantFromRsu(omnetpp::cPacket* pktAux)
     appGrant.processGnbPort = grant->getProcessGnbPort();
     appGrant.offloadGnbId = grant->getOffloadGnbId();
     appGrant.processGnbId = grant->getProcessGnbId();
-    appGrant.processGnbAddr = ipv4Header->getSrcAddress();
+    // get the offloading gNodeB address and its server port
+    cModule *processGnb = binder_->getModuleByMacNodeId(appGrant.processGnbId);
+    appGrant.processGnbAddr = L3AddressResolver().resolve(processGnb->getFullName());
 
     rbManagerUl_->setAppGrantInfo(appId, appGrant);
 
     // check if the RSU has enough resources to grant the request
     bool schedulable = rbManagerUl_->scheduleGrantedApp(appId);
-    appIpv4Header_[appId] = makeShared<Ipv4Header>(*ipv4Header);
-    appUdpHeader_[appId] = makeShared<UdpHeader>(*udpHeader);
+    // appIpv4Header_[appId] = makeShared<Ipv4Header>(*ipv4Header);
+    // appUdpHeader_[appId] = makeShared<UdpHeader>(*udpHeader);
     vecServiceFeedback(appId, true);
 
-    ipv4Header = nullptr;
-    udpHeader = nullptr;
+    // ipv4Header = nullptr;
+    // udpHeader = nullptr;
 
     if(!schedulable)    // send grant to veh but pause offloading temporarily
     {
@@ -1357,9 +1359,23 @@ void GnbMac::vecSendGrantToVeh(AppId appId, bool isNewGrant, bool isUpdate, bool
         packetFlowManager_->grantSent(ueId, grant->getChunkId());
 
     pkt->insertAtFront(grant);
-    auto udpHeader = makeShared<UdpHeader>(*(appUdpHeader_[appId]));
+
+    // manually create the udp header and ipv4 header in order
+    unsigned int appPort = MacCidToLcid(appId);
+    auto udpHeader = makeShared<UdpHeader>();
+    udpHeader->setDestinationPort(appPort);
+    udpHeader->setTotalLengthField(udpHeader->getChunkLength() + pkt->getTotalLength());
+    udpHeader->setCrcMode(CRC_DECLARED_CORRECT);
+    udpHeader->setCrc(0xC00D);
     pkt->insertAtFront(udpHeader);
-    auto ipv4Header = makeShared<Ipv4Header>(*(appIpv4Header_[appId]));
+
+    L3Address destAddr = binder_->getIPv4Address(ueId);
+    auto ipv4Header = makeShared<Ipv4Header>();
+    ipv4Header->setProtocolId(IP_PROT_UDP);
+    ipv4Header->setDestAddress(destAddr.toIpv4());
+    ipv4Header->addChunkLength(B(20));
+    ipv4Header->setHeaderLength(B(20));
+    ipv4Header->setTotalLengthField(ipv4Header->getChunkLength() + pkt->getDataLength());
     pkt->insertAtFront(ipv4Header);
 
     // add user control informatino to packet

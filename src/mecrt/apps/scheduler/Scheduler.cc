@@ -29,6 +29,7 @@
 #include "mecrt/packets/apps/Grant2Rsu_m.h"
 #include "mecrt/packets/apps/ServiceStatus_m.h"
 #include "inet/common/TimeTag_m.h"
+#include "inet/networklayer/common/L3AddressTag_m.h" // Include the header for L3AddressInd
 
 Define_Module(Scheduler);
 
@@ -359,7 +360,14 @@ void Scheduler::recordRsuStatus(cMessage *msg)
         rsuStatus_[gnbId] = rsuRes;
 
         // update rsu address related information
-        addRsuAddr(rsuStat);
+        RsuAddr addr;
+        auto l3Addr = pkt->getTag<L3AddressInd>();
+        addr.rsuAddress = l3Addr->getSrcAddress().toIpv4();
+        addr.serverPort = rsuStat->getServerPort();
+        rsuAddr_[gnbId] = addr;
+
+        EV << NOW << " Scheduler::addRsuAddr - add new RSU address, RSU[nodeId=" << gnbId << "] address: "
+            << addr.rsuAddress.str() << ":" << addr.serverPort << endl;
 
         EV << NOW << " Scheduler::recordRsuStatus - RSU[nodeId=" << gnbId << "] status recorded for the first time, bands: " << rsuRes.bands
         << ", cmpUnits: " << rsuRes.cmpUnits << ", deviceType: " << db_->deviceType.at(rsuRes.deviceType)

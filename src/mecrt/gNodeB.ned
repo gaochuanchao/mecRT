@@ -22,9 +22,11 @@ import inet.transportlayer.sctp.Sctp;
 import inet.transportlayer.tcp.Tcp;
 import mecRT.mecrt.apps.server.Server;
 import mecRT.mecrt.coreNetwork.MecGtpUser;
+import mecRT.mecrt.coreNetwork.MecRtUser;
 import mecRT.mecrt.mobility.MecStationaryMobility;
 import mecRT.mecrt.nic.GnbNic;
 import mecRT.mecrt.udp.MecUdp;
+import ned.IdealChannel;
 import simu5g.common.cellInfo.CellInfo;
 import simu5g.corenetwork.gtp.GtpUserX2;
 import simu5g.corenetwork.statsCollector.GNodeBStatsCollector;
@@ -86,6 +88,10 @@ module gNodeB
         //# MEC support	
         bool enableMecHost = default(false);
         string mecHost = default("");		// symbolic name of the connected MEHost in the Network
+
+        // data routing related parameters
+        string cellularNicName = default("cellular");
+        int rtUserPort = default(29); // port used by MecRtUser
 
         //# @author Alessandro Noferi
         //       	string StatsCollectorType = default("BaseStationStatsCollector"); 
@@ -213,6 +219,11 @@ module gNodeB
                 @display("p=750,446;b=1000,5,,,,1");
         }
 
+        rtUser: MecRtUser {
+            parameters:
+                @display("p=344.44,372.88");
+        }
+
         //# 
         //# Modules for connecting to the core network and X2
         //# 
@@ -224,7 +235,6 @@ module gNodeB
         gtpUser: MecGtpUser if hasGtp {
             parameters:
                 @display("p=1041.22,372.88");
-                ipOutInterface = "cellular";
         }
 
         gtpUserX2: GtpUserX2 if hasGtpX2 {
@@ -346,4 +356,8 @@ module gNodeB
         pppMEHostIf.upperLayerIn <-- nl.out++ if enableMecHost;
         pppMEHostIf.upperLayerOut --> nl.in++ if enableMecHost;
         pppMEHost <--> pppMEHostIf.phys if enableMecHost;
+        
+        rtUser.socketOut --> IdealChannel --> at.in++;
+        rtUser.socketIn <-- IdealChannel <-- at.out++;
+        rtUser.pppGate --> IdealChannel --> nl.in++;
 }

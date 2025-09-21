@@ -45,6 +45,7 @@ OBJS = \
     $O/mecrt/common/Database.o \
     $O/mecrt/common/NetTopology.o \
     $O/mecrt/coreNetwork/MecGtpUser.o \
+    $O/mecrt/coreNetwork/MecRtUser.o \
     $O/mecrt/feedback/MecDlFeedbackGenerator.o \
     $O/mecrt/mobility/MecMobility.o \
     $O/mecrt/mobility/MecStationaryMobility.o \

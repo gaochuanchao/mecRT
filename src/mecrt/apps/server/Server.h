@@ -52,9 +52,13 @@ class Server : public omnetpp::cSimpleModule
     VecDeviceType deviceType_;    // "RTX3090", "RTX1080Ti", ...
 
     // IP address of the gateway to the Internet
-    inet::L3Address gwAddress_;
+    // inet::L3Address gwAddress_;
     // the GTP protocol Port, specified in GtpUser.ned module
-    unsigned int tunnelPeerPort_;
+    // unsigned int tunnelPeerPort_;
+
+    // MEC routing information
+    unsigned int rtUserPort_; // the port used by MecRtUser module
+    string cellularNicName_; // the name of the cellular NIC interface
 
     Binder *binder_;
     MacNodeId gnbId_;
@@ -104,8 +108,6 @@ class Server : public omnetpp::cSimpleModule
     virtual void updateServiceStatus(omnetpp::cMessage *msg);
 
     virtual void sendGrant2Vehicle(AppId appId, bool isStop);
-
-    virtual void forwardGrant2Vehicle(omnetpp::cMessage *msg);
 
     virtual void initializeService(inet::Ptr<const Grant2Rsu> pkt);
 
