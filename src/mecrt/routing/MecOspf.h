@@ -1,0 +1,115 @@
+//
+//  Project: mecRT – Mobile Edge Computing Simulator for Real-Time Applications
+//  File:    MecOspf.h / MecOspf.cc
+//
+//  Description:
+//    This file implements a OSPF-like dynamic routing functionality in the edge server (RSU) in MEC.
+//    The router handles neighbor discovery, topology management, and dynamic routing table updates.
+//
+//      1. Interface management
+//         - Detect neighbors dynamically (like OSPF Hello packets).
+//         - Track interface states (up/down).
+//      2. Neighbor table
+//         - Keep track of neighbor IPs, interface indices, and last-seen times.
+//      3. Topology graph
+//         - Maintain a representation of the network graph (nodes + links).
+//         - Use this graph to recompute shortest paths on link/node failures.
+//      4. Routing table updates
+//         - Integrate with Ipv4RoutingTable dynamically.
+//         - Use the shortest-path computation to fill next-hop entries.
+//      5. Failure handling
+//         - Detect link/node failures.
+//         - Remove affected routes and recompute paths.
+//
+//   High-Level Workflow:
+//      1. Neighbor Discovery → Find who’s directly connected (Hello protocol).
+//      2. Topology Maintenance → Build/update a link-state database (links, costs, neighbors).
+//      3. Route Computation → Run Dijkstra on the database.
+//      4. Forwarding → Use installed routes to send packets.
+//      5. Fault Handling → Detect when neighbors disappear and re-run Dijkstra.
+//
+//  Author:  Gao Chuanchao (Nanyang Technological University)
+//  Date:    2025-09-01
+//
+//  License: Academic Public License -- NOT FOR COMMERCIAL USE
+//
+
+#ifndef __MECRT_MEC_OSPF_H
+#define __MECRT_MEC_OSPF_H
+
+#include "inet/common/INETDefs.h"
+#include "inet/routing/base/RoutingProtocolBase.h"
+#include "inet/networklayer/contract/IInterfaceTable.h"
+#include "inet/networklayer/ipv4/Ipv4RoutingTable.h"
+#include "inet/networklayer/ipv4/Ipv4Route.h"
+#include <vector>
+#include <unordered_map>
+
+using namespace inet;
+
+class MecOspf : public RoutingProtocolBase
+{
+  protected:
+    // neighbor entry discovered via Hello
+    struct Neighbor {
+        Ipv4Address addr;   // neighbor ip
+        NetworkInterface *interface = nullptr; // our arrival interface pointer
+        simtime_t lastSeen = 0; // last Hello time
+    };
+
+    // simple link struct used to build graph
+    struct Link {
+        Ipv4Address u;      // endpoint u
+        Ipv4Address v;      // endpoint v
+        double metric = 1.0;
+    };
+
+    // INET helpers
+    IInterfaceTable *ift = nullptr;
+    Ipv4RoutingTable *rt = nullptr;
+
+    // protocol state
+    std::unordered_map<uint32_t, Neighbor> neighbors; // keyed by ip.getInt()
+    std::vector<Link> localLinks;                     // local direct links (self<->neighbor)
+    std::vector<Ipv4Route *> installedRoutes;         // routes we installed (so we can remove them)
+
+    // timers & config
+    cMessage *helloTimer = nullptr;
+    simtime_t helloInterval = 5;       // seconds
+    simtime_t neighborTimeout = 15;    // seconds (dead interval)
+    bool enableInitDebug_ = false;
+
+  protected:
+    virtual int numInitStages() const override { return NUM_INIT_STAGES; }
+    virtual void initialize(int stage) override;
+    virtual void handleMessageWhenUp(cMessage *msg) override;
+    // lifecycle
+    virtual void handleStartOperation(LifecycleOperation *operation) override;
+    virtual void handleStopOperation(LifecycleOperation *operation) override;
+    virtual void handleCrashOperation(LifecycleOperation *operation) override;
+
+    virtual void finish() override;
+
+    // protocol actions
+    void sendHello();                                 // build/send Hello packets using tags
+    void processHello(Packet *packet, NetworkInterface *arrivalIf); // handle incoming Hello
+    void forwardPacket(Packet *packet);               // forward normal packets using routing table
+    void handleSelfTimer(cMessage *msg);                  // self-message handler (hello timer)
+
+    // neighbor / failure
+    void checkNeighborTimeouts();
+
+    // routing / SPF
+    void recomputeRouting();                          // build graph, Dijkstra, install routes
+    void clearInstalledRoutes();                      // remove routes we previously added
+
+    // helpers
+    uint32_t ipKey(const Ipv4Address &a) const { return a.getInt(); }
+    Ipv4Address getLocalAddressOnGate(cGate *gate);   // get local IP associated with a gate
+
+  public:
+    MecOspf();
+    ~MecOspf();
+};
+
+#endif

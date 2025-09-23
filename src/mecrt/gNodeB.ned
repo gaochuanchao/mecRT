@@ -18,6 +18,7 @@ import inet.linklayer.ppp.PppInterface;
 import inet.networklayer.common.InterfaceTable;
 import inet.networklayer.ipv4.Ipv4NetworkLayer;
 import inet.networklayer.ipv6.Ipv6NetworkLayer;
+import inet.routing.contract.IOspf;
 import inet.transportlayer.sctp.Sctp;
 import inet.transportlayer.tcp.Tcp;
 import mecRT.mecrt.apps.server.Server;
@@ -67,6 +68,8 @@ module gNodeB
         string nicType = default("GnbNic");	// default("NRNicEnb"); default("GnbNic"); default("LteNicEnb");
         bool hasGtpX2 = default(false); // whether to enable GTP for X2 interface (true)
         bool hasGtp = default(true);
+
+        bool hasOspf = default(true);	// Enable OSPFv2 routing protocol
 
         //# Network Layer specs
         bool hasIpv4 = default(true);
@@ -191,6 +194,11 @@ module gNodeB
         tcp: Tcp if hasTcp {
             parameters:
                 @display("p=963.195,212.68001");
+        }
+
+        ospf: <default("Ospfv2")> like IOspf if hasOspf {
+            parameters:
+                @display("p=824.76,211.72");
         }
 
 	    // =============== X2AP ============== //
@@ -356,8 +364,11 @@ module gNodeB
         pppMEHostIf.upperLayerIn <-- nl.out++ if enableMecHost;
         pppMEHostIf.upperLayerOut --> nl.in++ if enableMecHost;
         pppMEHost <--> pppMEHostIf.phys if enableMecHost;
-        
+
         rtUser.socketOut --> IdealChannel --> at.in++;
         rtUser.socketIn <-- IdealChannel <-- at.out++;
         rtUser.pppGate --> IdealChannel --> nl.in++;
+        
+        ospf.ipOut --> tn.in++ if hasOspf;
+        ospf.ipIn <-- tn.out++ if hasOspf;
 }

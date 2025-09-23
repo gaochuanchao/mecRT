@@ -343,6 +343,13 @@ void Scheduler::recordRsuStatus(cMessage *msg)
     MacNodeId gnbId = rsuStat->getGnbId();
     MacNodeId vehId = rsuStat->getVehId();
 
+    // get gnb module by gnbId
+    cModule* gnbMod = binder_->getModuleByMacNodeId(gnbId);
+    if (gnbMod == nullptr)
+        throw cRuntimeError("Scheduler::recordRsuStatus - cannot find the RSU module by gnbId: %d", gnbId);
+    // get the gnb index in the gnb vector
+    int gnbIndex = gnbMod->getIndex();
+
     /***
      * update rsu information
      */
@@ -366,10 +373,10 @@ void Scheduler::recordRsuStatus(cMessage *msg)
         addr.serverPort = rsuStat->getServerPort();
         rsuAddr_[gnbId] = addr;
 
-        EV << NOW << " Scheduler::addRsuAddr - add new RSU address, RSU[nodeId=" << gnbId << "] address: "
+        EV << NOW << " Scheduler::addRsuAddr - add new RSU address, RSU[" << gnbIndex << "] nodeId=" << gnbId << " address: "
             << addr.rsuAddress.str() << ":" << addr.serverPort << endl;
 
-        EV << NOW << " Scheduler::recordRsuStatus - RSU[nodeId=" << gnbId << "] status recorded for the first time, bands: " << rsuRes.bands
+        EV << NOW << " Scheduler::recordRsuStatus - RSU[" << gnbIndex << "] nodeId=" << gnbId << " status recorded for the first time, bands: " << rsuRes.bands
         << ", cmpUnits: " << rsuRes.cmpUnits << ", deviceType: " << db_->deviceType.at(rsuRes.deviceType)
         << ", resourceType: " << db_->resourceType.at(rsuRes.resourceType) << endl;
 
@@ -386,13 +393,13 @@ void Scheduler::recordRsuStatus(cMessage *msg)
             rsuRes.bands = rsuStat->getAvailBands();
             rsuRes.bandUpdateTime = bandUpdateTime;
 
-            EV << NOW << " Scheduler::recordRsuStatus - RSU[nodeId=" << gnbId << "] status updated, bands: " << rsuRes.bands
+            EV << NOW << " Scheduler::recordRsuStatus - RSU[" << gnbIndex << "] nodeId=" << gnbId << " status updated, bands: " << rsuRes.bands
                 << ", bandCapacity: " << rsuRes.bandCapacity << ", deviceType: " << db_->deviceType.at(rsuRes.deviceType)
                 << ", resourceType: " << db_->resourceType.at(rsuRes.resourceType) << endl;
         }
         else
         {
-            EV << NOW << " Scheduler::recordRsuStatus - RSU[nodeId=" << gnbId << "] bands information is outdated, ignore!" << endl;
+            EV << NOW << " Scheduler::recordRsuStatus - RSU[" << gnbIndex << "] nodeId=" << gnbId << " bands information is outdated, ignore!" << endl;
         }
 
         if (cmpUnitUpdateTime > rsuRes.cmpUpdateTime)
@@ -400,13 +407,13 @@ void Scheduler::recordRsuStatus(cMessage *msg)
             rsuRes.cmpUnits = rsuStat->getFreeCmpUnits();
             rsuRes.cmpUpdateTime = cmpUnitUpdateTime;
 
-            EV << NOW << " Scheduler::recordRsuStatus - RSU[nodeId=" << gnbId << "] status updated, cmpUnits: " << rsuRes.cmpUnits
+            EV << NOW << " Scheduler::recordRsuStatus - RSU[" << gnbIndex << "] nodeId=" << gnbId << " status updated, cmpUnits: " << rsuRes.cmpUnits
                 << ", cmpCapacity: " << rsuRes.cmpCapacity << ", deviceType: " << db_->deviceType.at(rsuRes.deviceType)
                 << ", resourceType: " << db_->resourceType.at(rsuRes.resourceType) << endl;
         }
         else
         {
-            EV << NOW << " Scheduler::recordRsuStatus - RSU[nodeId=" << gnbId << "] cmpUnits information is outdated, ignore!" << endl;
+            EV << NOW << " Scheduler::recordRsuStatus - RSU[" << gnbIndex << "] nodeId=" << gnbId << " cmpUnits information is outdated, ignore!" << endl;
         }
     }
 

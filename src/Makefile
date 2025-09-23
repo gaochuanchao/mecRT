@@ -67,6 +67,7 @@ OBJS = \
     $O/mecrt/nic/phy/UePhy.o \
     $O/mecrt/nic/rlc/um/MecRlcUm.o \
     $O/mecrt/packets/apps/Grant2Veh.o \
+    $O/mecrt/routing/MecOspf.o \
     $O/mecrt/udp/MecUdp.o \
     $O/mecrt/packets/apps/Grant2Rsu_m.o \
     $O/mecrt/packets/apps/Grant2Veh_Base_m.o \
