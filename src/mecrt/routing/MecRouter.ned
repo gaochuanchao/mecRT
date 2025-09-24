@@ -61,7 +61,12 @@ module MecRouter extends ApplicationLayerNodeBase
         *.routingTableModule = default("^.ipv4.routingTable");
 
     submodules:
-        ospf: <default("Ospfv2")> like IOspf if hasOspf {
+    //    ospf: <default("Ospfv2")> like IOspf if hasOspf {
+    //        parameters:
+    //            @display("p=975,226");
+    //    }
+        
+        ospf: MecOspf if hasOspf {
             parameters:
                 @display("p=975,226");
         }

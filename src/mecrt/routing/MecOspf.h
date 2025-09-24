@@ -46,37 +46,55 @@
 #include <unordered_map>
 
 using namespace inet;
+using namespace std;
 
 class MecOspf : public RoutingProtocolBase
 {
   protected:
     // neighbor entry discovered via Hello
     struct Neighbor {
-        Ipv4Address addr;   // neighbor ip
-        NetworkInterface *interface = nullptr; // our arrival interface pointer
+        Ipv4Address destIp; // router ID of the neighbor (the address of the ipv4 module)
+        NetworkInterface *interface = nullptr; // the outgoing interface to reach this neighbor
+        double cost = 1.0; // link cost to this neighbor (default 1.0)
         simtime_t lastSeen = 0; // last Hello time
+
+        string str() const {
+            ostringstream os;
+            os << "Neighbor " << destIp << " via " << (interface ? interface->getInterfaceName() : "nullptr")
+               << " lastSeen=" << lastSeen << " cost=" << cost;
+            return os.str();
+        }
+
+        // constructor
+        Neighbor(const Ipv4Address& r, NetworkInterface *i, simtime_t t, double c) 
+          : destIp(r), interface(i), cost(c), lastSeen(t)  {}
+
+        Neighbor() = default;
     };
 
-    // simple link struct used to build graph
-    struct Link {
-        Ipv4Address u;      // endpoint u
-        Ipv4Address v;      // endpoint v
-        double metric = 1.0;
-    };
+    // router id
+    Ipv4Address routerId_;
+    uint32_t routerIdKey_; // integer form of routerId_
 
     // INET helpers
     IInterfaceTable *ift = nullptr;
     Ipv4RoutingTable *rt = nullptr;
 
     // protocol state
-    std::unordered_map<uint32_t, Neighbor> neighbors; // keyed by ip.getInt()
-    std::vector<Link> localLinks;                     // local direct links (self<->neighbor)
-    std::vector<Ipv4Route *> installedRoutes;         // routes we installed (so we can remove them)
+    // keyed by int form of neighbor router ip
+    map<uint32_t, Neighbor> neighbors; 
+    // keyed by int form of router ip, store the network topology we know. 
+    // e.g., {ip1: {ip2: cost, ip3: cost}, ip2: {ip1: cost, ...}, ...}
+    map<uint32_t, map<uint32_t, double>> adjMap;
+    // routes we installed (so we can remove them)
+    map<uint32_t, Ipv4Route *> indirectRoutes;  // separate from routes to neighbors
+    map<uint32_t, Ipv4Route *> neighborRoutes; // direct routes to neighbors
 
     // timers & config
     cMessage *helloTimer = nullptr;
     simtime_t helloInterval = 5;       // seconds
     simtime_t neighborTimeout = 15;    // seconds (dead interval)
+    simtime_t lsFwdInterval = 0.001;     // seconds, link-state flooding interval (not used now)
     bool enableInitDebug_ = false;
 
   protected:
@@ -92,7 +110,7 @@ class MecOspf : public RoutingProtocolBase
 
     // protocol actions
     void sendHello();                                 // build/send Hello packets using tags
-    void processHello(Packet *packet, NetworkInterface *arrivalIf); // handle incoming Hello
+    void processHello(Packet *packet); // handle incoming Hello
     void forwardPacket(Packet *packet);               // forward normal packets using routing table
     void handleSelfTimer(cMessage *msg);                  // self-message handler (hello timer)
 
@@ -100,8 +118,9 @@ class MecOspf : public RoutingProtocolBase
     void checkNeighborTimeouts();
 
     // routing / SPF
-    void recomputeRouting();                          // build graph, Dijkstra, install routes
-    void clearInstalledRoutes();                      // remove routes we previously added
+    void recomputeIndirectRouting();     // build graph, Dijkstra, install routes
+    void clearIndirectRoutes();          // remove routes we previously added
+    void clearNeighborRoutes();          // remove direct neighbor routes
 
     // helpers
     uint32_t ipKey(const Ipv4Address &a) const { return a.getInt(); }

@@ -18,7 +18,6 @@ import inet.linklayer.ppp.PppInterface;
 import inet.networklayer.common.InterfaceTable;
 import inet.networklayer.ipv4.Ipv4NetworkLayer;
 import inet.networklayer.ipv6.Ipv6NetworkLayer;
-import inet.routing.contract.IOspf;
 import inet.transportlayer.sctp.Sctp;
 import inet.transportlayer.tcp.Tcp;
 import mecRT.mecrt.apps.server.Server;
@@ -26,6 +25,7 @@ import mecRT.mecrt.coreNetwork.MecGtpUser;
 import mecRT.mecrt.coreNetwork.MecRtUser;
 import mecRT.mecrt.mobility.MecStationaryMobility;
 import mecRT.mecrt.nic.GnbNic;
+import mecRT.mecrt.routing.MecOspf;
 import mecRT.mecrt.udp.MecUdp;
 import ned.IdealChannel;
 import simu5g.common.cellInfo.CellInfo;
@@ -33,7 +33,7 @@ import simu5g.corenetwork.gtp.GtpUserX2;
 import simu5g.corenetwork.statsCollector.GNodeBStatsCollector;
 import simu5g.corenetwork.trafficFlowFilter.TrafficFlowFilter;
 import simu5g.x2.LteX2App;
-
+import inet.routing.contract.IOspf;
 
 // 
 // gNodeB Module 
@@ -196,7 +196,12 @@ module gNodeB
                 @display("p=963.195,212.68001");
         }
 
-        ospf: <default("Ospfv2")> like IOspf if hasOspf {
+    //    ospf: <default("Ospfv2")> like IOspf if hasOspf {
+    //        parameters:
+    //            @display("p=824.76,211.72");
+    //    }
+
+        ospf: MecOspf if hasOspf {
             parameters:
                 @display("p=824.76,211.72");
         }
@@ -368,7 +373,7 @@ module gNodeB
         rtUser.socketOut --> IdealChannel --> at.in++;
         rtUser.socketIn <-- IdealChannel <-- at.out++;
         rtUser.pppGate --> IdealChannel --> nl.in++;
-        
+
         ospf.ipOut --> tn.in++ if hasOspf;
         ospf.ipIn <-- tn.out++ if hasOspf;
 }

@@ -31,7 +31,7 @@ package mecRT.mecrt.routing;
 simple MecOspf
 {
     parameters:
-        volatile double startupTime @unit(s) = default(0s); // delay before starting OSPF
+        volatile double startupTime @unit(s) = default(0.001s); // delay before starting OSPF
 
         string interfaceTableModule = default("^.interfaceTable"); // path to the interface table
         string routingTableModule = default("^.ipv4.routingTable");     // path to the routing table
