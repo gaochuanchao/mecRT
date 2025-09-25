@@ -14,18 +14,11 @@
 
 import inet.common.INETDefs;
 import inet.common.packet.chunk.Chunk;
-import inet.networklayer.contract.ipv4.Ipv4Address;
-import inet.routing.ospf_common.OspfPacketBase;
-import inet.transportlayer.common.CrcMode;
 
-namespace inet::ospfv2;
-
-cplusplus {{
-using namespace ospf;
-}}
-
-class OspfHello extends ospf::OspfPacketBase
+class OspfHello extends inet::FieldsChunk
 {
-    type = HELLO_PACKET;
-    version = 2;
+    uint32 senderIp;
+    uint32 neighborIp;
+
+    chunkLength = inet::B(8);
 }

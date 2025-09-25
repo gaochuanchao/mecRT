@@ -150,18 +150,15 @@ void doParsimUnpacking(omnetpp::cCommBuffer *, T& t)
 
 }  // namespace omnetpp
 
-namespace inet {
-namespace ospfv2 {
-
 Register_Class(OspfHello)
 
-OspfHello::OspfHello() : ::inet::ospf::OspfPacketBase()
+OspfHello::OspfHello() : ::inet::FieldsChunk()
 {
-    this->setType(HELLO_PACKET);
-    this->setVersion(2);
+    this->setChunkLength(inet::B(8));
+
 }
 
-OspfHello::OspfHello(const OspfHello& other) : ::inet::ospf::OspfPacketBase(other)
+OspfHello::OspfHello(const OspfHello& other) : ::inet::FieldsChunk(other)
 {
     copy(other);
 }
@@ -173,23 +170,51 @@ OspfHello::~OspfHello()
 OspfHello& OspfHello::operator=(const OspfHello& other)
 {
     if (this == &other) return *this;
-    ::inet::ospf::OspfPacketBase::operator=(other);
+    ::inet::FieldsChunk::operator=(other);
     copy(other);
     return *this;
 }
 
 void OspfHello::copy(const OspfHello& other)
 {
+    this->senderIp = other.senderIp;
+    this->neighborIp = other.neighborIp;
 }
 
 void OspfHello::parsimPack(omnetpp::cCommBuffer *b) const
 {
-    ::inet::ospf::OspfPacketBase::parsimPack(b);
+    ::inet::FieldsChunk::parsimPack(b);
+    doParsimPacking(b,this->senderIp);
+    doParsimPacking(b,this->neighborIp);
 }
 
 void OspfHello::parsimUnpack(omnetpp::cCommBuffer *b)
 {
-    ::inet::ospf::OspfPacketBase::parsimUnpack(b);
+    ::inet::FieldsChunk::parsimUnpack(b);
+    doParsimUnpacking(b,this->senderIp);
+    doParsimUnpacking(b,this->neighborIp);
+}
+
+uint32_t OspfHello::getSenderIp() const
+{
+    return this->senderIp;
+}
+
+void OspfHello::setSenderIp(uint32_t senderIp)
+{
+    handleChange();
+    this->senderIp = senderIp;
+}
+
+uint32_t OspfHello::getNeighborIp() const
+{
+    return this->neighborIp;
+}
+
+void OspfHello::setNeighborIp(uint32_t neighborIp)
+{
+    handleChange();
+    this->neighborIp = neighborIp;
 }
 
 class OspfHelloDescriptor : public omnetpp::cClassDescriptor
@@ -197,6 +222,8 @@ class OspfHelloDescriptor : public omnetpp::cClassDescriptor
   private:
     mutable const char **propertyNames;
     enum FieldConstants {
+        FIELD_senderIp,
+        FIELD_neighborIp,
     };
   public:
     OspfHelloDescriptor();
@@ -228,7 +255,7 @@ class OspfHelloDescriptor : public omnetpp::cClassDescriptor
 
 Register_ClassDescriptor(OspfHelloDescriptor)
 
-OspfHelloDescriptor::OspfHelloDescriptor() : omnetpp::cClassDescriptor(omnetpp::opp_typename(typeid(inet::ospfv2::OspfHello)), "inet::ospf::OspfPacketBase")
+OspfHelloDescriptor::OspfHelloDescriptor() : omnetpp::cClassDescriptor(omnetpp::opp_typename(typeid(OspfHello)), "inet::FieldsChunk")
 {
     propertyNames = nullptr;
 }
@@ -263,7 +290,7 @@ const char *OspfHelloDescriptor::getProperty(const char *propertyName) const
 int OspfHelloDescriptor::getFieldCount() const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
-    return base ? 0+base->getFieldCount() : 0;
+    return base ? 2+base->getFieldCount() : 2;
 }
 
 unsigned int OspfHelloDescriptor::getFieldTypeFlags(int field) const
@@ -274,7 +301,11 @@ unsigned int OspfHelloDescriptor::getFieldTypeFlags(int field) const
             return base->getFieldTypeFlags(field);
         field -= base->getFieldCount();
     }
-    return 0;
+    static unsigned int fieldTypeFlags[] = {
+        FD_ISEDITABLE,    // FIELD_senderIp
+        FD_ISEDITABLE,    // FIELD_neighborIp
+    };
+    return (field >= 0 && field < 2) ? fieldTypeFlags[field] : 0;
 }
 
 const char *OspfHelloDescriptor::getFieldName(int field) const
@@ -285,12 +316,19 @@ const char *OspfHelloDescriptor::getFieldName(int field) const
             return base->getFieldName(field);
         field -= base->getFieldCount();
     }
-    return nullptr;
+    static const char *fieldNames[] = {
+        "senderIp",
+        "neighborIp",
+    };
+    return (field >= 0 && field < 2) ? fieldNames[field] : nullptr;
 }
 
 int OspfHelloDescriptor::findField(const char *fieldName) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
+    int baseIndex = base ? base->getFieldCount() : 0;
+    if (strcmp(fieldName, "senderIp") == 0) return baseIndex + 0;
+    if (strcmp(fieldName, "neighborIp") == 0) return baseIndex + 1;
     return base ? base->findField(fieldName) : -1;
 }
 
@@ -302,7 +340,11 @@ const char *OspfHelloDescriptor::getFieldTypeString(int field) const
             return base->getFieldTypeString(field);
         field -= base->getFieldCount();
     }
-    return nullptr;
+    static const char *fieldTypeStrings[] = {
+        "uint32",    // FIELD_senderIp
+        "uint32",    // FIELD_neighborIp
+    };
+    return (field >= 0 && field < 2) ? fieldTypeStrings[field] : nullptr;
 }
 
 const char **OspfHelloDescriptor::getFieldPropertyNames(int field) const
@@ -385,6 +427,8 @@ std::string OspfHelloDescriptor::getFieldValueAsString(omnetpp::any_ptr object, 
     }
     OspfHello *pp = omnetpp::fromAnyPtr<OspfHello>(object); (void)pp;
     switch (field) {
+        case FIELD_senderIp: return ulong2string(pp->getSenderIp());
+        case FIELD_neighborIp: return ulong2string(pp->getNeighborIp());
         default: return "";
     }
 }
@@ -401,6 +445,8 @@ void OspfHelloDescriptor::setFieldValueAsString(omnetpp::any_ptr object, int fie
     }
     OspfHello *pp = omnetpp::fromAnyPtr<OspfHello>(object); (void)pp;
     switch (field) {
+        case FIELD_senderIp: pp->setSenderIp(string2ulong(value)); break;
+        case FIELD_neighborIp: pp->setNeighborIp(string2ulong(value)); break;
         default: throw omnetpp::cRuntimeError("Cannot set field %d of class 'OspfHello'", field);
     }
 }
@@ -415,6 +461,8 @@ omnetpp::cValue OspfHelloDescriptor::getFieldValue(omnetpp::any_ptr object, int 
     }
     OspfHello *pp = omnetpp::fromAnyPtr<OspfHello>(object); (void)pp;
     switch (field) {
+        case FIELD_senderIp: return (omnetpp::intval_t)(pp->getSenderIp());
+        case FIELD_neighborIp: return (omnetpp::intval_t)(pp->getNeighborIp());
         default: throw omnetpp::cRuntimeError("Cannot return field %d of class 'OspfHello' as cValue -- field index out of range?", field);
     }
 }
@@ -431,6 +479,8 @@ void OspfHelloDescriptor::setFieldValue(omnetpp::any_ptr object, int field, int 
     }
     OspfHello *pp = omnetpp::fromAnyPtr<OspfHello>(object); (void)pp;
     switch (field) {
+        case FIELD_senderIp: pp->setSenderIp(omnetpp::checked_int_cast<uint32_t>(value.intValue())); break;
+        case FIELD_neighborIp: pp->setNeighborIp(omnetpp::checked_int_cast<uint32_t>(value.intValue())); break;
         default: throw omnetpp::cRuntimeError("Cannot set field %d of class 'OspfHello'", field);
     }
 }
@@ -443,7 +493,9 @@ const char *OspfHelloDescriptor::getFieldStructName(int field) const
             return base->getFieldStructName(field);
         field -= base->getFieldCount();
     }
-    return nullptr;
+    switch (field) {
+        default: return nullptr;
+    };
 }
 
 omnetpp::any_ptr OspfHelloDescriptor::getFieldStructValuePointer(omnetpp::any_ptr object, int field, int i) const
@@ -475,9 +527,6 @@ void OspfHelloDescriptor::setFieldStructValuePointer(omnetpp::any_ptr object, in
         default: throw omnetpp::cRuntimeError("Cannot set field %d of class 'OspfHello'", field);
     }
 }
-
-}  // namespace ospfv2
-}  // namespace inet
 
 namespace omnetpp {
 

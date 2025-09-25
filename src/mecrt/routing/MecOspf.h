@@ -65,16 +65,40 @@ class MecOspf : public RoutingProtocolBase
             return os.str();
         }
 
-        // constructor
         Neighbor(const Ipv4Address& r, NetworkInterface *i, simtime_t t, double c) 
           : destIp(r), interface(i), cost(c), lastSeen(t)  {}
 
         Neighbor() = default;
     };
 
+	// the Link State Advertisement (LSA) info, maintained by each router
+	struct LsaInfo {
+		Ipv4Address origin;
+		uint32_t seqNum;
+		simtime_t installTime;
+		map<Ipv4Address, double> neighbors;
+
+		string str() const {
+			ostringstream os;
+			os << "LSA from " << origin << " seqNum=" << seqNum << " installed at " << installTime << "\n";
+			for (const auto& n : neighbors) {
+				os << "   neighbor " << n.first << " cost=" << n.second << "\n";
+			}
+			return os.str();
+		}
+
+		LsaInfo(const Ipv4Address& o, uint32_t s, simtime_t t) 
+		  : origin(o), seqNum(s), installTime(t) {}
+
+		LsaInfo() = default;
+	};
+
+	bool enableInitDebug_ = false;
+
     // router id
     Ipv4Address routerId_;
     uint32_t routerIdKey_; // integer form of routerId_
+	uint32_t seqNum_ = 0; // LSA sequence number
 
     // INET helpers
     IInterfaceTable *ift = nullptr;
@@ -83,19 +107,25 @@ class MecOspf : public RoutingProtocolBase
     // protocol state
     // keyed by int form of neighbor router ip
     map<uint32_t, Neighbor> neighbors; 
-    // keyed by int form of router ip, store the network topology we know. 
-    // e.g., {ip1: {ip2: cost, ip3: cost}, ip2: {ip1: cost, ...}, ...}
-    map<uint32_t, map<uint32_t, double>> adjMap;
+    // Link State Advertisement (LSA) database, store the lsa from all users, keyed by origin router ip
+	// each router maintains its own LSA in the db, with seqNum indicating if it is updated
+    map<Ipv4Address, LsaInfo> lsdb;  // key = ipKey(originRouter)
     // routes we installed (so we can remove them)
     map<uint32_t, Ipv4Route *> indirectRoutes;  // separate from routes to neighbors
     map<uint32_t, Ipv4Route *> neighborRoutes; // direct routes to neighbors
 
-    // timers & config
+    // ======= Phrase 1: Neighbor Discovery =======
     cMessage *helloTimer = nullptr;
+	cMessage *helloFeedbackTimer = nullptr; // not used now
+
+	simtime_t helloFeedbackDelay = 0.003; // seconds, delay to send Hello in response to received Hello (not used now)
     simtime_t helloInterval = 5;       // seconds
     simtime_t neighborTimeout = 15;    // seconds (dead interval)
-    simtime_t lsFwdInterval = 0.001;     // seconds, link-state flooding interval (not used now)
-    bool enableInitDebug_ = false;
+    
+	// ======= Phrase 2: Start Broadcasting LSA =======
+	cMessage *lsaTimer = nullptr; // not used now
+	simtime_t lsaWaitInterval = 0.005; // seconds, wait time before sending LSA after neighbor discovery/change happens
+    
 
   protected:
     virtual int numInitStages() const override { return NUM_INIT_STAGES; }
@@ -109,18 +139,26 @@ class MecOspf : public RoutingProtocolBase
     virtual void finish() override;
 
     // protocol actions
-    void sendHello();                                 // build/send Hello packets using tags
-    void processHello(Packet *packet); // handle incoming Hello
-    void forwardPacket(Packet *packet);               // forward normal packets using routing table
-    void handleSelfTimer(cMessage *msg);                  // self-message handler (hello timer)
+	virtual void handleSelfTimer(cMessage *msg);                  // self-message handler (hello timer)
+
+	// ====== Hello protocol ======
+    virtual void sendInitialHello();                                 // build/send Hello packets using tags
+	virtual void sendHelloFeedback(Packet *packet);               // send Hello in response to received Hello
+    virtual void processHello(Packet *packet); // handle incoming Hello
+
+	// ====== LSA protocol (not used now) ======
+	virtual void sendLsa();                                        // build/send LSA packets using tags (not used now)
+	virtual void processLsa(Packet *packet);                        // handle incoming LSA packets (not used
+    virtual void forwardLsa(Packet *packet);               // forward normal packets using routing table
+    
 
     // neighbor / failure
-    void checkNeighborTimeouts();
+    virtual void checkNeighborTimeouts();
 
     // routing / SPF
-    void recomputeIndirectRouting();     // build graph, Dijkstra, install routes
-    void clearIndirectRoutes();          // remove routes we previously added
-    void clearNeighborRoutes();          // remove direct neighbor routes
+    virtual void recomputeIndirectRouting();     // build graph, Dijkstra, install routes
+    virtual void clearIndirectRoutes();          // remove routes we previously added
+    virtual void clearNeighborRoutes();          // remove direct neighbor routes
 
     // helpers
     uint32_t ipKey(const Ipv4Address &a) const { return a.getInt(); }

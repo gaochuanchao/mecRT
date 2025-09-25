@@ -1,5 +1,33 @@
+//
+//  Project: mecRT – Mobile Edge Computing Simulator for Real-Time Applications
+//  File:    MecCommon.h/MecCommon.cc
+//
+//  Description:
+//    Define common data struct used in MEC system
+//
+//  Author:  Gao Chuanchao (Nanyang Technological University)
+//  Date:    2025-09-16
+//
+//  License: Academic Public License -- NOT FOR COMMERCIAL USE
+//
+
+#ifndef _MECRT_MECCOMMON_H_
+#define _MECRT_MECCOMMON_H_
+
+#include "common/LteCommon.h"
+
+
+/**
+ * Mec specific protocols
+ */
+class MecProtocol {
+    public:
+        static const inet::Protocol mecOspf;  // IP protocol on the uU interface
+};
+
+
 /***
- * Define the data struct used in VEC
+ * Define the data struct used in MEC
  */
 
 // =================================
@@ -70,3 +98,4 @@ struct Service
     omnetpp::simtime_t maxOffloadTime;  // the maximum offloading time results in positive energy saving
 };
 
+#endif // _MECRT_MECCOMMON_H_
