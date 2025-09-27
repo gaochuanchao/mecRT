@@ -76,7 +76,8 @@ OBJS = \
     $O/mecrt/packets/apps/ServiceStatus_m.o \
     $O/mecrt/packets/apps/VecPacket_m.o \
     $O/mecrt/packets/nic/VecDataInfo_m.o \
-    $O/mecrt/packets/routing/OspfHello_m.o
+    $O/mecrt/packets/routing/OspfHello_m.o \
+    $O/mecrt/packets/routing/OspfLsa_m.o
 
 # Message files
 MSGFILES = \
@@ -86,7 +87,8 @@ MSGFILES = \
     mecrt/packets/apps/ServiceStatus.msg \
     mecrt/packets/apps/VecPacket.msg \
     mecrt/packets/nic/VecDataInfo.msg \
-    mecrt/packets/routing/OspfHello.msg
+    mecrt/packets/routing/OspfHello.msg \
+    mecrt/packets/routing/OspfLsa.msg
 
 # SM files
 SMFILES =

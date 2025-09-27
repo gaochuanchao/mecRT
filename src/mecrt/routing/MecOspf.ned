@@ -32,13 +32,16 @@ simple MecOspf
 {
     parameters:
         volatile double startupTime @unit(s) = default(0.001s); // delay before starting OSPF
+        double lsaWaitInterval @unit(s) = default(0.005s); // wait for LSA propagation
 
         string interfaceTableModule = default("^.interfaceTable"); // path to the interface table
         string routingTableModule = default("^.ipv4.routingTable");     // path to the routing table
         string routingAlgorithm = default("dijkstra"); // you can extend later
 
-        double helloInterval @unit(s) = default(5s);   // neighbor discovery
-        double deadInterval @unit(s) = default(15s);   // link fault detection
+        double helloInterval @unit(s) = default(5s);   // neighbor state detection interval
+        double helloFeedbackDelay @unit(s) = default(0.003s); // delay waiting for hello feedback
+        double neighborTimeout @unit(s) = default(11s); // timeout for neighbor inactivity
+
         @display("i=block/network2");                  // icon for visualization    
     
     gates:

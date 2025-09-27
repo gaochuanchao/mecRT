@@ -45,6 +45,8 @@
 #include <vector>
 #include <unordered_map>
 
+#include "mecrt/packets/routing/OspfLsa_m.h"
+
 using namespace inet;
 using namespace std;
 
@@ -71,28 +73,6 @@ class MecOspf : public RoutingProtocolBase
         Neighbor() = default;
     };
 
-	// the Link State Advertisement (LSA) info, maintained by each router
-	struct LsaInfo {
-		Ipv4Address origin;
-		uint32_t seqNum;
-		simtime_t installTime;
-		map<Ipv4Address, double> neighbors;
-
-		string str() const {
-			ostringstream os;
-			os << "LSA from " << origin << " seqNum=" << seqNum << " installed at " << installTime << "\n";
-			for (const auto& n : neighbors) {
-				os << "   neighbor " << n.first << " cost=" << n.second << "\n";
-			}
-			return os.str();
-		}
-
-		LsaInfo(const Ipv4Address& o, uint32_t s, simtime_t t) 
-		  : origin(o), seqNum(s), installTime(t) {}
-
-		LsaInfo() = default;
-	};
-
 	bool enableInitDebug_ = false;
 
     // router id
@@ -101,31 +81,36 @@ class MecOspf : public RoutingProtocolBase
 	uint32_t seqNum_ = 0; // LSA sequence number
 
     // INET helpers
-    IInterfaceTable *ift = nullptr;
-    Ipv4RoutingTable *rt = nullptr;
+    IInterfaceTable *ift_ = nullptr;
+    Ipv4RoutingTable *rt_ = nullptr;
 
     // protocol state
     // keyed by int form of neighbor router ip
-    map<uint32_t, Neighbor> neighbors; 
+    map<uint32_t, Neighbor> neighbors_; 
     // Link State Advertisement (LSA) database, store the lsa from all users, keyed by origin router ip
 	// each router maintains its own LSA in the db, with seqNum indicating if it is updated
-    map<Ipv4Address, LsaInfo> lsdb;  // key = ipKey(originRouter)
+    map<uint32_t, map<uint32_t, double>> topology_;  // key = ipKey(originRouter)
+    inet::Ptr<OspfLsa> selfLsa_;    // our own LSA packet, which will be maintained and updated by us
+    map<uint32_t, inet::Ptr<OspfLsa>> lsaPacketCache_; // cache of recently received LSAs, keyed by origin router id
     // routes we installed (so we can remove them)
-    map<uint32_t, Ipv4Route *> indirectRoutes;  // separate from routes to neighbors
-    map<uint32_t, Ipv4Route *> neighborRoutes; // direct routes to neighbors
+    map<uint32_t, Ipv4Route *> indirectRoutes_;  // separate from routes to neighbors
+    map<uint32_t, Ipv4Route *> neighborRoutes_; // direct routes to neighbors
 
     // ======= Phrase 1: Neighbor Discovery =======
-    cMessage *helloTimer = nullptr;
-	cMessage *helloFeedbackTimer = nullptr; // not used now
+    cMessage *helloTimer_ = nullptr;
+	cMessage *helloFeedbackTimer_ = nullptr; // not used now
 
-	simtime_t helloFeedbackDelay = 0.003; // seconds, delay to send Hello in response to received Hello (not used now)
-    simtime_t helloInterval = 5;       // seconds
-    simtime_t neighborTimeout = 15;    // seconds (dead interval)
+	simtime_t helloFeedbackDelay_ = 0.003; // seconds, delay to send Hello in response to received Hello (not used now)
+    simtime_t helloInterval_ = 5;       // seconds
+    simtime_t neighborTimeout_ = 15;    // seconds (dead interval)
+
+    bool neighborChanged_ = false; // flag to indicate neighbor change happened (if yes, need to send LSA)
+    vector<uint32_t> newNeighbors_; // count of newly discovered neighbors
     
 	// ======= Phrase 2: Start Broadcasting LSA =======
-	cMessage *lsaTimer = nullptr; // not used now
-	simtime_t lsaWaitInterval = 0.005; // seconds, wait time before sending LSA after neighbor discovery/change happens
-    
+	cMessage *lsaTimer_ = nullptr; // not used now
+	simtime_t lsaWaitInterval_ = 0.005; // seconds, wait time before sending LSA after neighbor discovery/change happens
+
 
   protected:
     virtual int numInitStages() const override { return NUM_INIT_STAGES; }
@@ -147,10 +132,9 @@ class MecOspf : public RoutingProtocolBase
     virtual void processHello(Packet *packet); // handle incoming Hello
 
 	// ====== LSA protocol (not used now) ======
-	virtual void sendLsa();                                        // build/send LSA packets using tags (not used now)
-	virtual void processLsa(Packet *packet);                        // handle incoming LSA packets (not used
-    virtual void forwardLsa(Packet *packet);               // forward normal packets using routing table
-    
+	virtual void updateLsaToNetwork();                             // update our own LSA to the whole network
+	virtual void handleReceivedLsa(Packet *packet);                        // handle incoming LSA packets
+    virtual void sendLsa(inet::Ptr<const OspfLsa> lsa, uint32_t neighborKey); // send LSA to a specific neighbor
 
     // neighbor / failure
     virtual void checkNeighborTimeouts();
