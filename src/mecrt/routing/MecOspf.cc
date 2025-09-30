@@ -105,13 +105,15 @@ void MecOspf::initialize(int stage)
 
     if (stage == INITSTAGE_LOCAL) {
         // create timers
-        helloTimer_ = new cMessage("helloTimer_");
-        lsaTimer_ = new cMessage("lsaTimer_");
+        helloTimer_ = new cMessage("helloTimer");
+        lsaTimer_ = new cMessage("lsaTimer");
+        routeComputationTimer_ = new cMessage("routeComputationTimer");
 
         lsaWaitInterval_ = par("lsaWaitInterval").doubleValue();
         helloFeedbackDelay_ = par("helloFeedbackDelay").doubleValue();
         helloInterval_ = par("helloInterval").doubleValue();
         neighborTimeout_ = par("neighborTimeout").doubleValue();
+        routeComputationDelay_ = par("routeComputationDelay").doubleValue();
 
         if (getSystemModule()->hasPar("enableInitDebug"))
             enableInitDebug_ = getSystemModule()->par("enableInitDebug").boolValue();
@@ -168,7 +170,7 @@ void MecOspf::initialize(int stage)
         WATCH(routerIdKey_);
         WATCH(neighborChanged_);
         WATCH(seqNum_);
-        WATCH(selfLsa_);
+        WATCH(schedulerNode_);
         WATCH_VECTOR(newNeighbors_);
         WATCH_MAP(indirectRoutes_);
         WATCH_MAP(neighborRoutes_);
@@ -264,7 +266,26 @@ void MecOspf::handleSelfTimer(cMessage *msg)
             // reset neighbor change flag and clear new neighbor list
             neighborChanged_ = false;
             newNeighbors_.clear();
+
+            if (!routeComputationTimer_->isScheduled())
+            {
+                scheduleAt(simTime() + routeComputationDelay_, routeComputationTimer_);
+                largestLsaTime_ = simTime();
+            }
+            else if (routeComputationTimer_->isScheduled() && largestLsaTime_ < simTime())
+            {
+                largestLsaTime_ = simTime();
+                cancelEvent(routeComputationTimer_);
+                scheduleAfter(routeComputationDelay_, routeComputationTimer_);
+            }
         }
+    }
+    else if (msg == routeComputationTimer_)
+    {
+        EV_INFO << "MecOspf::handleSelfTimer - Route Computation timer fired at " << simTime() << "\n";
+
+        // recompute routes to all nodes in the topology
+        recomputeIndirectRouting();
     }
     else
     {
@@ -377,7 +398,7 @@ void MecOspf::processHello(Packet *packet)
     auto ospfHelloChunk = packet->peekAtFront<OspfHello>();
     if (ospfHelloChunk->getNeighborIp() != routerIdKey_) {
         // this is the initial Hello from neighbor, send feedback Hello back
-        EV_INFO << "MecOspf:processHello - received initial Hello from " << ospfHelloChunk->getSenderIp() << ", sending feedback\n";
+        EV_INFO << "MecOspf:processHello - received initial Hello from " << Ipv4Address(ospfHelloChunk->getSenderIp()) << ", sending feedback\n";
         sendHelloFeedback(packet);
 
         return;
@@ -406,7 +427,7 @@ void MecOspf::processHello(Packet *packet)
     auto l3ind = packet->findTag<L3AddressInd>();
     Ipv4Address gateway = Ipv4Address::UNSPECIFIED_ADDRESS;
     if (l3ind) {
-        // L3AddressInd provides canonical L3 info
+        // gateway is the ip address of the neighbor interface that our Hello arrived on
         gateway = l3ind->getSrcAddress().toIpv4();
     }
     // If we didn't find src in tags, try to derive from arrival gate's interface
@@ -423,7 +444,7 @@ void MecOspf::processHello(Packet *packet)
     auto it = neighbors_.find(key);
     if (it == neighbors_.end()) {
         // new neighbor
-        Neighbor n = Neighbor(neighborIp, arrivalIf, simTime(), 1.0);
+        Neighbor n = Neighbor(neighborIp, gateway, arrivalIf, simTime(), 1.0);
         neighbors_.emplace(key, n);
         EV_INFO << "MecOspf:processHello - discovered neighbor " << neighborIp << " (discovered neighbors in total:" << neighbors_.size() << ")\n";
 
@@ -474,7 +495,7 @@ void MecOspf::updateLsaToNetwork()
     for (auto &kv : neighbors_)
     {
         Neighbor &n = kv.second;
-        if (!n.interface || !n.interface->isUp()) continue;
+        if (!n.outInterface || !n.outInterface->isUp()) continue;
 
         EV_INFO << "MecOspf:sendLsaToNeighbor - sending LSA to neighbor " << n.destIp << "\n";
         sendLsa(selfLsa_, kv.first);
@@ -490,7 +511,7 @@ void MecOspf::updateLsaToNetwork()
 
             // make sure the neighbor interface is still up
             Neighbor &n = it->second;
-            if (!n.interface || !n.interface->isUp()) continue;
+            if (!n.outInterface || !n.outInterface->isUp()) continue;
 
             EV_INFO << "MecOspf:sendLsaToNeighbor - new neighbor " << n.destIp << " discovered, sending all cached LSAs\n";
             // send all cached LSAs to this new neighbor, except our own (already sent above)
@@ -527,11 +548,11 @@ void MecOspf::handleReceivedLsa(Packet *packet)
     // if the origin router is not in cache, add it
     Ipv4Address origin = lsa->getOrigin();
     uint32_t originKey = ipKey(origin);
-    if (lsaPacketCache_.find(originKey) == lsaPacketCache_.end())
+    if (lsaPacketCache_.find(originKey) == lsaPacketCache_.end())   // first time seeing this origin
         needUpdate = true;
 
     int lsaSeqNum = lsa->getSeqNum();
-    if (!needUpdate && (lsaSeqNum > lsaPacketCache_[originKey]->getSeqNum()))
+    if (!needUpdate && (lsaSeqNum > lsaPacketCache_[originKey]->getSeqNum()))   // not first time but higher seqNum
         needUpdate = true;
 
     if (needUpdate) {
@@ -539,19 +560,63 @@ void MecOspf::handleReceivedLsa(Packet *packet)
         lsaPacketCache_[originKey] = makeShared<OspfLsa>(*lsa);
         EV_INFO << "MecOspf:handleReceivedLsa - received updated LSA from " << origin << "\n";
 
+        // Update topology graph
+        updateTopologyFromLsa(lsa);
+
         // get the arrival interface (to avoid sending back)
         auto ifaceInd = packet->findTag<InterfaceInd>();
         int arrivalIfId = ifaceInd->getInterfaceId();
 
         // Forward LSA to neighbors (except the one it came from)
         for (const auto& n : neighbors_) {
-            if (n.second.interface->getInterfaceId() != arrivalIfId) {
-                EV_INFO << "MecOspf:handleReceivedLsa - forwarding LSA from " << origin << " to neighbor " << n.second.destIp << "\n";
+            if (n.second.outInterface->getInterfaceId() != arrivalIfId) {
                 sendLsa(lsa, n.first);
             }
         }
+
+        // schedule route recomputation after a short delay to ensure the propagation is complete
+        if (!routeComputationTimer_->isScheduled())
+        {
+            scheduleAfter(routeComputationDelay_, routeComputationTimer_);
+            largestLsaTime_ = simTime();
+        }
+        else if (routeComputationTimer_->isScheduled() && largestLsaTime_ < lsa->getInstallTime())
+        {
+            // if some LSA is generated at a later time, we can cancel and reschedule
+            // the routeComputationTimer_ to a later time to avoid multiple recomputations
+            largestLsaTime_ = lsa->getInstallTime();
+            cancelEvent(routeComputationTimer_);
+            scheduleAt(largestLsaTime_ + routeComputationDelay_, routeComputationTimer_);
+        }
     } else {
         EV_INFO << "MecOspf:handleReceivedLsa - received old LSA from " << origin << ", ignore it!\n";
+    }
+}
+
+
+/***
+ * === updateTopologyFromLsa ===
+ * Update our topology graph from a received LSA.
+ */
+void MecOspf::updateTopologyFromLsa(inet::Ptr<const OspfLsa>& lsa)
+{
+    if (!lsa) return;
+    Ipv4Address origin = lsa->getOrigin();
+    uint32_t originKey = ipKey(origin);
+
+    int neighborCount = lsa->getNeighborArraySize();
+    topology_[originKey].clear();
+    for (int i = 0; i < neighborCount; i++) {
+        Ipv4Address nbrIp = lsa->getNeighbor(i);
+        double cost = lsa->getCost(i);
+        uint32_t nbrKey = ipKey(nbrIp);
+        topology_[originKey][nbrKey] = cost;
+    }
+    EV_DETAIL << "MecOspf:updateTopologyFromLsa - updated topology for " << origin << ":\n";
+    for (const auto& kv : topology_[originKey]) {
+        Ipv4Address nbrIp = Ipv4Address(kv.first);
+        double cost = kv.second;
+        EV_DETAIL << "\t" << nbrIp << " (cost=" << cost << ")\n";
     }
 }
 
@@ -575,12 +640,12 @@ void MecOspf::sendLsa(inet::Ptr<const OspfLsa> lsa, uint32_t neighborKey)
     // Tag destination address (multicast all-routers)
     auto addrReq = lsaPkt->addTagIfAbsent<L3AddressReq>();
     addrReq->setDestAddress(Ipv4Address::ALL_OSPF_ROUTERS_MCAST);
-    addrReq->setSrcAddress(n.interface->getIpv4Address());  // used as gateway for neighbor to reach us
+    addrReq->setSrcAddress(n.outInterface->getIpv4Address());
     // Tag outgoing interface id (so ipOut knows which interface)
-    lsaPkt->addTagIfAbsent<InterfaceReq>()->setInterfaceId(n.interface->getInterfaceId());
+    lsaPkt->addTagIfAbsent<InterfaceReq>()->setInterfaceId(n.outInterface->getInterfaceId());
 
-    EV_INFO << "MecOspf:sendLsa - sending LSA seqNum=" << lsa->getSeqNum() << " from " << lsa->getOrigin() 
-            << " to neighbor " << n.destIp << " via interface " << n.interface->getInterfaceName() << "\n";
+    EV_INFO << "MecOspf:sendLsa - sending LSA (origin=" << lsa->getOrigin() << ", seqNum=" << lsa->getSeqNum()
+            << ") to neighbor " << n.destIp << " via interface " << n.outInterface->getInterfaceName() << "\n";
 
     send(lsaPkt, "ipOut");
 }
@@ -655,8 +720,8 @@ void MecOspf::clearNeighborRoutes()
 }
 
 /* === recomputeRouting ===
- * Build a graph from localLinks and neighbors (optionally LSAs if you extend)
- * Run Dijkstra from one of our local addresses and install host (/32) routes.
+ * Run Dijkstra to compute shortest paths from ourself to all nodes in the topology.
+ * Install indirect routes in the routing table accordingly (neighbor routes do not need to change).
  */
 void MecOspf::recomputeIndirectRouting()
 {
@@ -665,26 +730,132 @@ void MecOspf::recomputeIndirectRouting()
         return;
     }
 
-    EV_INFO << "MecOspf::recomputeIndirectRouting - starting SPF computation\n";
+    EV_INFO << "MecOspf::recomputeIndirectRouting - Run Dijkstra to determine updated indirect routes\n";
 
-    // 1) Build node list and node index map
-    vector<Ipv4Address> nodes;
-    unordered_map<uint32_t,int> idx;   // ipKey -> index in nodes, assisting node lookup
-    
-    // an assistant function to add a node if not already present and record its index in the vector
-    auto addNode = [&](const Ipv4Address &a){
-        if (a.isUnspecified()) return;
-        uint32_t k = ipKey(a);
-        if (idx.count(k) == 0) { idx[k] = nodes.size(); nodes.push_back(a); }
-    };
+    // ======== Step 1: clear previously installed indirect routes ========
+    clearIndirectRoutes();
 
-    // add our local IP addresses
-    for (int i = 0; i < ift_->getNumInterfaces(); ++i) {
-        NetworkInterface *ie = ift_->getInterface(i);
-        if (!ie || ie->isLoopback()) continue;
-        auto addr = ie->getIpv4Address();
-        if (addr.isUnspecified()) continue;
-        addNode(addr);
+    // ======== Step 2: Dijkstra's algorithm to find shortest paths from routerIdKey_ to all other nodes ========
+    // initialize node infos
+    std::map<uint32_t, NodeInfo> nodeInfos;
+    for (const auto& kv : topology_) {
+        uint32_t nodeKey = kv.first;
+        nodeInfos[nodeKey] = {nodeKey, INFINITY, 0, false};
+        if (nodeKey == routerIdKey_) {
+            nodeInfos[nodeKey].cost = 0.0; // cost to self is 0
+        }
+    }
+
+    dijkstra(routerIdKey_, nodeInfos);
+
+    // ======== Step 3: extract next-hop routing table from Dijkstra results ========
+    vector<uint32_t> reachableNodes = {routerIdKey_};    // in case the topology is partitioned
+    // For each destination, we backtrack the predecessor chain until we reach the direct neighbor of routerIdKey_.
+    for (const auto& kv : nodeInfos) {
+        uint32_t dest = kv.first;
+        if (dest == routerIdKey_) continue;  // skip self
+
+        // Unreachable?
+        if (kv.second.cost == INFINITY || kv.second.prevHop == 0) {
+            EV_INFO << "Destination " << Ipv4Address(dest) << " is unreachable\n";
+            topology_.erase(dest); // remove unreachable node from topology
+            lsaPacketCache_.erase(dest); // remove its LSA from cache
+            continue;
+        }
+
+        reachableNodes.push_back(dest);
+        // Backtrack from dest to source
+        uint32_t current = dest;
+        uint32_t prev = nodeInfos[current].prevHop;
+
+        // skip if direct neighbor
+        if (prev == routerIdKey_) continue;
+
+        // Walk backwards until the predecessor is the source
+        EV_INFO << "Path to " << Ipv4Address(dest) << ": " << Ipv4Address(current);
+        while (prev != 0 && prev != routerIdKey_) {
+            current = prev;
+            prev = nodeInfos[current].prevHop;
+            EV_INFO << " <- " << Ipv4Address(current);
+        }
+        EV_INFO << " <- " << Ipv4Address(prev);
+        EV_INFO << " (cost=" << kv.second.cost << ")\n";
+
+        // Add the next hop route into the routing table
+        // current is now the first hop on the path from routerIdKey_ to dest
+        if (prev == routerIdKey_) {
+            // add routes to the routingTable
+            auto it = neighbors_.find(current);
+            if (it == neighbors_.end()) {
+                EV_WARN << "MecOspf:recomputeIndirectRouting - next hop neighbor " << Ipv4Address(current) << " not found in neighbors, skip route to "
+                        << Ipv4Address(dest) << "\n";
+                continue;
+            }
+            Neighbor &n = it->second;
+            if (rt_) {
+                Ipv4Route *route = new Ipv4Route();
+                route->setDestination(Ipv4Address(dest));
+                route->setNetmask(Ipv4Address::ALLONES_ADDRESS); // host route
+                route->setGateway(n.gateway);
+                route->setInterface(n.outInterface);
+                route->setSourceType(Ipv4Route::OSPF);
+                route->setMetric(1);
+                rt_->addRoute(route);
+                indirectRoutes_[dest] = route;
+                EV_INFO << "MecOspf:processHello - added indirect route to node " << Ipv4Address(dest) << "\n";
+            }
+        }
+    }
+
+    // ======= Step 4: determine the scheduler node ========
+    // select the reachable node with maximum number of neighbors as the scheduler
+    // (if multiple, select the one with the lowest IP address)
+    // because 
+    size_t maxNeighbors = 0;
+    for (auto nodeKey : reachableNodes) {
+        size_t nbrCount = topology_[nodeKey].size();
+        if (nbrCount > maxNeighbors) {
+            maxNeighbors = nbrCount;
+            schedulerNode_ = Ipv4Address(nodeKey);
+        } else if (nbrCount == maxNeighbors) {
+            // If tie, select the one with the lowest IP address
+            Ipv4Address candidate = Ipv4Address(nodeKey);
+            if (candidate < schedulerNode_) {
+                schedulerNode_ = candidate;
+            }
+        }
+    }
+    EV_INFO << "MecOspf:recomputeIndirectRouting - selected scheduler node: " << schedulerNode_ << " (neighbors=" << maxNeighbors << ")\n";
+}
+
+
+void MecOspf::dijkstra(uint32_t source, std::map<uint32_t, NodeInfo>& nodeInfos)
+{
+    // Initialize priority queue
+    auto cmp = [](const NodeInfo* a, const NodeInfo* b) { return a->cost > b->cost; };
+    std::priority_queue<NodeInfo*, std::vector<NodeInfo*>, decltype(cmp)> pq(cmp);
+
+    // Start from source
+    pq.push(&nodeInfos[source]);
+    while (!pq.empty()) {
+        NodeInfo* current = pq.top();
+        pq.pop();
+        if (current->visited) continue;     // skip stale entries
+        current->visited = true;
+
+        // Explore neighbors
+        for (const auto& neighborKv : topology_[current->nodeKey]) {
+            uint32_t neighborKey = neighborKv.first;
+            double linkCost = neighborKv.second;
+            if (nodeInfos.find(neighborKey) == nodeInfos.end()) continue; // unknown node
+
+            NodeInfo &neighborInfo = nodeInfos[neighborKey];
+            if (current->cost + linkCost < neighborInfo.cost) {
+                neighborInfo.cost = current->cost + linkCost;
+                neighborInfo.prevHop = current->nodeKey;
+                pq.push(&neighborInfo);
+            }
+        }
     }
 }
 

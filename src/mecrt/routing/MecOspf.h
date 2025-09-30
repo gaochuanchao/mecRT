@@ -56,21 +56,30 @@ class MecOspf : public RoutingProtocolBase
     // neighbor entry discovered via Hello
     struct Neighbor {
         Ipv4Address destIp; // router ID of the neighbor (the address of the ipv4 module)
-        NetworkInterface *interface = nullptr; // the outgoing interface to reach this neighbor
+        Ipv4Address gateway; // the IP address of the neighbor interface that our Hello arrived on
+        NetworkInterface *outInterface = nullptr; // the outgoing interface to reach this neighbor
         double cost = 1.0; // link cost to this neighbor (default 1.0)
         simtime_t lastSeen = 0; // last Hello time
 
         string str() const {
             ostringstream os;
-            os << "Neighbor " << destIp << " via " << (interface ? interface->getInterfaceName() : "nullptr")
-               << " lastSeen=" << lastSeen << " cost=" << cost;
+            os << "Neighbor " << destIp << " via " << (outInterface ? outInterface->getInterfaceName() : "nullptr")
+               << " gateway=" << gateway << " lastSeen=" << lastSeen << " cost=" << cost;
             return os.str();
         }
 
-        Neighbor(const Ipv4Address& r, NetworkInterface *i, simtime_t t, double c) 
-          : destIp(r), interface(i), cost(c), lastSeen(t)  {}
+        Neighbor(const Ipv4Address& r, const Ipv4Address& g, NetworkInterface *i, simtime_t t, double c) 
+          : destIp(r), gateway(g), outInterface(i), cost(c), lastSeen(t)  {}
 
         Neighbor() = default;
+    };
+
+    // for Dijkstra algorithm
+    struct NodeInfo {
+        uint32_t nodeKey;   // node ID (router)
+        double cost;        // tentative distance
+        uint32_t prevHop;   // previous hop in the path
+        bool visited;       // has the shortest path been finalized?
     };
 
 	bool enableInitDebug_ = false;
@@ -111,6 +120,13 @@ class MecOspf : public RoutingProtocolBase
 	cMessage *lsaTimer_ = nullptr; // not used now
 	simtime_t lsaWaitInterval_ = 0.005; // seconds, wait time before sending LSA after neighbor discovery/change happens
 
+    // ======= Phrase 3: Compute Routes to All Nodes in the Topology =======
+    cMessage *routeComputationTimer_ = nullptr;
+    simtime_t routeComputationDelay_ = 0.01; // seconds, wait time before recomputing routes after LSA update
+    simtime_t largestLsaTime_ = 0; // track the largest LSA install time we have seen (to ensure LSA propagation is done before recomputing routes)
+
+    // ======= Phrase 4: determine the scheduler node =======
+    Ipv4Address schedulerNode_ = Ipv4Address::UNSPECIFIED_ADDRESS;
 
   protected:
     virtual int numInitStages() const override { return NUM_INIT_STAGES; }
@@ -135,12 +151,14 @@ class MecOspf : public RoutingProtocolBase
 	virtual void updateLsaToNetwork();                             // update our own LSA to the whole network
 	virtual void handleReceivedLsa(Packet *packet);                        // handle incoming LSA packets
     virtual void sendLsa(inet::Ptr<const OspfLsa> lsa, uint32_t neighborKey); // send LSA to a specific neighbor
+    virtual void updateTopologyFromLsa(inet::Ptr<const OspfLsa>& lsa); // update our topology graph from a received LSA
 
     // neighbor / failure
     virtual void checkNeighborTimeouts();
 
     // routing / SPF
     virtual void recomputeIndirectRouting();     // build graph, Dijkstra, install routes
+    virtual void dijkstra(uint32_t source, map<uint32_t, NodeInfo>& nodeInfos); // Dijkstra algorithm
     virtual void clearIndirectRoutes();          // remove routes we previously added
     virtual void clearNeighborRoutes();          // remove direct neighbor routes
 

@@ -24,6 +24,7 @@ import inet.networklayer.ipv6.Ipv6NetworkLayer;
 import inet.transportlayer.tcp.Tcp;
 import inet.transportlayer.udp.Udp;
 import mecRT.mecrt.apps.scheduler.Scheduler;
+import mecRT.mecrt.routing.MecOspf;
 
 
 module SchedulerHost
@@ -38,11 +39,13 @@ module SchedulerHost
         bool hasIpv4 = default(true);
         bool hasIpv6 = default(false);
         *.interfaceTableModule = default(absPath(".interfaceTable"));
-        
+        *.routingTableModule = default("^.ipv4.routingTable");
+
         //# Transport layer
         bool hasTcp = default(false);
+        bool hasOspf = default(true);	// Enable OSPFv2 routing protocol
 
-		
+
         int numExtEthInterfaces = default(0); //
 
     gates:
@@ -54,6 +57,11 @@ module SchedulerHost
 
         interfaceTable: InterfaceTable {
             @display("p=61.344,74.976;is=s");
+        }
+
+        ospf: MecOspf if hasOspf {
+            parameters:
+                @display("p=736.368,215.76");
         }
 
         //#
@@ -167,6 +175,9 @@ module SchedulerHost
             extEth[i].upperLayerOut --> nl.in++;
             extEth[i].upperLayerIn <-- nl.out++;
         }
+        
+        ospf.ipOut --> tn.in++ if hasOspf;
+        ospf.ipIn <-- tn.out++ if hasOspf;
 
 }
 
