@@ -228,14 +228,25 @@ MecDlFeedbackGenerator::MecDlFeedbackGenerator()
 
 MecDlFeedbackGenerator::~MecDlFeedbackGenerator()
 {
-    if (tPeriodicSensing_ != nullptr)
-        delete tPeriodicSensing_;
+    std::cout << "MecDlFeedbackGenerator::~MecDlFeedbackGenerator() - cleaning up" << std::endl;
     
-    if (tPeriodicTx_ != nullptr)
+    if (tPeriodicSensing_)
+    {
+        delete tPeriodicSensing_;
+        tPeriodicSensing_ = nullptr;
+    }
+    if (tPeriodicTx_)
+    {
         delete tPeriodicTx_;
-
-    if (tAperiodicTx_ != nullptr)
+        tPeriodicTx_ = nullptr;
+    }
+    if (tAperiodicTx_)
+    {
         delete tAperiodicTx_;
+        tAperiodicTx_ = nullptr;
+    }
+
+    std::cout << "MecDlFeedbackGenerator::~MecDlFeedbackGenerator() - cleaning up done!" << std::endl;
 }
 
 void MecDlFeedbackGenerator::aperiodicRequest()

@@ -61,11 +61,11 @@ void MecIP2Nic::initialize(int stage)
 
         gnbAddress_ = inet::L3AddressResolver().resolve(getParentModule()->getParentModule()->getFullName());
         EV << "MecIP2Nic::initialize - local gNB IP " << gnbAddress_.toIpv4() << endl;
-        if (nodeType_ == ENODEB || nodeType_ == GNODEB)
-        {
-            auto interfaceTable = check_and_cast<inet::IInterfaceTable *>(getParentModule()->getParentModule()->getSubmodule("interfaceTable"));
-            pppIfInterfaceId_ = interfaceTable->findInterfaceByName("pppIf")->getInterfaceId();
-        }
+        // if (nodeType_ == ENODEB || nodeType_ == GNODEB)
+        // {
+        //     auto interfaceTable = check_and_cast<inet::IInterfaceTable *>(getParentModule()->getParentModule()->getSubmodule("interfaceTable"));
+        //     pppIfInterfaceId_ = interfaceTable->findInterfaceByName("pppIf")->getInterfaceId();
+        // }
         
         if (enableInitDebug_)
             std::cout << "MecIP2Nic::initialize - stage: INITSTAGE_APPLICATION_LAYER - ends." << std::endl;
@@ -106,10 +106,10 @@ void MecIP2Nic::handleMessage(cMessage *msg)
                 removeAllSimu5GTags(pkt);
                 
                 // toIpBs(pkt);
-                pkt->addTagIfAbsent<InterfaceReq>()->setInterfaceId(pppIfInterfaceId_);
+                // pkt->addTagIfAbsent<InterfaceReq>()->setInterfaceId(pppIfInterfaceId_);
                 // add Interface-Indication to indicate which interface this packet was received from
                 pkt->addTagIfAbsent<InterfaceInd>()->setInterfaceId(networkIf->getInterfaceId());
-                EV << "IP2Nic::toIpBs - message from stack: send to pppInterface" << endl;
+                EV << "IP2Nic::toIpBs - message from stack: send to node " << destAddress << endl;
                 send(pkt,ipGateOut_);
             }
         }

@@ -27,8 +27,17 @@ BandManager::BandManager()
 
 BandManager::~BandManager()
 {
-    if (updateTick_ != nullptr)
+    if (enableInitDebug_)
+        std::cout << "BandManager::~BandManager - cleaning up" << std::endl;
+
+    if (updateTick_)
+    {
         cancelAndDelete(updateTick_);
+        updateTick_ = nullptr;
+    }
+
+    if (enableInitDebug_)
+        std::cout << "BandManager::~BandManager - cleaning up done!" << std::endl;
 }
 
 void BandManager::initialize(int stage)

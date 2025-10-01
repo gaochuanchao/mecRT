@@ -22,9 +22,11 @@
  */
 class MecProtocol {
     public:
-        static const inet::Protocol mecOspf;  // IP protocol on the uU interface
+        // static const inet::Protocol mecOspf;  // IP protocol on the uU interface
+        static inet::Protocol* mecOspf;  // IP protocol on the uU interface
 };
 
+void registerMecOspfProtocol();
 
 /***
  * Define the data struct used in MEC

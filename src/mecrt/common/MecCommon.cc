@@ -18,11 +18,30 @@
 
 using namespace inet;
 
-const inet::Protocol MecProtocol::mecOspf("mecOspf", "MEC OSPF");
-Register_Protocol_Dissector(&MecProtocol::mecOspf, Ipv4ProtocolDissector);
+
+inet::Protocol* MecProtocol::mecOspf = new inet::Protocol("mecOspf", "MEC OSPF");
+Register_Protocol_Dissector(MecProtocol::mecOspf, Ipv4ProtocolDissector);
 
 // Register mecOspf as a valid IPv4 payload protocol
 // Ensure it runs before simulation starts
-EXECUTE_ON_STARTUP(ProtocolGroup::getIpProtocolGroup()->addProtocol(99, &MecProtocol::mecOspf));
+void registerMecOspfProtocol() {
+    static bool registered = false;
+    if (!registered) {
+        ProtocolGroup::getIpProtocolGroup()->addProtocol(99, MecProtocol::mecOspf);
+        registered = true;
+    }
+}
 
+// const inet::Protocol MecProtocol::mecOspf("mecOspf", "MEC OSPF");
+// Register_Protocol_Dissector(&MecProtocol::mecOspf, Ipv4ProtocolDissector);
+
+// Register mecOspf as a valid IPv4 payload protocol
+// Ensure it runs before simulation starts
+// void registerMecOspfProtocol() {
+//     static bool registered = false;
+//     if (!registered) {
+//         ProtocolGroup::getIpProtocolGroup()->addProtocol(99, &MecProtocol::mecOspf);
+//         registered = true;
+//     }
+// }
 

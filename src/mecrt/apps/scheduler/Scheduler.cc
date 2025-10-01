@@ -43,14 +43,27 @@ Scheduler::Scheduler()
 
 Scheduler::~Scheduler()
 {
-    if (schedStarter_ != nullptr)
+    if (enableInitDebug_)
+        std::cout << "Scheduler::~Scheduler - destroying Scheduler module\n";
+
+    if (schedStarter_)
+    {
         cancelAndDelete(schedStarter_);
-
-    if (schedComplete_ != nullptr)
+        schedStarter_ = nullptr;
+    }
+    if (schedComplete_)
+    {
         cancelAndDelete(schedComplete_);
-
-    if (preSchedCheck_ != nullptr)
+        schedComplete_ = nullptr;
+    }
+    if (preSchedCheck_)
+    {
         cancelAndDelete(preSchedCheck_);
+        preSchedCheck_ = nullptr;
+    }
+
+    if (enableInitDebug_)
+        std::cout << "Scheduler::~Scheduler - destroying Scheduler module done!\n";
 }
 
 void Scheduler::initialize(int stage)

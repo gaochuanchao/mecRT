@@ -25,11 +25,15 @@ class MecIP2Nic : public IP2Nic
     bool enableInitDebug_ = false; // enable debug info during initialization
     RanNodeType nodeType_;      // node type: can be ENODEB, GNODEB, UE
     inet::L3Address gnbAddress_;  // the Ipv4 address of the gNB (the cellularNic IP address)
-    int pppIfInterfaceId_; // the interface id of the neighboring PPP interface
+    // int pppIfInterfaceId_; // the interface id of the neighboring PPP interface
 
     virtual void initialize(int stage) override;
     virtual void handleMessage(omnetpp::cMessage *msg) override;
     virtual void registerInterface();
+
+  public:
+    MecIP2Nic() {};
+    virtual ~MecIP2Nic() {};
 };
 
 #endif

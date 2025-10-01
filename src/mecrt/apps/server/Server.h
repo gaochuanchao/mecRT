@@ -63,7 +63,7 @@ class Server : public omnetpp::cSimpleModule
     Binder *binder_;
     MacNodeId gnbId_;
     int nicInterfaceId_;  // the interface id of the NIC module
-    int pppIfInterfaceId_; // the interface id of the PPP interface
+    // int pppIfInterfaceId_; // the interface id of the PPP interface
 
     // a map store granted service on this RSU
     std::map<AppId, Service> grantedService_;

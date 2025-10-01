@@ -52,6 +52,7 @@ MecOspf::MecOspf()
     helloTimer_ = nullptr;
     helloFeedbackTimer_ = nullptr;
     lsaTimer_ = nullptr;
+    routeComputationTimer_ = nullptr;
 
     ift_ = nullptr;
     rt_ = nullptr;
@@ -60,6 +61,9 @@ MecOspf::MecOspf()
 
 MecOspf::~MecOspf()
 {
+    if (enableInitDebug_)
+        std::cout << "MecOspf::~MecOspf - destroying OSPF protocol\n";
+
     if (helloTimer_) {
         cancelAndDelete(helloTimer_);
         helloTimer_ = nullptr;
@@ -72,6 +76,20 @@ MecOspf::~MecOspf()
         cancelAndDelete(lsaTimer_);
         lsaTimer_ = nullptr;
     }
+    if (routeComputationTimer_) {
+        cancelAndDelete(routeComputationTimer_);
+        routeComputationTimer_ = nullptr;
+    }
+
+    clearIndirectRoutes();
+    clearNeighborRoutes();
+    newNeighbors_.clear();
+    lsaPacketCache_.clear();
+    neighbors_.clear();
+    topology_.clear();
+
+    if (enableInitDebug_)
+        std::cout << "MecOspf::~MecOspf - cleaning up OSPF protocol done!\n";
 }
 
 
@@ -104,6 +122,12 @@ void MecOspf::initialize(int stage)
     RoutingProtocolBase::initialize(stage);
 
     if (stage == INITSTAGE_LOCAL) {
+        if (getSystemModule()->hasPar("enableInitDebug"))
+            enableInitDebug_ = getSystemModule()->par("enableInitDebug").boolValue();
+
+        EV_INFO << "MecOspf:initialize - stage: INITSTAGE_LOCAL - begins\n";
+        registerMecOspfProtocol(); // ensure protocol is registered before simulation starts
+
         // create timers
         helloTimer_ = new cMessage("helloTimer");
         lsaTimer_ = new cMessage("lsaTimer");
@@ -114,9 +138,6 @@ void MecOspf::initialize(int stage)
         helloInterval_ = par("helloInterval").doubleValue();
         neighborTimeout_ = par("neighborTimeout").doubleValue();
         routeComputationDelay_ = par("routeComputationDelay").doubleValue();
-
-        if (getSystemModule()->hasPar("enableInitDebug"))
-            enableInitDebug_ = getSystemModule()->par("enableInitDebug").boolValue();
     }
     else if (isInitializeStage(stage)) {
         if (enableInitDebug_)
@@ -153,7 +174,7 @@ void MecOspf::initialize(int stage)
         }
 
         // register protocol such that the IP layer can deliver packets to us
-        registerProtocol(MecProtocol::mecOspf, gate("ipOut"), gate("ipIn"));
+        registerProtocol(*MecProtocol::mecOspf, gate("ipOut"), gate("ipIn"));
 
         EV_INFO << "MecOspf:initialize - network-layer init. Interfaces=" << (ift_ ? ift_->getNumInterfaces() : 0)
                 << " RoutingTable=" << (rt_ ? "found" : "NOT_FOUND") << "\n";
@@ -327,7 +348,7 @@ void MecOspf::sendInitialHello()
 
         // add dispatch tags and protocols
         hello->addTagIfAbsent<DispatchProtocolReq>()->setProtocol(&Protocol::ipv4);
-        hello->addTagIfAbsent<PacketProtocolTag>()->setProtocol(&MecProtocol::mecOspf);
+        hello->addTagIfAbsent<PacketProtocolTag>()->setProtocol(MecProtocol::mecOspf);
         // Tag destination address (multicast all-hosts)
         auto addrReq = hello->addTagIfAbsent<L3AddressReq>();
         addrReq->setDestAddress(Ipv4Address::ALL_OSPF_ROUTERS_MCAST);
@@ -368,7 +389,7 @@ void MecOspf::sendHelloFeedback(Packet *pkt)
     // add dispatch tags
     hello->addTagIfAbsent<DispatchProtocolReq>()->setProtocol(&Protocol::ipv4);
     // add the packet protocol tag as OSPF (we'll use IPv4 as the carrier)
-    hello->addTagIfAbsent<PacketProtocolTag>()->setProtocol(&MecProtocol::mecOspf);
+    hello->addTagIfAbsent<PacketProtocolTag>()->setProtocol(MecProtocol::mecOspf);
     // Tag destination address (multicast all-hosts)
     auto addrReq = hello->addTagIfAbsent<L3AddressReq>();
     addrReq->setDestAddress(Ipv4Address::ALL_OSPF_ROUTERS_MCAST);
@@ -636,7 +657,7 @@ void MecOspf::sendLsa(inet::Ptr<const OspfLsa> lsa, uint32_t neighborKey)
 
     // add dispatch tags and protocols
     lsaPkt->addTagIfAbsent<DispatchProtocolReq>()->setProtocol(&Protocol::ipv4);
-    lsaPkt->addTagIfAbsent<PacketProtocolTag>()->setProtocol(&MecProtocol::mecOspf);
+    lsaPkt->addTagIfAbsent<PacketProtocolTag>()->setProtocol(MecProtocol::mecOspf);
     // Tag destination address (multicast all-routers)
     auto addrReq = lsaPkt->addTagIfAbsent<L3AddressReq>();
     addrReq->setDestAddress(Ipv4Address::ALL_OSPF_ROUTERS_MCAST);
@@ -872,6 +893,9 @@ Ipv4Address MecOspf::getLocalAddressOnGate(cGate *gate)
 
 void MecOspf::handleStopOperation(LifecycleOperation *operation)
 {
+    if (enableInitDebug_)
+        std::cout << "MecOspf::handleStopOperation - stopping OSPF protocol\n";
+
     EV_INFO << "MecOspf::handleStopOperation - stopping the OSPF protocol\n";
     if (helloTimer_) {
         cancelAndDelete(helloTimer_);
@@ -885,6 +909,10 @@ void MecOspf::handleStopOperation(LifecycleOperation *operation)
         cancelAndDelete(lsaTimer_);
         lsaTimer_ = nullptr;
     }
+    if (routeComputationTimer_) {
+        cancelAndDelete(routeComputationTimer_);
+        routeComputationTimer_ = nullptr;
+    }
 
     clearIndirectRoutes();
     clearNeighborRoutes();
@@ -892,11 +920,13 @@ void MecOspf::handleStopOperation(LifecycleOperation *operation)
     lsaPacketCache_.clear();
     neighbors_.clear();
     topology_.clear();
-    lsaPacketCache_.clear();
 }
 
 void MecOspf::handleCrashOperation(LifecycleOperation *operation)
 {
+    if (enableInitDebug_)
+        std::cout << "MecOspf::handleCrashOperation - the OSPF protocol is crashed\n";
+    
     EV_INFO << "MecOspf::handleCrashOperation - the OSPF protocol is crashed\n";
     if (helloTimer_) {
         cancelAndDelete(helloTimer_);
@@ -910,6 +940,10 @@ void MecOspf::handleCrashOperation(LifecycleOperation *operation)
         cancelAndDelete(lsaTimer_);
         lsaTimer_ = nullptr;
     }
+    if (routeComputationTimer_) {
+        cancelAndDelete(routeComputationTimer_);
+        routeComputationTimer_ = nullptr;
+    }
 
     clearIndirectRoutes();
     clearNeighborRoutes();
@@ -917,13 +951,15 @@ void MecOspf::handleCrashOperation(LifecycleOperation *operation)
     lsaPacketCache_.clear();
     neighbors_.clear();
     topology_.clear();
-    lsaPacketCache_.clear();
 }
 
 
 // cleanup
 void MecOspf::finish()
 {
+    if (enableInitDebug_)
+        std::cout << "MecOspf::finish - cleaning up OSPF protocol\n";
+
     if (helloTimer_) {
         cancelAndDelete(helloTimer_);
         helloTimer_ = nullptr;
@@ -936,6 +972,10 @@ void MecOspf::finish()
         cancelAndDelete(lsaTimer_);
         lsaTimer_ = nullptr;
     }
+    if (routeComputationTimer_) {
+        cancelAndDelete(routeComputationTimer_);
+        routeComputationTimer_ = nullptr;
+    }
 
     clearIndirectRoutes();
     clearNeighborRoutes();
@@ -943,7 +983,7 @@ void MecOspf::finish()
     lsaPacketCache_.clear();
     neighbors_.clear();
     topology_.clear();
-    lsaPacketCache_.clear();
 
-    EV_INFO << "MecOspf::finish - cleanup done\n";
+    if (enableInitDebug_)
+        std::cout << "MecOspf::finish - cleaning up OSPF protocol done!\n";
 }

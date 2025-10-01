@@ -12,7 +12,6 @@
 //
 //  License: Academic Public License -- NOT FOR COMMERCIAL USE
 //
-
 #include "mecrt/apps/server/Server.h"
 
 #include "mecrt/packets/apps/RsuFeedback_m.h"
@@ -35,8 +34,17 @@ Server::Server()
 
 Server::~Server()
 {
-    if (srvInitComplete_ != nullptr)
+    if (enableInitDebug_)
+        std::cout << "Server::~Server - destroying Server module\n";
+
+    if (srvInitComplete_)
+    {
         cancelAndDelete(srvInitComplete_);
+        srvInitComplete_ = nullptr;
+    }
+
+    if (enableInitDebug_)
+        std::cout << "Server::~Server - destroying Server module done!\n";
 }
 
 void Server::initialize(int stage)
@@ -95,9 +103,8 @@ void Server::initialize(int stage)
 
         auto interfaceTable = check_and_cast<inet::IInterfaceTable *>(getParentModule()->getSubmodule("interfaceTable"));
         // the interface name is specified in the NED file: VecIP2Nic.ned
-        cellularNicName_ = getAncestorPar("cellularNicName").stringValue();
-        nicInterfaceId_ = interfaceTable->findInterfaceByName(cellularNicName_.c_str())->getInterfaceId();
-        pppIfInterfaceId_ = interfaceTable->findInterfaceByName("pppIf")->getInterfaceId();
+        nicInterfaceId_ = interfaceTable->findInterfaceByName(getAncestorPar("cellularNicName"))->getInterfaceId();
+        // pppIfInterfaceId_ = interfaceTable->findInterfaceByName("pppIf")->getInterfaceId();
 
         srvInitComplete_ = new cMessage("ServiceInitComplete");
         srvInitComplete_->setSchedulingPriority(1);  // after other messages
@@ -224,7 +231,7 @@ void Server::updateRsuFeedback(omnetpp::cMessage *msg)
 
     // addHeaders(pkt, schedulerAddr_, schedulerPort_, vehAddr);
     // socket.sendTo(pkt, gwAddress_, tunnelPeerPort_);
-    pkt->addTagIfAbsent<InterfaceReq>()->setInterfaceId(pppIfInterfaceId_);
+    // pkt->addTagIfAbsent<InterfaceReq>()->setInterfaceId(pppIfInterfaceId_);
     socket.sendTo(pkt, schedulerAddr_, schedulerPort_);
 }
 
@@ -270,7 +277,7 @@ void Server::updateServiceStatus(omnetpp::cMessage *msg)
 
     // addHeaders(pkt, schedulerAddr_, schedulerPort_, serverAddr_.toIpv4());
     // socket.sendTo(pkt, gwAddress_, tunnelPeerPort_);
-    pkt->addTagIfAbsent<InterfaceReq>()->setInterfaceId(pppIfInterfaceId_);
+    // pkt->addTagIfAbsent<InterfaceReq>()->setInterfaceId(pppIfInterfaceId_);
     socket.sendTo(pkt, schedulerAddr_, schedulerPort_);
 }
 
@@ -323,7 +330,7 @@ void Server::sendGrant2Vehicle(AppId appId, bool isStop)
         // get the offloading gNodeB address and its server port
         L3Address offloadGnbAddr = L3AddressResolver().resolve(offloadGnb->getFullName()).toIpv4();
         EV << "Server::sendGrant2Vehicle - forwarding to the RtUser module of the offloading gNodeB" << endl;
-        packet->addTagIfAbsent<InterfaceReq>()->setInterfaceId(pppIfInterfaceId_);
+        // packet->addTagIfAbsent<InterfaceReq>()->setInterfaceId(pppIfInterfaceId_);
         socket.sendTo(packet, offloadGnbAddr, rtUserPort_);
     }
 }
@@ -369,7 +376,7 @@ void Server::initializeService(inet::Ptr<const Grant2Rsu> pkt)
         srvStatus->addTag<CreationTimeTag>()->setCreationTime(simTime());
         packet->insertAtFront(srvStatus);
         // addHeaders(packet, schedulerAddr_, schedulerPort_, serverAddr_.toIpv4());
-        packet->addTagIfAbsent<InterfaceReq>()->setInterfaceId(pppIfInterfaceId_);
+        // packet->addTagIfAbsent<InterfaceReq>()->setInterfaceId(pppIfInterfaceId_);
         socket.sendTo(packet, schedulerAddr_, schedulerPort_);
 
         grantedService_.erase(appId);
@@ -391,7 +398,7 @@ void Server::initializeService(inet::Ptr<const Grant2Rsu> pkt)
         srvStatus->addTag<CreationTimeTag>()->setCreationTime(simTime());
         packet->insertAtFront(srvStatus);
         // addHeaders(packet, schedulerAddr_, schedulerPort_, serverAddr_.toIpv4());
-        packet->addTagIfAbsent<InterfaceReq>()->setInterfaceId(pppIfInterfaceId_);
+        // packet->addTagIfAbsent<InterfaceReq>()->setInterfaceId(pppIfInterfaceId_);
         socket.sendTo(packet, schedulerAddr_, schedulerPort_);
 
         grantedService_.erase(appId);
@@ -460,7 +467,7 @@ void Server::stopService(AppId appId)
         srvStatus->addTag<CreationTimeTag>()->setCreationTime(simTime());
         packet->insertAtFront(srvStatus);
         // addHeaders(packet, schedulerAddr_, schedulerPort_, serverAddr_.toIpv4());
-        packet->addTagIfAbsent<InterfaceReq>()->setInterfaceId(pppIfInterfaceId_);
+        // packet->addTagIfAbsent<InterfaceReq>()->setInterfaceId(pppIfInterfaceId_);
         socket.sendTo(packet, schedulerAddr_, schedulerPort_);
 
         appsWaitStop_.insert(appId);

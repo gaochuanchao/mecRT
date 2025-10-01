@@ -41,11 +41,22 @@ MecMobility::MecMobility()
 
 MecMobility::~MecMobility()
 {
-    if (moveTimer_ != nullptr)
-        cancelAndDelete(moveTimer_);
+    if (enableInitDebug_)
+        std::cout << "MecMobility::~MecMobility - the MecMobility module is destructed\n";
 
-    if (showVehicle_ != nullptr)
+    if (moveTimer_)
+    {
+        cancelAndDelete(moveTimer_);
+        moveTimer_ = nullptr;
+    }
+    if (showVehicle_)
+    {
         cancelAndDelete(showVehicle_);
+        showVehicle_ = nullptr;
+    }
+
+    if (enableInitDebug_)
+        std::cout << "MecMobility::~MecMobility - the MecMobility module is destructed done!\n";
 }
 
 void MecMobility::initialize(int stage)

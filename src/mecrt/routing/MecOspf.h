@@ -46,6 +46,7 @@
 #include <unordered_map>
 
 #include "mecrt/packets/routing/OspfLsa_m.h"
+#include "mecrt/common/MecCommon.h"
 
 using namespace inet;
 using namespace std;

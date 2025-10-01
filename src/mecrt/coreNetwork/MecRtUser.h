@@ -40,6 +40,10 @@ class MecRtUser : public omnetpp::cSimpleModule
 
     // detect outgoing interface name (CellularNic)
     inet::NetworkInterface *detectInterface();
+
+  public:
+    MecRtUser() {};
+    virtual ~MecRtUser() {};
 };
 
 

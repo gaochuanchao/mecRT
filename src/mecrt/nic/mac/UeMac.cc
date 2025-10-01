@@ -50,9 +50,17 @@ UeMac::UeMac()
 
 UeMac::~UeMac()
 {
-    if (ttiTick_ != nullptr)
-        cancelAndDelete(ttiTick_);
+    if (enableInitDebug_)
+        std::cout << "UeMac::~UeMac - destroying MAC protocol" << std::endl;
 
+    if (ttiTick_)
+    {
+        cancelAndDelete(ttiTick_);
+        ttiTick_ = nullptr;
+    }
+    
+    if (enableInitDebug_)
+        std::cout << "UeMac::~UeMac - destroying MAC protocol done!\n";
 }
 
 void UeMac::initialize(int stage)

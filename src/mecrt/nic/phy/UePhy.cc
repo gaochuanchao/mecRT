@@ -22,7 +22,27 @@ UePhy::UePhy()
 
 UePhy::~UePhy()
 {
+    if (enableInitDebug_)
+        std::cout << "UePhy::~UePhy - destroying PHY protocol\n";
 
+    if (handoverStarter_)
+    {
+        cancelAndDelete(handoverStarter_);
+        handoverStarter_ = nullptr;
+    }
+    if (das_)
+    {
+        delete das_;
+        das_ = nullptr;
+    }
+    if (d2dDecodingTimer_)
+    {
+        cancelAndDelete(d2dDecodingTimer_);
+        d2dDecodingTimer_ = nullptr;
+    }
+
+    if (enableInitDebug_)
+        std::cout << "UePhy::~UePhy - destroying PHY protocol done!\n";
 }
 
 void UePhy::initialize(int stage)

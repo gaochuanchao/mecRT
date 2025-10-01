@@ -67,7 +67,7 @@ module gNodeB
         double txPower @unit(mw) = default(100mw);
         string nicType = default("GnbNic");	// default("NRNicEnb"); default("GnbNic"); default("LteNicEnb");
         bool hasGtpX2 = default(false); // whether to enable GTP for X2 interface (true)
-        bool hasGtp = default(true);
+        bool hasGtp = default(false);
 
         bool hasOspf = default(true);	// Enable OSPFv2 routing protocol
 

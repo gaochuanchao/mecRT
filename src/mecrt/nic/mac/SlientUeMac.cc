@@ -28,5 +28,6 @@ void SlientUeMac::initialize(int stage)
     {
         // no need to run this timer for slilent Mac
         cancelAndDelete(ttiTick_);
+        ttiTick_ = nullptr;
     }
 }

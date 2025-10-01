@@ -49,7 +49,11 @@ class GnbPhy : public LtePhyEnbD2D
     /**
      * Destructor
      */
-    ~GnbPhy() {};
+    ~GnbPhy() 
+    { 
+        if (enableInitDebug_)
+            std::cout << "GnbPhy::~GnbPhy - destroying GnbPhy module\n";
+    };
 
   protected:
 

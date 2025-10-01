@@ -63,12 +63,36 @@ GnbMac::GnbMac()
 
 GnbMac::~GnbMac()
 {
+    if (enableInitDebug_)
+        std::cout << "GnbMac::~GnbMac - destroying MAC protocol\n";
+
     // remove flushAppPduList_ message
-    if (flushAppPduList_ != nullptr)
+    if (flushAppPduList_)
+    {
         cancelAndDelete(flushAppPduList_);
+        flushAppPduList_ = nullptr;
+    }
     // remove ttiTick_ message
-    if (ttiTick_ != nullptr)
+    if (ttiTick_)
+    {
         cancelAndDelete(ttiTick_);
+        ttiTick_ = nullptr;
+    }
+    // delete the uplink RB manager
+    if (rbManagerUl_)
+    {
+        delete rbManagerUl_;
+        rbManagerUl_ = nullptr;
+    }
+
+    if (conflictGraph_)
+    {
+        delete conflictGraph_;
+        conflictGraph_ = nullptr;
+    }
+
+    if (enableInitDebug_)
+        std::cout << "GnbMac::~GnbMac - destroying MAC protocol done!\n";
 }
 
 void GnbMac::initialize(int stage)
@@ -391,7 +415,7 @@ void GnbMac::handleMessage(cMessage* msg)
         {
             cPacket* pkt = check_and_cast<cPacket*>(msg);
             macHandleD2DModeSwitch(pkt);
-            delete pkt;
+            cancelAndDelete(msg);
         }
         else if (msg->isName("updateConflictGraph"))
         {
@@ -406,7 +430,7 @@ void GnbMac::handleMessage(cMessage* msg)
         else if (strcmp(msg->getName(), "flushHarqMsg") == 0)
         {
             flushHarqBuffers();
-            delete msg;
+            cancelAndDelete(msg);
         }
         else if (strcmp(msg->getName(), "flushAppPduList") == 0)
         {

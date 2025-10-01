@@ -48,11 +48,22 @@ UeApp::UeApp()
 
 UeApp::~UeApp()
 {
-    if (selfSender_ != nullptr)
-        cancelAndDelete(selfSender_);
+    if (enableInitDebug_)
+        std::cout << "UeApp::~UeApp - destroying UE application\n";
 
-    if (initRequest_ != nullptr)
+    if (selfSender_)
+    {
+        cancelAndDelete(selfSender_);
+        selfSender_ = nullptr;
+    }
+    if (initRequest_)
+    {
         cancelAndDelete(initRequest_);
+        initRequest_ = nullptr;
+    }
+
+    if (enableInitDebug_)
+        std::cout << "UeApp::~UeApp - destroying UE application done!\n";
 }
 
 void UeApp::initialize(int stage)
