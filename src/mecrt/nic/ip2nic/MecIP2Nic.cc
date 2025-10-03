@@ -28,6 +28,14 @@ using namespace omnetpp;
 
 Define_Module(MecIP2Nic);
 
+
+MecIP2Nic::MecIP2Nic()
+{
+    gnbAddress_ = Ipv4Address::UNSPECIFIED_ADDRESS;
+    nodeInfo_ = nullptr;
+}
+
+
 void MecIP2Nic::initialize(int stage)
 {
     IP2Nic::initialize(stage);
@@ -49,6 +57,13 @@ void MecIP2Nic::initialize(int stage)
         if (enableInitDebug_)
             std::cout << "MecIP2Nic::initialize - stage: INITSTAGE_PHYSICAL_ENVIRONMENT - begins" << std::endl;
         
+        // get node info module
+        try {
+            nodeInfo_ = getModuleFromPar<NodeInfo>(getAncestorPar("nodeInfoModulePath"), this);
+        } catch (cException &e) {
+            cerr << "MecIP2Nic:initialize - cannot find nodeInfo module\n";
+            nodeInfo_ = nullptr;
+        }
         registerInterface();
 
         if (enableInitDebug_)
@@ -177,5 +192,8 @@ void MecIP2Nic::registerInterface()
     networkIf->setInterfaceName(par("interfaceName").stdstringValue().c_str());
     // TODO configure MTE size from NED
     networkIf->setMtu(par("mtu"));
+
+    if (nodeInfo_)
+        nodeInfo_->setNicInterfaceId(networkIf->getInterfaceId());
 }
 

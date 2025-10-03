@@ -27,8 +27,8 @@ Database::~Database()
     if (enableInitDebug_)
         std::cout << "Database::~Database - destroying Database module\n";
 
-    vehExeData_.clear();
-    rsuExeTime_.clear();
+    // vehExeData_.clear();
+    // rsuExeTime_.clear();
 
     if (enableInitDebug_)
         std::cout << "Database::~Database - destroying Database module done!\n";

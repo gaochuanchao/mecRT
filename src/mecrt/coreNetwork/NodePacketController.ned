@@ -20,10 +20,11 @@ package mecRT.mecrt.coreNetwork;
 // when data is routing in the backhaul network, it is sent to this module of a gnb
 // if the destination is the user device
 //
-simple MecRtUser
+simple NodePacketController
 {
     parameters:
         string interfaceTableModule;            // path to the InterfaceTable module
+        int localPort = default(37);               // local port to listen on
         
         @display("i=block/tunnel");
 

@@ -21,8 +21,9 @@ import inet.networklayer.ipv6.Ipv6NetworkLayer;
 import inet.transportlayer.sctp.Sctp;
 import inet.transportlayer.tcp.Tcp;
 import mecRT.mecrt.apps.server.Server;
+import mecRT.mecrt.common.NodeInfo;
 import mecRT.mecrt.coreNetwork.MecGtpUser;
-import mecRT.mecrt.coreNetwork.MecRtUser;
+import mecRT.mecrt.coreNetwork.NodePacketController;
 import mecRT.mecrt.mobility.MecStationaryMobility;
 import mecRT.mecrt.nic.GnbNic;
 import mecRT.mecrt.routing.MecOspf;
@@ -33,7 +34,7 @@ import simu5g.corenetwork.gtp.GtpUserX2;
 import simu5g.corenetwork.statsCollector.GNodeBStatsCollector;
 import simu5g.corenetwork.trafficFlowFilter.TrafficFlowFilter;
 import simu5g.x2.LteX2App;
-import inet.routing.contract.IOspf;
+
 
 // 
 // gNodeB Module 
@@ -83,6 +84,8 @@ module gNodeB
         int numApps = default(0);     // no of apps. 
         int numX2Apps = default(0);   // no of X2 apps. Specify the app types in INI file with x2App[0..1].typename="X2AppClient" syntax
 
+        string nodeInfoModulePath = default(absPath(".nodeInfo"));
+
         //# Transport layer
         bool hasUdp = true;
         bool hasTcp = default(false);  // default(firstAvailableOrEmpty("Tcp", "TcpLwip", "TcpNsc") != "");
@@ -118,19 +121,25 @@ module gNodeB
     submodules:
         interfaceTable: InterfaceTable {
             parameters:
-                @display("p=110.43,158.4875;is=s");
+                @display("p=109.020004,110.6;is=s");
         }
         mobility: MecStationaryMobility {
             parameters:
-                @display("p=110.43,343.56;is=s");
+                @display("p=109.020004,312.84;is=s");
         }
         cellInfo: CellInfo {
             parameters:
-                @display("p=110.43,244.3775;is=s");
+                @display("p=109.020004,186.44;is=s");
         }
 
         collector: GNodeBStatsCollector if hasRNISupport {
-            @display("p=109.020004,458.2;is=s");
+            @display("p=109.020004,491.38;is=s");
+        }
+
+        nodeInfo: NodeInfo {
+            parameters:
+                @display("p=109.020004,410.80002;is=s");
+                nodeType = parent.nodeType;
         }
 
         //#
@@ -232,7 +241,7 @@ module gNodeB
                 @display("p=750,446;b=1000,5,,,,1");
         }
 
-        rtUser: MecRtUser {
+        npc: NodePacketController {
             parameters:
                 @display("p=344.44,372.88");
         }
@@ -370,9 +379,9 @@ module gNodeB
         pppMEHostIf.upperLayerOut --> nl.in++ if enableMecHost;
         pppMEHost <--> pppMEHostIf.phys if enableMecHost;
 
-        rtUser.socketOut --> IdealChannel --> at.in++;
-        rtUser.socketIn <-- IdealChannel <-- at.out++;
-        rtUser.pppGate --> IdealChannel --> nl.in++;
+        npc.socketOut --> IdealChannel --> at.in++;
+        npc.socketIn <-- IdealChannel <-- at.out++;
+        npc.pppGate --> IdealChannel --> nl.in++;
 
         ospf.ipOut --> tn.in++ if hasOspf;
         ospf.ipIn <-- tn.out++ if hasOspf;

@@ -18,6 +18,7 @@ UePhy::UePhy()
     handoverStarter_ = nullptr;
     d2dDecodingTimer_ = nullptr;
     enableInitDebug_ = false;
+    das_ = nullptr;
 }
 
 UePhy::~UePhy()

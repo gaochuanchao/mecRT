@@ -27,6 +27,7 @@
 #include "mecrt/nic/mac/scheduler/GnbSchedulerDl.h"
 #include "mecrt/nic/mac/amc/MecNRAmc.h"
 #include "mecrt/nic/mac/scheduler/RbManagerUl.h"
+#include "mecrt/common/NodeInfo.h"
 
 class RbManagerUl;
 class GnbSchedulerUl;
@@ -86,6 +87,8 @@ class GnbMac : public NRMacGnb
     // ========= Newly Added ==========
     // ================================
     bool enableInitDebug_; // whether to enable debug info during initialization
+
+    NodeInfo* nodeInfo_ = nullptr; // pointer to the NodeInfo instance of this node
 
     /// Vec AMC module
     MecNRAmc *amc_;

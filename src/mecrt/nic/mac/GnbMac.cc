@@ -59,6 +59,9 @@ GnbMac::GnbMac()
     ttiTick_ = nullptr;
     flushAppPduList_ = nullptr;
     enableInitDebug_ = false;
+    conflictGraph_ = nullptr;
+    rbManagerUl_ = nullptr;
+    nodeInfo_ = nullptr;
 }
 
 GnbMac::~GnbMac()
@@ -199,6 +202,10 @@ void GnbMac::initialize(int stage)
         if (enableInitDebug_)
             std::cout << "GnbMac::initialize - stage: INITSTAGE_PHYSICAL_ENVIRONMENT - begins" << std::endl;
 
+        // get node info module
+        nodeInfo_ = getModuleFromPar<NodeInfo>(getAncestorPar("nodeInfoModulePath"), this);
+        nodeInfo_->setNodeId(nodeId_);
+
         // ========= LteMacEnb ===========
         /* Create and initialize AMC module */
         // std::string amcType = par("amcType").stdstringValue();  // default("NRAmc")
@@ -268,7 +275,7 @@ void GnbMac::initialize(int stage)
          */
         
         resAllocateMode_ = par("resAllocateMode");
-        serverPort_ = getParentModule()->getParentModule()->getSubmodule("server")->par("localPort");
+        serverPort_ = nodeInfo_->getServerPort();
         // std::cout << "server port: " << serverPort_ << endl;
         rbPerBand_ = par("numRbPerBand");
         EV << "GnbMac::initialize - number of resource blocks per Band " << rbPerBand_ << endl;
@@ -314,7 +321,7 @@ void GnbMac::initialize(int stage)
         if (enableInitDebug_)
             std::cout << "GnbMac::initialize - stage: INITSTAGE_LAST - begins" << std::endl;
 
-        gnbAddress_ = inet::L3AddressResolver().resolve(getParentModule()->getParentModule()->getFullName());
+        gnbAddress_ = nodeInfo_->getNodeAddr();
         EV << "GnbMac::initialize - gNB address " << gnbAddress_.toIpv4().str() << ", gNB MacNodeId " << nodeId_ << endl;
 
         // ========= LteMacEnb ===========

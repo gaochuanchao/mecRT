@@ -2,7 +2,7 @@
 # OMNeT++/OMNEST Makefile for $(LIB_PREFIX)mecrt
 #
 # This file was generated with the command:
-#  opp_makemake --make-so -f --deep -o mecrt -O out -KINET_PROJ=../../inet4.5 -KSIMU5G_PROJ=../../simu5g -DINET_IMPORT -DSIMU5G_IMPORT -I. -I../../inet4.5/src -L../../inet4.5/src -lINET_dbg -I../../simu5g/src -L../../simu5g/src -lsimu5g_dbg -I/home/chuanchao/gurobi1203/linux64/include -L/home/chuanchao/gurobi1203/linux64/lib -lgurobi_c++ -lgurobi120
+#  opp_makemake --make-so -f --deep -o mecrt -O out -KINET_PROJ=../../inet4.5 -KSIMU5G_PROJ=../../simu5g -DINET_IMPORT -DSIMU5G_IMPORT -I. -I../../inet4.5/src -L../../inet4.5/src -lINET -I../../simu5g/src -L../../simu5g/src -lsimu5g -I/home/chuanchao/gurobi1203/linux64/include -L/home/chuanchao/gurobi1203/linux64/lib -lgurobi_c++ -lgurobi120
 #
 
 # Name of target to be created (-o option)
@@ -20,7 +20,7 @@ INCLUDE_PATH = -I. -I../../inet4.5/src -I../../simu5g/src -I/home/chuanchao/guro
 EXTRA_OBJS =
 
 # Additional libraries (-L, -l options)
-LIBS = $(LDFLAG_LIBPATH)../../inet4.5/src $(LDFLAG_LIBPATH)../../simu5g/src $(LDFLAG_LIBPATH)/home/chuanchao/gurobi1203/linux64/lib  -lINET_dbg -lsimu5g_dbg -lgurobi_c++ -lgurobi120
+LIBS = $(LDFLAG_LIBPATH)../../inet4.5/src $(LDFLAG_LIBPATH)../../simu5g/src $(LDFLAG_LIBPATH)/home/chuanchao/gurobi1203/linux64/lib  -lINET -lsimu5g -lgurobi_c++ -lgurobi120
 
 # Output directory
 PROJECT_OUTPUT_DIR = ../out
@@ -45,8 +45,9 @@ OBJS = \
     $O/mecrt/common/Database.o \
     $O/mecrt/common/MecCommon.o \
     $O/mecrt/common/NetTopology.o \
+    $O/mecrt/common/NodeInfo.o \
     $O/mecrt/coreNetwork/MecGtpUser.o \
-    $O/mecrt/coreNetwork/MecRtUser.o \
+    $O/mecrt/coreNetwork/NodePacketController.o \
     $O/mecrt/feedback/MecDlFeedbackGenerator.o \
     $O/mecrt/mobility/MecMobility.o \
     $O/mecrt/mobility/MecStationaryMobility.o \

@@ -1,6 +1,6 @@
 //
 //  Project: mecRT – Mobile Edge Computing Simulator for Real-Time Applications
-//  File:    MecRtUser.cc / MecRtUser.h
+//  File:    NodePacketController.cc / NodePacketController.h
 //
 //  Description:
 //    This file implements a simple module that routes packets from the gnb to the user device.
@@ -13,8 +13,8 @@
 //  License: Academic Public License -- NOT FOR COMMERCIAL USE
 //
 
-#ifndef __MECRT_MEC_RT_USER_H_
-#define __MECRT_MEC_RT_USER_H_
+#ifndef __MECRT_NODE_PACKET_CONTROLLER_H_
+#define __MECRT_NODE_PACKET_CONTROLLER_H_
 
 #include <omnetpp.h>
 #include "inet/transportlayer/contract/udp/UdpSocket.h"
@@ -22,12 +22,15 @@
 #include <inet/networklayer/common/NetworkInterface.h>
 #include "common/binder/Binder.h"
 
-class MecRtUser : public omnetpp::cSimpleModule
+#include "mecrt/common/NodeInfo.h"
+
+class NodePacketController : public omnetpp::cSimpleModule
 {
   protected:
     inet::UdpSocket socket_;
     int localPort_;
-    inet::NetworkInterface* ie_;
+    NodeInfo *nodeInfo_; // node information module
+    bool enableInitDebug_ = false;
 
   protected:
 
@@ -38,12 +41,9 @@ class MecRtUser : public omnetpp::cSimpleModule
     // receive a GTP-U packet from Udp, reads the TEID and decides whether performing label switching or removal
     void handleFromUdp(inet::Packet * gtpMsg);
 
-    // detect outgoing interface name (CellularNic)
-    inet::NetworkInterface *detectInterface();
-
   public:
-    MecRtUser() {};
-    virtual ~MecRtUser() {};
+    NodePacketController();
+    virtual ~NodePacketController() {};
 };
 
 

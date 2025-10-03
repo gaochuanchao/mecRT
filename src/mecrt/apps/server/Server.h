@@ -30,6 +30,7 @@
 #include "mecrt/packets/apps/Grant2Rsu_m.h"
 #include "mecrt/common/Database.h"
 #include "mecrt/packets/apps/VecPacket_m.h"
+#include "mecrt/common/NodeInfo.h"
 
 class GnbMac;
 
@@ -44,6 +45,8 @@ class Server : public omnetpp::cSimpleModule
     int schedulerPort_;
     inet::L3Address schedulerAddr_;
     inet::L3Address serverAddr_;
+
+    NodeInfo *nodeInfo_ = nullptr;
 
     int cmpUnitTotal_;  // the total computing units in the RSU
     int cmpUnitFree_;   // the remaining free computing units in the RSU  

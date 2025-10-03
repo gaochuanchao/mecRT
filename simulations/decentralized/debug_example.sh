@@ -11,7 +11,7 @@ cd ${MEC_WORKSPACE}/mecRT/simulations/decentralized
 # -r 0: run the simulation for 0 iterations
 # -u Qtenv: "Qtenv" for GUI mode, use "Cmdenv" for command line mode
 # -c Uploading: specify the configuration to use  opp_run
-${OMNETPP_ROOT}/bin/opp_run  \
+gdb --args ${OMNETPP_ROOT}/bin/opp_run_dbg  \
   -r 0 \
   -m \
   -u Qtenv \
@@ -22,4 +22,4 @@ ${OMNETPP_ROOT}/bin/opp_run  \
   -l "../../../simu5g/src/simu5g" \
   -l "../../../inet4.5/src/INET" \
   omnetpp.ini \
-  --sim-time-limit=60s
+  --sim-time-limit=100s

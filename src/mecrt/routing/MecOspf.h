@@ -47,6 +47,7 @@
 
 #include "mecrt/packets/routing/OspfLsa_m.h"
 #include "mecrt/common/MecCommon.h"
+#include "mecrt/common/NodeInfo.h"
 
 using namespace inet;
 using namespace std;
@@ -76,7 +77,7 @@ class MecOspf : public RoutingProtocolBase
     };
 
     // for Dijkstra algorithm
-    struct NodeInfo {
+    struct Node {
         uint32_t nodeKey;   // node ID (router)
         double cost;        // tentative distance
         uint32_t prevHop;   // previous hop in the path
@@ -85,6 +86,7 @@ class MecOspf : public RoutingProtocolBase
 
 	bool enableInitDebug_ = false;
 
+    NodeInfo *nodeInfo_ = nullptr; // info about this node
     // router id
     Ipv4Address routerId_;
     uint32_t routerIdKey_; // integer form of routerId_
@@ -128,6 +130,7 @@ class MecOspf : public RoutingProtocolBase
 
     // ======= Phrase 4: determine the scheduler node =======
     Ipv4Address schedulerNode_ = Ipv4Address::UNSPECIFIED_ADDRESS;
+    bool globalSchedulerReady_ = false; // whether the global scheduler is ready (if not, no cannot start scheduling)
 
   protected:
     virtual int numInitStages() const override { return NUM_INIT_STAGES; }
@@ -159,13 +162,14 @@ class MecOspf : public RoutingProtocolBase
 
     // routing / SPF
     virtual void recomputeIndirectRouting();     // build graph, Dijkstra, install routes
-    virtual void dijkstra(uint32_t source, map<uint32_t, NodeInfo>& nodeInfos); // Dijkstra algorithm
+    virtual void dijkstra(uint32_t source, map<uint32_t, Node>& nodeInfos); // Dijkstra algorithm
     virtual void clearIndirectRoutes();          // remove routes we previously added
     virtual void clearNeighborRoutes();          // remove direct neighbor routes
 
     // helpers
     uint32_t ipKey(const Ipv4Address &a) const { return a.getInt(); }
     Ipv4Address getLocalAddressOnGate(cGate *gate);   // get local IP associated with a gate
+    virtual void resetGlobalScheduler(); // reset the global scheduler info
 
   public:
     MecOspf();

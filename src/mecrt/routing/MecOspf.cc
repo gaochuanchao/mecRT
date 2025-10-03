@@ -34,6 +34,7 @@
 #include "inet/common/IProtocolRegistrationListener.h"
 #include "inet/networklayer/common/NetworkInterface.h"
 
+#include <inet/networklayer/ipv4/Ipv4Header_m.h>
 #include "inet/common/packet/Packet.h"
 #include "inet/networklayer/common/L3AddressTag_m.h"
 #include <inet/linklayer/common/InterfaceTag_m.h>
@@ -57,6 +58,10 @@ MecOspf::MecOspf()
     ift_ = nullptr;
     rt_ = nullptr;
     selfLsa_ = nullptr;
+    nodeInfo_ = nullptr;
+
+    indirectRoutes_ = map<uint32_t, Ipv4Route *>();
+    neighborRoutes_ = map<uint32_t, Ipv4Route *>();
 }
 
 MecOspf::~MecOspf()
@@ -68,25 +73,21 @@ MecOspf::~MecOspf()
         cancelAndDelete(helloTimer_);
         helloTimer_ = nullptr;
     }
+
     if (helloFeedbackTimer_) {
         cancelAndDelete(helloFeedbackTimer_);
         helloFeedbackTimer_ = nullptr;
     }
+
     if (lsaTimer_) {
         cancelAndDelete(lsaTimer_);
         lsaTimer_ = nullptr;
     }
+
     if (routeComputationTimer_) {
         cancelAndDelete(routeComputationTimer_);
         routeComputationTimer_ = nullptr;
     }
-
-    clearIndirectRoutes();
-    clearNeighborRoutes();
-    newNeighbors_.clear();
-    lsaPacketCache_.clear();
-    neighbors_.clear();
-    topology_.clear();
 
     if (enableInitDebug_)
         std::cout << "MecOspf::~MecOspf - cleaning up OSPF protocol done!\n";
@@ -108,13 +109,10 @@ void MecOspf::handleStartOperation(LifecycleOperation *operation)
 
     neighbors_.clear();
     topology_.clear();
-    lsaPacketCache_.clear();
 
     simtime_t startupTime = par("startupTime");
     scheduleAfter(startupTime, helloTimer_);
 }
-
-
 
 
 void MecOspf::initialize(int stage)
@@ -138,12 +136,27 @@ void MecOspf::initialize(int stage)
         helloInterval_ = par("helloInterval").doubleValue();
         neighborTimeout_ = par("neighborTimeout").doubleValue();
         routeComputationDelay_ = par("routeComputationDelay").doubleValue();
+
+        WATCH(lsaWaitInterval_);
+        WATCH(helloFeedbackDelay_);
+        WATCH(helloInterval_);
+        WATCH(neighborTimeout_);
+        WATCH(routeComputationDelay_);
     }
     else if (isInitializeStage(stage)) {
         if (enableInitDebug_)
             EV_INFO << "MecOspf:initialize - initialize stage " << stage << "\n";
 
         EV_INFO << "MecOspf:initialize - network-layer init at stage " << stage << "\n";
+
+        // get node info module
+        try {
+            nodeInfo_ = getModuleFromPar<NodeInfo>(getAncestorPar("nodeInfoModulePath"), this);
+        } catch (cException &e) {
+            cerr << "MecOspf:initialize - cannot find nodeInfo module\n";
+            nodeInfo_ = nullptr;
+        }
+
         // acquire required INET modules via parameters (StandardHost uses these params)
         try {
             ift_ = getModuleFromPar<IInterfaceTable>(par("interfaceTableModule"), this);
@@ -159,13 +172,17 @@ void MecOspf::initialize(int stage)
 
             EV_INFO << "MecOspf:initialize - interfaceTableModule found\n";
         } catch (cException &e) {
-            cerr << "MecOspf: cannot find interfaceTableModule param\n";
+            cerr << "MecOspf:initialize - cannot find interfaceTableModule param\n";
             ift_ = nullptr;
         }
+        // get routing table module
         try {
             rt_ = getModuleFromPar<Ipv4RoutingTable>(par("routingTableModule"), this);
             routerId_ = rt_->getRouterId();
             routerIdKey_ = routerId_.getInt();
+
+            if (nodeInfo_)
+                nodeInfo_->setNodeAddr(routerId_);
 
             EV_INFO << "MecOspf:initialize - routingTableModule found, routerId=" << routerId_ << "\n";
         } catch (cException &e) {
@@ -195,7 +212,7 @@ void MecOspf::initialize(int stage)
         WATCH_VECTOR(newNeighbors_);
         WATCH_MAP(indirectRoutes_);
         WATCH_MAP(neighborRoutes_);
-        WATCH_MAP(lsaPacketCache_);
+        // WATCH_MAP(lsaPacketCache_);
     }
 }
 
@@ -217,21 +234,24 @@ void MecOspf::handleMessageWhenUp(cMessage *msg)
             EV_INFO << "MecOspf:handleMessageWhenUp - OspfHello received\n";
             processHello(packet);
 
-            delete msg;
+            delete packet;
+            packet = nullptr;
             return;
         }
         else if (pname && strcmp(pname, "OspfLsa") == 0) {
             EV_INFO << "MecOspf:handleMessageWhenUp - OspfLsa received\n";
             handleReceivedLsa(packet);
 
-            delete msg;
+            delete packet;
+            packet = nullptr;
             return;
         }
         else
         {
             // Otherwise treat as data packet to forward
             EV_WARN << "MecOspf:handleMessageWhenUp - data packet received: " << (pname ? pname : "(unnamed)") << ", delete!\n";
-            delete msg;
+            delete packet;
+            packet = nullptr;
             return;
         }
     }
@@ -338,6 +358,10 @@ void MecOspf::sendInitialHello()
         // get the IPv4 address for this interface
         Ipv4Address local = ie->getIpv4Address();
         if (local.isUnspecified()) continue;
+
+        //TODO: the packet has print errors in ipv4 module in the gui mode, but works fine in cmdenv mode
+        // this issue will cause a core dump when we close the GUI window during ospf synchronization
+        // consider to move it to the application layer in the future
 
         // Build a Packet named OspfHello
         Packet *hello = new Packet("OspfHello");
@@ -485,6 +509,7 @@ void MecOspf::processHello(Packet *packet)
 
         neighborChanged_ = true; // mark neighbor change happened
         newNeighbors_.push_back(key);
+        resetGlobalScheduler(); // reset global scheduler info
 
         // Update adjacency map (bidirectional link with cost n.cost)
         topology_[routerIdKey_][key] = n.cost;
@@ -581,6 +606,7 @@ void MecOspf::handleReceivedLsa(Packet *packet)
         lsaPacketCache_[originKey] = makeShared<OspfLsa>(*lsa);
         EV_INFO << "MecOspf:handleReceivedLsa - received updated LSA from " << origin << "\n";
 
+        resetGlobalScheduler(); // reset global scheduler info
         // Update topology graph
         updateTopologyFromLsa(lsa);
 
@@ -696,6 +722,7 @@ void MecOspf::checkNeighborTimeouts()
     }
 
     neighborChanged_ = true; // mark neighbor change happened
+    resetGlobalScheduler(); // reset global scheduler
 
     // start building new topology
     clearIndirectRoutes();
@@ -704,7 +731,8 @@ void MecOspf::checkNeighborTimeouts()
     }
 
     // TODO: start propagating link-state updates to other neighbors to build new topology
-
+    // send LSA to neighbors
+    updateLsaToNetwork();
 }
 
 /* === clearInstalledRoutes ===
@@ -722,6 +750,7 @@ void MecOspf::clearIndirectRoutes()
         rt_->removeRoute(r.second);
         delete r.second;
     }
+
     indirectRoutes_.clear();
 }
 
@@ -734,8 +763,9 @@ void MecOspf::clearNeighborRoutes()
     }
     EV_INFO << "MecOspf::clearNeighborRoutes - removing " << neighborRoutes_.size() << " routes\n";
     for (auto r : neighborRoutes_) {
-        rt_->removeRoute(r.second);
-        delete r.second;
+        Ipv4Route *route = rt_->removeRoute(r.second);
+        if (route != nullptr)
+            delete route;
     }
     neighborRoutes_.clear();
 }
@@ -758,7 +788,7 @@ void MecOspf::recomputeIndirectRouting()
 
     // ======== Step 2: Dijkstra's algorithm to find shortest paths from routerIdKey_ to all other nodes ========
     // initialize node infos
-    std::map<uint32_t, NodeInfo> nodeInfos;
+    std::map<uint32_t, Node> nodeInfos;
     for (const auto& kv : topology_) {
         uint32_t nodeKey = kv.first;
         nodeInfos[nodeKey] = {nodeKey, INFINITY, 0, false};
@@ -827,6 +857,9 @@ void MecOspf::recomputeIndirectRouting()
             }
         }
     }
+    if (nodeInfo_) {
+        nodeInfo_->setRtState(true); // mark routing table is ready
+    }
 
     // ======= Step 4: determine the scheduler node ========
     // select the reachable node with maximum number of neighbors as the scheduler
@@ -846,20 +879,34 @@ void MecOspf::recomputeIndirectRouting()
             }
         }
     }
-    EV_INFO << "MecOspf:recomputeIndirectRouting - selected scheduler node: " << schedulerNode_ << " (neighbors=" << maxNeighbors << ")\n";
+
+    globalSchedulerReady_ = true;
+    if (nodeInfo_)
+        nodeInfo_->setGlobalSchedulerAddr(schedulerNode_);
+
+    if (schedulerNode_ == routerId_)
+    {
+        EV_INFO << "MecOspf:recomputeIndirectRouting - this node is selected as the scheduler node (neighbors=" << maxNeighbors << ")\n";
+        if (nodeInfo_) 
+            nodeInfo_->setIsGlobalScheduler(true);
+    }
+    else
+    {
+        EV_INFO << "MecOspf:recomputeIndirectRouting - selected scheduler node: " << schedulerNode_ << " (neighbors=" << maxNeighbors << ")\n";
+    }
 }
 
 
-void MecOspf::dijkstra(uint32_t source, std::map<uint32_t, NodeInfo>& nodeInfos)
+void MecOspf::dijkstra(uint32_t source, std::map<uint32_t, Node>& nodeInfos)
 {
     // Initialize priority queue
-    auto cmp = [](const NodeInfo* a, const NodeInfo* b) { return a->cost > b->cost; };
-    std::priority_queue<NodeInfo*, std::vector<NodeInfo*>, decltype(cmp)> pq(cmp);
+    auto cmp = [](const Node* a, const Node* b) { return a->cost > b->cost; };
+    std::priority_queue<Node*, std::vector<Node*>, decltype(cmp)> pq(cmp);
 
     // Start from source
     pq.push(&nodeInfos[source]);
     while (!pq.empty()) {
-        NodeInfo* current = pq.top();
+        Node* current = pq.top();
         pq.pop();
         if (current->visited) continue;     // skip stale entries
         current->visited = true;
@@ -870,13 +917,30 @@ void MecOspf::dijkstra(uint32_t source, std::map<uint32_t, NodeInfo>& nodeInfos)
             double linkCost = neighborKv.second;
             if (nodeInfos.find(neighborKey) == nodeInfos.end()) continue; // unknown node
 
-            NodeInfo &neighborInfo = nodeInfos[neighborKey];
+            Node &neighborInfo = nodeInfos[neighborKey];
             if (current->cost + linkCost < neighborInfo.cost) {
                 neighborInfo.cost = current->cost + linkCost;
                 neighborInfo.prevHop = current->nodeKey;
                 pq.push(&neighborInfo);
             }
         }
+    }
+}
+
+
+void MecOspf::resetGlobalScheduler()
+{
+    if (globalSchedulerReady_)
+    {
+        EV_INFO << "MecOspf:resetGlobalScheduler - resetting global scheduler\n";
+
+        if (nodeInfo_)
+        {
+            nodeInfo_->setIsGlobalScheduler(false);
+            nodeInfo_->setGlobalSchedulerAddr(Ipv4Address::UNSPECIFIED_ADDRESS);
+        }
+        globalSchedulerReady_ = false;
+        schedulerNode_ = Ipv4Address::UNSPECIFIED_ADDRESS;
     }
 }
 
@@ -893,33 +957,7 @@ Ipv4Address MecOspf::getLocalAddressOnGate(cGate *gate)
 
 void MecOspf::handleStopOperation(LifecycleOperation *operation)
 {
-    if (enableInitDebug_)
-        std::cout << "MecOspf::handleStopOperation - stopping OSPF protocol\n";
 
-    EV_INFO << "MecOspf::handleStopOperation - stopping the OSPF protocol\n";
-    if (helloTimer_) {
-        cancelAndDelete(helloTimer_);
-        helloTimer_ = nullptr;
-    }
-    if (helloFeedbackTimer_) {
-        cancelAndDelete(helloFeedbackTimer_);
-        helloFeedbackTimer_ = nullptr;
-    }
-    if (lsaTimer_) {
-        cancelAndDelete(lsaTimer_);
-        lsaTimer_ = nullptr;
-    }
-    if (routeComputationTimer_) {
-        cancelAndDelete(routeComputationTimer_);
-        routeComputationTimer_ = nullptr;
-    }
-
-    clearIndirectRoutes();
-    clearNeighborRoutes();
-    newNeighbors_.clear();
-    lsaPacketCache_.clear();
-    neighbors_.clear();
-    topology_.clear();
 }
 
 void MecOspf::handleCrashOperation(LifecycleOperation *operation)
@@ -947,43 +985,12 @@ void MecOspf::handleCrashOperation(LifecycleOperation *operation)
 
     clearIndirectRoutes();
     clearNeighborRoutes();
-    newNeighbors_.clear();
-    lsaPacketCache_.clear();
-    neighbors_.clear();
-    topology_.clear();
 }
 
 
 // cleanup
 void MecOspf::finish()
 {
-    if (enableInitDebug_)
-        std::cout << "MecOspf::finish - cleaning up OSPF protocol\n";
-
-    if (helloTimer_) {
-        cancelAndDelete(helloTimer_);
-        helloTimer_ = nullptr;
-    }
-    if (helloFeedbackTimer_) {
-        cancelAndDelete(helloFeedbackTimer_);
-        helloFeedbackTimer_ = nullptr;
-    }
-    if (lsaTimer_) {
-        cancelAndDelete(lsaTimer_);
-        lsaTimer_ = nullptr;
-    }
-    if (routeComputationTimer_) {
-        cancelAndDelete(routeComputationTimer_);
-        routeComputationTimer_ = nullptr;
-    }
-
     clearIndirectRoutes();
     clearNeighborRoutes();
-    newNeighbors_.clear();
-    lsaPacketCache_.clear();
-    neighbors_.clear();
-    topology_.clear();
-
-    if (enableInitDebug_)
-        std::cout << "MecOspf::finish - cleaning up OSPF protocol done!\n";
 }

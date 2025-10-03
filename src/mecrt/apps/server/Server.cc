@@ -30,6 +30,7 @@ Server::Server()
 {
     srvInitComplete_ = nullptr;
     enableInitDebug_ = false;
+    nodeInfo_ = nullptr;
 }
 
 Server::~Server()
@@ -92,6 +93,9 @@ void Server::initialize(int stage)
             socket.setOutputGate(gate("socketOut"));
             socket.bind(localPort_);
         }
+
+        nodeInfo_ = getModuleFromPar<NodeInfo>(getAncestorPar("nodeInfoModulePath"), this);
+        nodeInfo_->setServerPort(localPort_);
 
         binder_ = getBinder();
         gnbId_ = getAncestorPar("macNodeId");
