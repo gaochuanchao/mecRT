@@ -39,6 +39,7 @@
 #include "mecrt/mobility/MecMobility.h"
 #include "mecrt/common/Database.h"
 #include "mecrt/nic/mac/UeMac.h"
+#include "mecrt/common/NodeInfo.h"
 
 class UeApp : public omnetpp::cSimpleModule
 {
@@ -58,8 +59,8 @@ class UeApp : public omnetpp::cSimpleModule
     // ----------------------------
 
     int localPort_;
-    int destPort_;  // the port of processing RSU server
-    inet::L3Address destAddress_; // the address of processing RSU server
+    inet::Ipv4Address destAddress_; // the address of the offloading RSU server
+    int npcPort_;  // the port of the node packet controller of the gNodeB
 
     int inputSize_;          // input data size of the job
     int outputSize_;     // output data size
@@ -79,12 +80,12 @@ class UeApp : public omnetpp::cSimpleModule
 
     bool serviceGranted_;    // whether the service has been granted by the RSU server
 
-    int schedulerPort_;
-    inet::L3Address schedulerAddr_;
+    // int schedulerPort_;
+    // inet::L3Address schedulerAddr_;
 
-    UeMac *mac_;
     Binder *binder_;
     Database *db_;
+    NodeInfo *nodeInfo_;  // the node information of the vehicle
 
     MecMobility *mobility_;   // the mobility module of the vehicle
     simtime_t moveStartTime_;	// the start time of the provided file, start moving

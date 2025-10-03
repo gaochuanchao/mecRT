@@ -38,12 +38,12 @@ class NodeInfo : public omnetpp::cSimpleModule
         bool nodeState_; // whether this node is active (true) or inactive (false), used for fault simulation
 
         // =========== Routing related ===========
-        Ipv4Address nodeAddr_; // [MecOspf] IPv4 address of the ipv4 module in this node
+        Ipv4Address nodeAddr_; // [MecOspf, UeMac] IPv4 address of the ipv4 module in this node
         int npcPort_; // [NodePacketController] the port used by the Node Packet Controller (Npc) module
         bool rtState_; // [MecOspf] whether the routing table has been set up by the routing protocol (e.g., OSPF)
 
         // =========== Wireless NIC module related ===========
-        MacNodeId nodeId_;    // [GnbMac] macNodeId of the wireless NIC
+        MacNodeId nodeId_;    // [GnbMac, UeMac] macNodeId of the wireless NIC
         int nicInterfaceId_;  // [MecIP2Nic] the interface id of the NIC module
         bool nicState_; // whether the NIC is active (true) or inactive (false), used for fault simulation
 
@@ -56,6 +56,10 @@ class NodeInfo : public omnetpp::cSimpleModule
         Ipv4Address globalSchedulerAddr_; // [MecOspf] the IPv4 address of the selected scheduler node
         int localSchedulerPort_; //  the port number used by the local scheduler module
         double scheduleInterval_; // in seconds
+
+        // =========== UE related information ===========
+        MacNodeId masterNodeId_; // [UePhy] the macNodeId of the master gNB of this UE, only used in UE nodes
+        Ipv4Address masterNodeAddr_; // [UePhy] the IPv4 address of the master gNB of this UE, only used in UE nodes
 
     protected:
         virtual void initialize(int stage) override;
@@ -106,6 +110,13 @@ class NodeInfo : public omnetpp::cSimpleModule
         int getLocalSchedulerPort() {return localSchedulerPort_;}
         void setScheduleInterval(double interval) {scheduleInterval_ = interval;}
         double getScheduleInterval() {return scheduleInterval_;}
+
+
+        // methods to set/get UE related information
+        void setMasterNodeId(MacNodeId id) {masterNodeId_ = id;}
+        MacNodeId getMasterNodeId() {return masterNodeId_;}
+        void setMasterNodeAddr(Ipv4Address addr) {masterNodeAddr_ = addr;}
+        Ipv4Address getMasterNodeAddr() {return masterNodeAddr_;}
 };
 
 #endif /* _MECRT_COMMON_NODEINFO_H_ */

@@ -22,6 +22,7 @@
 #include "mecrt/common/MecCommon.h"
 #include "mecrt/packets/apps/Grant2Veh.h"
 #include "mecrt/mobility/MecMobility.h"
+#include "mecrt/common/NodeInfo.h"
 
 #include "inet/networklayer/ipv4/Ipv4Header_m.h"
 #include "inet/transportlayer/udp/UdpHeader_m.h"
@@ -46,6 +47,8 @@ class UeMac : public NRMacUe
     virtual ~UeMac();
 
   protected:
+
+    NodeInfo *nodeInfo_;  // the node information of the vehicle
 
     bool enableInitDebug_;
     std::map<AppId, inet::IntrusivePtr<const Grant2Veh>> vecGrant_;

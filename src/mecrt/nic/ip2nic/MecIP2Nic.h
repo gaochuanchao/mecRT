@@ -20,6 +20,7 @@
 #include "stack/ip2nic/IP2Nic.h"
 #include "mecrt/common/NodeInfo.h"
 
+
 class MecIP2Nic : public IP2Nic
 {
   protected:

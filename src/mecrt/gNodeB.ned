@@ -97,7 +97,6 @@ module gNodeB
 
         // data routing related parameters
         string cellularNicName = default("cellular");
-        int rtUserPort = default(29); // port used by MecRtUser
 
         //# @author Alessandro Noferi
         //       	string StatsCollectorType = default("BaseStationStatsCollector"); 

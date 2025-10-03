@@ -39,6 +39,9 @@ NodeInfo::NodeInfo()
     localSchedulerPort_ = -1;
     globalSchedulerAddr_ = Ipv4Address::UNSPECIFIED_ADDRESS;
     scheduleInterval_ = 10.0; // default 10 seconds
+
+    masterNodeId_ = -1;
+    masterNodeAddr_ = Ipv4Address::UNSPECIFIED_ADDRESS;
 }
 
 
@@ -70,6 +73,8 @@ void NodeInfo::initialize(int stage)
         WATCH(globalSchedulerAddr_);
         WATCH(localSchedulerPort_);
         WATCH(scheduleInterval_);
+        WATCH(masterNodeId_);
+        WATCH(masterNodeAddr_);
 
         if (enableInitDebug_)
             std::cout << "NodeInfo:initialize - stage: INITSTAGE_LOCAL - ends\n";

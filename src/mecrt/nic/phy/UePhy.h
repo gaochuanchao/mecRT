@@ -11,6 +11,7 @@
 
 #include "stack/phy/layer/NRPhyUe.h"
 #include "mecrt/common/BandManager.h"
+#include "mecrt/common/NodeInfo.h"
 
 
 class BandManager;
@@ -68,6 +69,8 @@ class UePhy : public NRPhyUe
     BandManager *bandManager_;
 
 	omnetpp::simtime_t moveStartTime_;
+
+    NodeInfo *nodeInfo_;  // the node information of the vehicle
 
 	/***
 	 * Only do broadcasting when the scheduling is going to start

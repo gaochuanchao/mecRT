@@ -22,4 +22,4 @@ ${OMNETPP_ROOT}/bin/opp_run  \
   -l "../../../simu5g/src/simu5g" \
   -l "../../../inet4.5/src/INET" \
   omnetpp.ini \
-  --sim-time-limit=60s
+  --sim-time-limit=100s

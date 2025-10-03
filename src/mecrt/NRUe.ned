@@ -23,6 +23,7 @@ import inet.networklayer.ipv6.Ipv6NetworkLayer;
 import inet.transportlayer.contract.ISctp;
 import inet.transportlayer.contract.ITcp;
 import mecRT.mecrt.apps.ue.UeApp;
+import mecRT.mecrt.common.NodeInfo;
 import mecRT.mecrt.mobility.MecMobility;
 import mecRT.mecrt.nic.UeNic;
 import mecRT.mecrt.udp.MecUdp;
@@ -57,7 +58,7 @@ module NRUe
 
         //# Transport layer
         bool hasUdp = default(true);
-        bool hasTcp = default(firstAvailableOrEmpty("Tcp", "TcpLwip", "TcpNsc") != "");
+        bool hasTcp = default(false);
         bool hasSctp = default(false);
 
         //# Node specs
@@ -70,7 +71,8 @@ module NRUe
         bool hasIpv4 = default(true);
         bool hasIpv6 = default(false);
         *.interfaceTableModule = default(absPath(".interfaceTable"));
-        //*.routingTableModule = default("^.ipv4.routingTable");
+        *.routingTableModule = default("^.ipv4.routingTable");
+        string nodeInfoModulePath = default(absPath(".nodeInfo"));
 
         //# External Ethernet interfaces
         int numEthInterfaces = default(0);
@@ -101,6 +103,12 @@ module NRUe
         }
         mobility: MecMobility {
             @display("p=127.368004,172.26001;is=s");
+        }
+
+        nodeInfo: NodeInfo {
+            parameters:
+                @display("p=127.296,462.774;is=s");
+                nodeType = parent.nodeType;
         }
 
         //# layer submodules (must be ordered from lower to upper layers)

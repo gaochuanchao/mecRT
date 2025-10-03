@@ -167,6 +167,8 @@ void UePhy::initialize(int stage)
         lastFeedback_ = 0;
         handoverStarter_ = new cMessage("handoverStarter");
 
+        nodeInfo_ = getModuleFromPar<NodeInfo>(getAncestorPar("nodeInfoModulePath"), this);
+
         if (isNr_)
         {
             mac_ = check_and_cast<LteMacUe *>(
@@ -325,6 +327,8 @@ void UePhy::initialize(int stage)
         das_->setMasterRuSet(masterId_);
         emit(servingCell_, (long)masterId_);
 
+
+
         if (enableInitDebug_)
             std::cout << "UePhy::initialize - stage: INITSTAGE_PHYSICAL_LAYER - ends" << std::endl;
     }
@@ -380,6 +384,9 @@ void UePhy::initialize(int stage)
     {
         if (enableInitDebug_)
             std::cout << "UePhy::initialize - stage: INITSTAGE_LAST - begins" << std::endl;
+
+        nodeInfo_->setMasterNodeId(masterId_);
+        nodeInfo_->setMasterNodeAddr(binder_->getIPv4Address(masterId_));
 
         int fbTtiCount = getParentModule()->getSubmodule("nrDlFbGen")->par("fbPeriod");
         fbPeriod_ = fbTtiCount * TTI;   // convert to seconds

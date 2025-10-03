@@ -41,6 +41,7 @@ network DeMEC
         int numGnb = default(15);
         int numBgCells = default(0);
         bool enableInitDebug = default(false); // enable debug info during initialization
+        int npcPort = default(29); // port used by the node packet controller of the gNodeB
 
         @display("i=block/network2;bgb=1319.256,1118.4559;bgi=background/pisa");
     submodules:

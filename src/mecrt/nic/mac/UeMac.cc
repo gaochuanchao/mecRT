@@ -46,6 +46,7 @@ UeMac::UeMac()
 { 
     ttiTick_ = nullptr; 
     enableInitDebug_ = false;
+    nodeInfo_ = nullptr;
 }
 
 UeMac::~UeMac()
@@ -180,6 +181,8 @@ void UeMac::initialize(int stage)
         // =========== LteMacUe ===========
         EV << "UeMac::initialize - MAC layer, stage INITSTAGE_LINK_LAYER" << endl;
 
+        nodeInfo_ = getModuleFromPar<NodeInfo>(getAncestorPar("nodeInfoModulePath"), this);
+
         resAllocateMode_ = par("resAllocateMode");
 
         /***
@@ -212,6 +215,8 @@ void UeMac::initialize(int stage)
             nodeId_ = getAncestorPar("nrMacNodeId");
         else
             nodeId_ = getAncestorPar("macNodeId");
+
+        nodeInfo_->setNodeId(nodeId_);
 
         /* Insert UeInfo in the Binder */
         UeInfo* info = new UeInfo();
@@ -253,7 +258,8 @@ void UeMac::initialize(int stage)
         if(ipv4if == nullptr)
             throw new cRuntimeError("no Ipv4 interface data - cannot bind node %i", nodeId_);
         binder_->setMacNodeId(ipv4if->getIPAddress(), nodeId_);
-
+        nodeInfo_->setNodeAddr(ipv4if->getIPAddress());
+        
         // for emulation mode
         const char* extHostAddress = getAncestorPar("extHostAddress").stringValue();
         if (strcmp(extHostAddress, "") != 0)

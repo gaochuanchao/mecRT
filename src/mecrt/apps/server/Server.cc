@@ -99,7 +99,6 @@ void Server::initialize(int stage)
 
         binder_ = getBinder();
         gnbId_ = getAncestorPar("macNodeId");
-        rtUserPort_ = getAncestorPar("rtUserPort");
 
         schedulerAddr_ = inet::L3AddressResolver().resolve(par("schedulerAddr").stringValue());
         serverAddr_ = inet::L3AddressResolver().resolve(getParentModule()->getFullName());
@@ -333,9 +332,9 @@ void Server::sendGrant2Vehicle(AppId appId, bool isStop)
         }
         // get the offloading gNodeB address and its server port
         L3Address offloadGnbAddr = L3AddressResolver().resolve(offloadGnb->getFullName()).toIpv4();
-        EV << "Server::sendGrant2Vehicle - forwarding to the RtUser module of the offloading gNodeB" << endl;
+        EV << "Server::sendGrant2Vehicle - forwarding to the NPC module of the offloading gNodeB" << endl;
         // packet->addTagIfAbsent<InterfaceReq>()->setInterfaceId(pppIfInterfaceId_);
-        socket.sendTo(packet, offloadGnbAddr, rtUserPort_);
+        socket.sendTo(packet, offloadGnbAddr, nodeInfo_->getNpcPort());
     }
 }
 

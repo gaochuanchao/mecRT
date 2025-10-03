@@ -30,10 +30,7 @@ UeApp::UeApp()
     selfSender_ = nullptr;
     initRequest_ = nullptr;
 
-    destAddress_ = inet::L3Address();
-    destPort_ = -1;
-    schedulerAddr_ = inet::L3Address();
-    schedulerPort_ = -1;
+    npcPort_ = -1;
     serviceGranted_ = false;
 
     outputSize_ = 0;
@@ -81,7 +78,9 @@ void UeApp::initialize(int stage)
         nframes_ = 0;
         iDframe_ = 0;
         localPort_ = par("localPort");
-        schedulerPort_ = par("schedulerPort");
+        // schedulerPort_ = par("schedulerPort");
+
+        npcPort_ = getAncestorPar("npcPort"); // the port of the node packet controller of the gNodeB
 
         startOffset_ = intuniform(0, 50) * TTI; // 0~50ms
         serviceGranted_ = false;
@@ -109,11 +108,10 @@ void UeApp::initialize(int stage)
 
         EV << "VEC Application initialize: stage " << stage << endl;
 
-        mac_ = check_and_cast<UeMac *>(
-            getParentModule()-> // ue
-            getSubmodule("cellularNic")-> // nic
-            getSubmodule("nrMac"));
-        MacNodeId srcId = mac_->getMacNodeId();
+        nodeInfo_ = getModuleFromPar<NodeInfo>(getAncestorPar("nodeInfoModulePath"), this);
+        destAddress_ = nodeInfo_->getMasterNodeAddr(); // the address of the offloading RSU server
+
+        MacNodeId srcId = nodeInfo_->getNodeId();
         appId_ = idToMacCid(srcId, localPort_);
         EV << "UeApp::initialize - macNodeId " << srcId << ", portId " << localPort_ << ", appId_ " << appId_ <<endl;
 
@@ -202,8 +200,6 @@ void UeApp::handleMessage(cMessage *msg)
                     << grant->getProcessGnbId() << " is stopped!" <<endl;
                 
                 serviceGranted_ = false;
-                destPort_ = -1;
-                destAddress_ = inet::L3Address();
             }
             else if (grant->getPause())
             {
@@ -220,9 +216,6 @@ void UeApp::handleMessage(cMessage *msg)
                    << ", processGnbPort: " << grant->getProcessGnbPort() << ", inputSize: " << grant->getInputSize() << endl;
 
                 serviceGranted_ = true;
-                destPort_ = grant->getProcessGnbPort();
-                int serverId = grant->getProcessGnbId();
-                destAddress_ = inet::L3AddressResolver().resolve(binder_->getModuleNameByMacNodeId(serverId));
             }
         }
 
@@ -232,12 +225,12 @@ void UeApp::handleMessage(cMessage *msg)
 
 void UeApp::initTraffic()
 {
-    std::string schedAddress = par("schedulerAddr").stringValue();
-    cModule* schedModule = findModuleByPath(par("schedulerAddr").stringValue());
-    if (schedModule == nullptr)
-        throw cRuntimeError("UeApp::initTraffic - %s address not found", schedAddress.c_str());
+    // std::string schedAddress = par("schedulerAddr").stringValue();
+    // cModule* schedModule = findModuleByPath(par("schedulerAddr").stringValue());
+    // if (schedModule == nullptr)
+    //     throw cRuntimeError("UeApp::initTraffic - %s address not found", schedAddress.c_str());
 
-    schedulerAddr_ = inet::L3AddressResolver().resolve(par("schedulerAddr").stringValue());
+    // schedulerAddr_ = inet::L3AddressResolver().resolve(par("schedulerAddr").stringValue());
     socket.setOutputGate(gate("socketOut"));
     socket.bind(localPort_);
 
@@ -248,7 +241,7 @@ void UeApp::initTraffic()
     if (tos != -1)
         socket.setTos(tos);
 
-    EV << "UeApp::initialize - binding to port: local:" << localPort_ << " , scheduler: " << schedulerAddr_.str() << ":" << schedulerPort_ << endl;
+    EV << "UeApp::initialize - binding to port: local:" << localPort_ << endl;
 
     scheduleAt(moveStartTime_, initRequest_);
 }
@@ -276,7 +269,7 @@ void UeApp::sendJobPacket()
         {
             txBytes_ += inputSize_;
         }
-        socket.sendTo(packet, destAddress_, destPort_);
+        socket.sendTo(packet, destAddress_, npcPort_);
 
         emit(offloadSignal_, 1);
         emit(localProcessSignal_, 0);
@@ -311,7 +304,7 @@ void UeApp::sendServiceRequest()
     vecReq->addTag<CreationTimeTag>()->setCreationTime(simTime());
     packet->insertAtBack(vecReq);
 
-    socket.sendTo(packet, schedulerAddr_, schedulerPort_);
+    socket.sendTo(packet, destAddress_, npcPort_);
 }
 
 

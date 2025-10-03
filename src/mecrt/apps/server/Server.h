@@ -60,7 +60,6 @@ class Server : public omnetpp::cSimpleModule
     // unsigned int tunnelPeerPort_;
 
     // MEC routing information
-    unsigned int rtUserPort_; // the port used by MecRtUser module
     string cellularNicName_; // the name of the cellular NIC interface
 
     Binder *binder_;

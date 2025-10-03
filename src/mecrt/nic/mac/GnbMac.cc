@@ -316,13 +316,22 @@ void GnbMac::initialize(int stage)
         if (enableInitDebug_)
             std::cout << "GnbMac::initialize - stage: INITSTAGE_LINK_LAYER - ends" << std::endl;
     }
+    else if (stage == INITSTAGE_APPLICATION_LAYER)
+    {
+        if (enableInitDebug_)
+            std::cout << "GnbMac::initialize - stage: INITSTAGE_APPLICATION_LAYER - begins" << std::endl;
+
+        gnbAddress_ = nodeInfo_->getNodeAddr();
+        EV << "GnbMac::initialize - gNB address " << gnbAddress_.toIpv4().str() << ", gNB MacNodeId " << nodeId_ << endl;
+        binder_->setMacNodeId(gnbAddress_.toIpv4(), nodeId_);
+
+        if (enableInitDebug_)
+            std::cout << "GnbMac::initialize - stage: INITSTAGE_APPLICATION_LAYER - ends" << std::endl;
+    }
     else if (stage == INITSTAGE_LAST)  // after all UEs have been initialized
     {
         if (enableInitDebug_)
             std::cout << "GnbMac::initialize - stage: INITSTAGE_LAST - begins" << std::endl;
-
-        gnbAddress_ = nodeInfo_->getNodeAddr();
-        EV << "GnbMac::initialize - gNB address " << gnbAddress_.toIpv4().str() << ", gNB MacNodeId " << nodeId_ << endl;
 
         // ========= LteMacEnb ===========
         /* Start TTI tick */

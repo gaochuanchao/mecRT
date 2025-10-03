@@ -21,6 +21,7 @@
 #include <inet/linklayer/common/InterfaceTag_m.h>
 #include <inet/common/socket/SocketTag_m.h>
 #include <inet/networklayer/common/L3AddressResolver.h>
+#include "inet/networklayer/ipv4/Ipv4RoutingTable.h"
 
 using namespace std;
 using namespace inet;
@@ -192,6 +193,20 @@ void MecIP2Nic::registerInterface()
     networkIf->setInterfaceName(par("interfaceName").stdstringValue().c_str());
     // TODO configure MTE size from NED
     networkIf->setMtu(par("mtu"));
+
+    if (nodeType_ == UE)
+    {
+        // get the routing table, add a default route (0.0.0.0/0) to point towards this gateway.
+        auto rt = check_and_cast<Ipv4RoutingTable *>(getModuleByPath("^.^.ipv4.routingTable"));
+        Ipv4Route *route = new Ipv4Route();
+        route->setDestination(Ipv4Address::UNSPECIFIED_ADDRESS); // default route
+        route->setNetmask(Ipv4Address::UNSPECIFIED_ADDRESS);
+        route->setInterface(networkIf);
+        route->setSourceType(Ipv4Route::MANUAL);
+        route->setMetric(1);
+        rt->addRoute(route);
+    }
+
 
     if (nodeInfo_)
         nodeInfo_->setNicInterfaceId(networkIf->getInterfaceId());
