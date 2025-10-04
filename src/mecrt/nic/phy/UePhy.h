@@ -65,12 +65,7 @@ class UePhy : public NRPhyUe
      *    txPower is the power within the signal (at the transmitter side)
      */
     double offloadPower_;
-
     BandManager *bandManager_;
-
-	omnetpp::simtime_t moveStartTime_;
-
-    NodeInfo *nodeInfo_;  // the node information of the vehicle
 
 	/***
 	 * Only do broadcasting when the scheduling is going to start
@@ -78,8 +73,6 @@ class UePhy : public NRPhyUe
 	 * i.e., if no grant is received by the ue, only broadcast the feedback when next scheduling is going to start 
 	 */
 	double fbPeriod_;
-	double schedulePeriod_;
-	simtime_t nextSchedulingTime_;
 	std::set<MacNodeId> grantedRsus_;
 
 	// ========= for broadcasting =========

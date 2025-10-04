@@ -42,6 +42,7 @@ network DeMEC
         int numBgCells = default(0);
         bool enableInitDebug = default(false); // enable debug info during initialization
         int npcPort = default(29); // port used by the node packet controller of the gNodeB
+        double scheduleInterval @unit(s) = default(1s); // in TTI, if the scheduler run periodically, specify the interval
 
         @display("i=block/network2;bgb=1319.256,1118.4559;bgi=background/pisa");
     submodules:
@@ -83,12 +84,12 @@ network DeMEC
             // @display("i=misc/car3;p=642.56,771.07196;is=n;or");
             @display("i=misc/car3;p=642.56,771.07196");
         }
-        schedulerHost: SchedulerHost {
-            @display("p=664.224,44.88");
-        }
-        upf: MecRouter {
-            @display("p=664.224,175.032;is=s");
-        }
+        // schedulerHost: SchedulerHost {
+        //     @display("p=664.224,44.88");
+        // }
+        // upf: MecRouter {
+        //     @display("p=664.224,175.032;is=s");
+        // }
     connections allowunconnected:
         for i=0..numGnb-1 {
             gnb[i].ppp <--> Eth100G <--> gnbRouter[i].pppg++;
@@ -120,6 +121,6 @@ network DeMEC
         gnbRouter[12].pppg++ <--> Eth100G <--> gnbRouter[14].pppg++;
         gnbRouter[13].pppg++ <--> Eth100G <--> gnbRouter[14].pppg++;
 
-        gnbRouter[0].pppg++ <--> Eth100G <--> upf.pppg++;
-        upf.pppg++ <--> Eth100G <--> schedulerHost.ppp++;
+        // gnbRouter[0].pppg++ <--> Eth100G <--> upf.pppg++;
+        // upf.pppg++ <--> Eth100G <--> schedulerHost.ppp++;
 }

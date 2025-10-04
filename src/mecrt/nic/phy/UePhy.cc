@@ -167,8 +167,6 @@ void UePhy::initialize(int stage)
         lastFeedback_ = 0;
         handoverStarter_ = new cMessage("handoverStarter");
 
-        nodeInfo_ = getModuleFromPar<NodeInfo>(getAncestorPar("nodeInfoModulePath"), this);
-
         if (isNr_)
         {
             mac_ = check_and_cast<LteMacUe *>(
@@ -385,18 +383,8 @@ void UePhy::initialize(int stage)
         if (enableInitDebug_)
             std::cout << "UePhy::initialize - stage: INITSTAGE_LAST - begins" << std::endl;
 
-        nodeInfo_->setMasterNodeId(masterId_);
-        nodeInfo_->setMasterNodeAddr(binder_->getIPv4Address(masterId_));
-
         int fbTtiCount = getParentModule()->getSubmodule("nrDlFbGen")->par("fbPeriod");
         fbPeriod_ = fbTtiCount * TTI;   // convert to seconds
-        schedulePeriod_ = getSimulation()->getModuleByPath("schedulerHost")->getSubmodule("scheduler")->par("scheduleInterval");
-
-        MecMobility* mobilityModule = check_and_cast<MecMobility*>(getParentModule()->getParentModule()->getSubmodule("mobility"));
-        moveStartTime_ = mobilityModule->getMoveStartTime();
-        int count = floor(moveStartTime_.dbl() / schedulePeriod_) + 1;
-        nextSchedulingTime_ = schedulePeriod_ * count;
-        EV << "UePhy::initialize - nextSchedulingTime for broadcasting: " << nextSchedulingTime_ << endl;
 
         if (enableInitDebug_)
             std::cout << "UePhy::initialize - stage: INITSTAGE_LAST - ends" << std::endl;
@@ -484,12 +472,9 @@ void UePhy::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVector f
          * 5 TTI is to ensure that the last broadcast feedback is not too close to the scheduling time such that 
          * it has enough time to be sent to the scheduler.
          */
-        if (NOW + fbPeriod_ + 5 * TTI >= nextSchedulingTime_)     
+        if (NOW + fbPeriod_ + 5 * TTI >= NEXT_SCHEDULING_TIME)     
         {
             EV << "UePhy::sendFeedback - broadcast feedback to the air channel for carrier " << carrierFrequency << endl;
-            
-            // if (NOW + fbPeriod_ >= nextSchedulingTime_)
-            nextSchedulingTime_ += schedulePeriod_;
 
             /***
              * LteChannelControl: max interference distance:14057.7m

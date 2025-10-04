@@ -48,6 +48,7 @@
 #include "mecrt/packets/routing/OspfLsa_m.h"
 #include "mecrt/common/MecCommon.h"
 #include "mecrt/common/NodeInfo.h"
+#include "mecrt/apps/scheduler/Scheduler.h"
 
 using namespace inet;
 using namespace std;
@@ -95,6 +96,7 @@ class MecOspf : public RoutingProtocolBase
     // INET helpers
     IInterfaceTable *ift_ = nullptr;
     Ipv4RoutingTable *rt_ = nullptr;
+    Scheduler* scheduler_ = nullptr; // pointer to the scheduler module
 
     // protocol state
     // keyed by int form of neighbor router ip

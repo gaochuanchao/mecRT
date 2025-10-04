@@ -645,7 +645,7 @@ Register_Class(VecRequest)
 
 VecRequest::VecRequest() : ::inet::FieldsChunk()
 {
-    this->setChunkLength(inet::B(40));
+    this->setChunkLength(inet::B(44));
 
 }
 
@@ -670,6 +670,7 @@ void VecRequest::copy(const VecRequest& other)
 {
     this->inputSize = other.inputSize;
     this->outputSize = other.outputSize;
+    this->ueIpAddress = other.ueIpAddress;
     this->period = other.period;
     this->resourceType = other.resourceType;
     this->service = other.service;
@@ -684,6 +685,7 @@ void VecRequest::parsimPack(omnetpp::cCommBuffer *b) const
     ::inet::FieldsChunk::parsimPack(b);
     doParsimPacking(b,this->inputSize);
     doParsimPacking(b,this->outputSize);
+    doParsimPacking(b,this->ueIpAddress);
     doParsimPacking(b,this->period);
     doParsimPacking(b,this->resourceType);
     doParsimPacking(b,this->service);
@@ -698,6 +700,7 @@ void VecRequest::parsimUnpack(omnetpp::cCommBuffer *b)
     ::inet::FieldsChunk::parsimUnpack(b);
     doParsimUnpacking(b,this->inputSize);
     doParsimUnpacking(b,this->outputSize);
+    doParsimUnpacking(b,this->ueIpAddress);
     doParsimUnpacking(b,this->period);
     doParsimUnpacking(b,this->resourceType);
     doParsimUnpacking(b,this->service);
@@ -727,6 +730,17 @@ void VecRequest::setOutputSize(int outputSize)
 {
     handleChange();
     this->outputSize = outputSize;
+}
+
+uint32_t VecRequest::getUeIpAddress() const
+{
+    return this->ueIpAddress;
+}
+
+void VecRequest::setUeIpAddress(uint32_t ueIpAddress)
+{
+    handleChange();
+    this->ueIpAddress = ueIpAddress;
 }
 
 omnetpp::simtime_t VecRequest::getPeriod() const
@@ -813,6 +827,7 @@ class VecRequestDescriptor : public omnetpp::cClassDescriptor
     enum FieldConstants {
         FIELD_inputSize,
         FIELD_outputSize,
+        FIELD_ueIpAddress,
         FIELD_period,
         FIELD_resourceType,
         FIELD_service,
@@ -886,7 +901,7 @@ const char *VecRequestDescriptor::getProperty(const char *propertyName) const
 int VecRequestDescriptor::getFieldCount() const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
-    return base ? 9+base->getFieldCount() : 9;
+    return base ? 10+base->getFieldCount() : 10;
 }
 
 unsigned int VecRequestDescriptor::getFieldTypeFlags(int field) const
@@ -900,6 +915,7 @@ unsigned int VecRequestDescriptor::getFieldTypeFlags(int field) const
     static unsigned int fieldTypeFlags[] = {
         FD_ISEDITABLE,    // FIELD_inputSize
         FD_ISEDITABLE,    // FIELD_outputSize
+        FD_ISEDITABLE,    // FIELD_ueIpAddress
         FD_ISEDITABLE,    // FIELD_period
         FD_ISEDITABLE,    // FIELD_resourceType
         FD_ISEDITABLE,    // FIELD_service
@@ -908,7 +924,7 @@ unsigned int VecRequestDescriptor::getFieldTypeFlags(int field) const
         FD_ISEDITABLE,    // FIELD_energy
         FD_ISEDITABLE,    // FIELD_offloadPower
     };
-    return (field >= 0 && field < 9) ? fieldTypeFlags[field] : 0;
+    return (field >= 0 && field < 10) ? fieldTypeFlags[field] : 0;
 }
 
 const char *VecRequestDescriptor::getFieldName(int field) const
@@ -922,6 +938,7 @@ const char *VecRequestDescriptor::getFieldName(int field) const
     static const char *fieldNames[] = {
         "inputSize",
         "outputSize",
+        "ueIpAddress",
         "period",
         "resourceType",
         "service",
@@ -930,7 +947,7 @@ const char *VecRequestDescriptor::getFieldName(int field) const
         "energy",
         "offloadPower",
     };
-    return (field >= 0 && field < 9) ? fieldNames[field] : nullptr;
+    return (field >= 0 && field < 10) ? fieldNames[field] : nullptr;
 }
 
 int VecRequestDescriptor::findField(const char *fieldName) const
@@ -939,13 +956,14 @@ int VecRequestDescriptor::findField(const char *fieldName) const
     int baseIndex = base ? base->getFieldCount() : 0;
     if (strcmp(fieldName, "inputSize") == 0) return baseIndex + 0;
     if (strcmp(fieldName, "outputSize") == 0) return baseIndex + 1;
-    if (strcmp(fieldName, "period") == 0) return baseIndex + 2;
-    if (strcmp(fieldName, "resourceType") == 0) return baseIndex + 3;
-    if (strcmp(fieldName, "service") == 0) return baseIndex + 4;
-    if (strcmp(fieldName, "appId") == 0) return baseIndex + 5;
-    if (strcmp(fieldName, "stopTime") == 0) return baseIndex + 6;
-    if (strcmp(fieldName, "energy") == 0) return baseIndex + 7;
-    if (strcmp(fieldName, "offloadPower") == 0) return baseIndex + 8;
+    if (strcmp(fieldName, "ueIpAddress") == 0) return baseIndex + 2;
+    if (strcmp(fieldName, "period") == 0) return baseIndex + 3;
+    if (strcmp(fieldName, "resourceType") == 0) return baseIndex + 4;
+    if (strcmp(fieldName, "service") == 0) return baseIndex + 5;
+    if (strcmp(fieldName, "appId") == 0) return baseIndex + 6;
+    if (strcmp(fieldName, "stopTime") == 0) return baseIndex + 7;
+    if (strcmp(fieldName, "energy") == 0) return baseIndex + 8;
+    if (strcmp(fieldName, "offloadPower") == 0) return baseIndex + 9;
     return base ? base->findField(fieldName) : -1;
 }
 
@@ -960,6 +978,7 @@ const char *VecRequestDescriptor::getFieldTypeString(int field) const
     static const char *fieldTypeStrings[] = {
         "int",    // FIELD_inputSize
         "int",    // FIELD_outputSize
+        "uint32_t",    // FIELD_ueIpAddress
         "omnetpp::simtime_t",    // FIELD_period
         "unsigned short",    // FIELD_resourceType
         "unsigned short",    // FIELD_service
@@ -968,7 +987,7 @@ const char *VecRequestDescriptor::getFieldTypeString(int field) const
         "double",    // FIELD_energy
         "double",    // FIELD_offloadPower
     };
-    return (field >= 0 && field < 9) ? fieldTypeStrings[field] : nullptr;
+    return (field >= 0 && field < 10) ? fieldTypeStrings[field] : nullptr;
 }
 
 const char **VecRequestDescriptor::getFieldPropertyNames(int field) const
@@ -1053,6 +1072,7 @@ std::string VecRequestDescriptor::getFieldValueAsString(omnetpp::any_ptr object,
     switch (field) {
         case FIELD_inputSize: return long2string(pp->getInputSize());
         case FIELD_outputSize: return long2string(pp->getOutputSize());
+        case FIELD_ueIpAddress: return ulong2string(pp->getUeIpAddress());
         case FIELD_period: return simtime2string(pp->getPeriod());
         case FIELD_resourceType: return ulong2string(pp->getResourceType());
         case FIELD_service: return ulong2string(pp->getService());
@@ -1078,6 +1098,7 @@ void VecRequestDescriptor::setFieldValueAsString(omnetpp::any_ptr object, int fi
     switch (field) {
         case FIELD_inputSize: pp->setInputSize(string2long(value)); break;
         case FIELD_outputSize: pp->setOutputSize(string2long(value)); break;
+        case FIELD_ueIpAddress: pp->setUeIpAddress(string2ulong(value)); break;
         case FIELD_period: pp->setPeriod(string2simtime(value)); break;
         case FIELD_resourceType: pp->setResourceType(string2ulong(value)); break;
         case FIELD_service: pp->setService(string2ulong(value)); break;
@@ -1101,6 +1122,7 @@ omnetpp::cValue VecRequestDescriptor::getFieldValue(omnetpp::any_ptr object, int
     switch (field) {
         case FIELD_inputSize: return pp->getInputSize();
         case FIELD_outputSize: return pp->getOutputSize();
+        case FIELD_ueIpAddress: return (omnetpp::intval_t)(pp->getUeIpAddress());
         case FIELD_period: return pp->getPeriod().dbl();
         case FIELD_resourceType: return (omnetpp::intval_t)(pp->getResourceType());
         case FIELD_service: return (omnetpp::intval_t)(pp->getService());
@@ -1126,6 +1148,7 @@ void VecRequestDescriptor::setFieldValue(omnetpp::any_ptr object, int field, int
     switch (field) {
         case FIELD_inputSize: pp->setInputSize(omnetpp::checked_int_cast<int>(value.intValue())); break;
         case FIELD_outputSize: pp->setOutputSize(omnetpp::checked_int_cast<int>(value.intValue())); break;
+        case FIELD_ueIpAddress: pp->setUeIpAddress(omnetpp::checked_int_cast<uint32_t>(value.intValue())); break;
         case FIELD_period: pp->setPeriod(value.doubleValue()); break;
         case FIELD_resourceType: pp->setResourceType(omnetpp::checked_int_cast<unsigned short>(value.intValue())); break;
         case FIELD_service: pp->setService(omnetpp::checked_int_cast<unsigned short>(value.intValue())); break;

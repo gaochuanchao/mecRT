@@ -29,8 +29,6 @@ UeApp::UeApp()
     initialized_ = false;
     selfSender_ = nullptr;
     initRequest_ = nullptr;
-
-    npcPort_ = -1;
     serviceGranted_ = false;
 
     outputSize_ = 0;
@@ -80,8 +78,6 @@ void UeApp::initialize(int stage)
         localPort_ = par("localPort");
         // schedulerPort_ = par("schedulerPort");
 
-        npcPort_ = getAncestorPar("npcPort"); // the port of the node packet controller of the gNodeB
-
         startOffset_ = intuniform(0, 50) * TTI; // 0~50ms
         serviceGranted_ = false;
         txBytes_ = 0;
@@ -108,8 +104,8 @@ void UeApp::initialize(int stage)
 
         EV << "VEC Application initialize: stage " << stage << endl;
 
-        nodeInfo_ = getModuleFromPar<NodeInfo>(getAncestorPar("nodeInfoModulePath"), this);
-        destAddress_ = nodeInfo_->getMasterNodeAddr(); // the address of the offloading RSU server
+        nodeInfo_ = getModuleFromPar<NodeInfo>(par("nodeInfoModulePath"), this);
+        // destAddress_ = MEC_UE_OFFLOAD_ADDR; // the address of the offloading RSU server
 
         MacNodeId srcId = nodeInfo_->getNodeId();
         appId_ = idToMacCid(srcId, localPort_);
@@ -269,7 +265,7 @@ void UeApp::sendJobPacket()
         {
             txBytes_ += inputSize_;
         }
-        socket.sendTo(packet, destAddress_, npcPort_);
+        socket.sendTo(packet, MEC_UE_OFFLOAD_ADDR, MEC_NPC_PORT);
 
         emit(offloadSignal_, 1);
         emit(localProcessSignal_, 0);
@@ -301,10 +297,11 @@ void UeApp::sendServiceRequest()
     vecReq->setStopTime(moveStoptime_);
     vecReq->setEnergy(localConsumedEnergy_);
     vecReq->setOffloadPower(offloadPower_);
-    vecReq->addTag<CreationTimeTag>()->setCreationTime(simTime());
+    vecReq->setUeIpAddress(0); // will be filled by the NPC module
+    // vecReq->addTag<CreationTimeTag>()->setCreationTime(simTime());
     packet->insertAtBack(vecReq);
 
-    socket.sendTo(packet, destAddress_, npcPort_);
+    socket.sendTo(packet, MEC_UE_OFFLOAD_ADDR, MEC_NPC_PORT);
 }
 
 

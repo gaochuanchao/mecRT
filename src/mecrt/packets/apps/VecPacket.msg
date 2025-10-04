@@ -30,6 +30,7 @@ class JobPacket extends inet::FieldsChunk {
 class VecRequest extends inet::FieldsChunk {
 	int inputSize;			// input data size of the job, 4 bytes
 	int outputSize = 0;		// output data size, 4 bytes
+	uint32_t ueIpAddress;	// the IP address of the UE, 4 bytes
 	simtime_t period;			// the deadline of single job or period of periodic task, 8 bytes
 	unsigned short resourceType;	// whether using GPU or CPU, 2 bytes
 	unsigned short service;			// the service name, 2 bytes
@@ -37,7 +38,7 @@ class VecRequest extends inet::FieldsChunk {
 	simtime_t stopTime;	// the time that this application stops
 	double energy;	// the energy consumed by processing an application locally
 	double offloadPower;	// the offloading power of the Gnb
-	chunkLength = inet::B(40);
+	chunkLength = inet::B(44); // total size: 44 bytes
 }
 
 

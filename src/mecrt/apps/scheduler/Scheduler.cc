@@ -39,6 +39,11 @@ Scheduler::Scheduler()
     schedComplete_ = nullptr;
     preSchedCheck_ = nullptr;
     enableInitDebug_ = false;
+
+    db_ = nullptr;
+    binder_ = nullptr;
+    scheme_ = nullptr;
+    nodeInfo_ = nullptr;
 }
 
 Scheduler::~Scheduler()
@@ -79,7 +84,7 @@ void Scheduler::initialize(int stage)
         
         periodicScheduling_ = par("periodicScheduling");
 
-        schedulingInterval_ = par("scheduleInterval");
+        schedulingInterval_ = getAncestorPar("scheduleInterval");
         grantAckInterval_ = par("grantAckInterval");
         connOutdateInterval_ = par("connOutdateInterval");
 
@@ -111,12 +116,12 @@ void Scheduler::initialize(int stage)
         if (enableInitDebug_)
             std::cout << "Scheduler::initialize - stage: INITSTAGE_APPLICATION_LAYER - begins" << std::endl;
         
-        int port = par("localPort");
-        EV << "vecReceiver::initialize - binding to port: local:" << port << endl;
-        if (port != -1)
+        localPort_ = par("localPort");
+        EV << "vecReceiver::initialize - binding to port: local:" << localPort_ << endl;
+        if (localPort_ != -1)
         {
             socket_.setOutputGate(gate("socketOut"));
-            socket_.bind(port);
+            socket_.bind(localPort_);
         }
 
         db_ = check_and_cast<Database*>(getSimulation()->getModuleByPath("database"));
@@ -129,6 +134,18 @@ void Scheduler::initialize(int stage)
     else if (stage == INITSTAGE_LAST){
         if (enableInitDebug_)
             std::cout << "Scheduler::initialize - stage: INITSTAGE_LAST - begins" << std::endl;
+
+        try
+        {
+            nodeInfo_ = check_and_cast<NodeInfo*>(getModuleByPath(par("nodeInfoModulePath").stringValue()));
+            nodeInfo_->setLocalSchedulerPort(localPort_);
+            nodeInfo_->setScheduleInterval(schedulingInterval_.dbl());
+        }
+        catch (std::exception &e)
+        {
+            EV_WARN << "Scheduler::initialize - cannot find the NodeInfo module" << endl;
+            nodeInfo_ = nullptr;
+        }
 
         binder_ = getBinder();
         NumerologyIndex numerologyIndex = par("numerologyIndex");
@@ -176,11 +193,11 @@ void Scheduler::initialize(int stage)
 
         newAppPending_ = false;
 
-        if (periodicScheduling_)
-        {
-            scheduleAt(simTime() + schedulingInterval_, schedStarter_);
-            scheduleAt(simTime() + schedulingInterval_ - appStopInterval_, preSchedCheck_);
-        }
+        // if (periodicScheduling_)
+        // {
+        //     scheduleAt(simTime() + schedulingInterval_, schedStarter_);
+        //     scheduleAt(simTime() + schedulingInterval_ - appStopInterval_, preSchedCheck_);
+        // }
             
         WATCH_SET(allocatedApps_);
         WATCH_SET(unscheduledApps_);
@@ -189,6 +206,8 @@ void Scheduler::initialize(int stage)
         WATCH(cuStep_);
         WATCH(rbStep_);
         WATCH(fairFactor_);
+        WATCH(localPort_);
+        WATCH(schedulingInterval_);
 
         if (enableInitDebug_)
             std::cout << "Scheduler::initialize - stage: INITSTAGE_LAST - ends" << std::endl;
@@ -242,8 +261,10 @@ void Scheduler::handleMessage(cMessage *msg)
 
             if (periodicScheduling_)
             {
-                scheduleAt(simTime() + schedulingInterval_, schedStarter_);
-                scheduleAt(simTime() + schedulingInterval_ - appStopInterval_, preSchedCheck_);
+                NEXT_SCHEDULING_TIME = simTime() + schedulingInterval_;
+                scheduleAt(NEXT_SCHEDULING_TIME, schedStarter_);
+                scheduleAt(NEXT_SCHEDULING_TIME - appStopInterval_, preSchedCheck_);
+                EV << NOW << " Scheduler::handleMessage - next scheduling time: " << NEXT_SCHEDULING_TIME << endl;
             }
         }
         else if (!strcmp(msg->getName(), "ScheduleComplete"))
@@ -301,6 +322,60 @@ void Scheduler::handleMessage(cMessage *msg)
     }
 }
 
+
+void Scheduler::globalSchedulerInit()
+{
+    EV << "Scheduler::globalSchedulerInit - do the necessary initialization for global scheduler" << std::endl;
+
+    if (periodicScheduling_)
+    {
+        NEXT_SCHEDULING_TIME = simTime() + appStopInterval_;
+        scheduleAt(NEXT_SCHEDULING_TIME, schedStarter_);
+        scheduleAt(simTime(), preSchedCheck_);
+
+        EV << "Scheduler::globalSchedulerInit - next scheduling time: " << NEXT_SCHEDULING_TIME << std::endl;
+    }
+}
+
+
+void Scheduler::globalSchedulerFinish()
+{
+    EV << "Scheduler::globalSchedulerFinish - do the necessary finishing operation for previous global scheduler" << std::endl;
+
+    // cancel the scheduled self message
+    if (schedStarter_->isScheduled())
+        cancelEvent(schedStarter_);
+    if (preSchedCheck_->isScheduled())
+        cancelEvent(preSchedCheck_);
+    if (schedComplete_->isScheduled())
+        cancelEvent(schedComplete_);
+
+    rsuStatus_.clear();
+    rsuOnholdRbs_.clear();
+    rsuOnholdCus_.clear();
+    vehAccessRsu_.clear();
+    veh2RsuTime_.clear();
+    veh2RsuRate_.clear();
+    rsuWaitInitFbApps_.clear();
+    vecSchedule_.clear();
+    srvInInitiating_.clear();
+    runningService_.clear();
+
+    // reset all app status
+    for (AppId appId : appsWaitInitFb_)
+    {
+        unscheduledApps_.insert(appId);
+    }
+    for (AppId appId : allocatedApps_)
+    {
+        unscheduledApps_.insert(appId);
+    }
+
+    appsWaitInitFb_.clear();
+    allocatedApps_.clear();
+}
+
+
 void Scheduler::recordVehRequest(cMessage *msg)
 {
     Packet* pkt = check_and_cast<Packet*>(msg);
@@ -325,6 +400,7 @@ void Scheduler::recordVehRequest(cMessage *msg)
     reqMeta.stopTime = vecReq->getStopTime();
     reqMeta.energy = vecReq->getEnergy();
     reqMeta.offloadPower = vecReq->getOffloadPower();
+    reqMeta.ueIpv4Address = vecReq->getUeIpAddress();
     appInfo_[appId] = reqMeta;
     unscheduledApps_.insert(appId);
 

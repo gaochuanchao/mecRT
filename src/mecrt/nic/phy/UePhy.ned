@@ -23,6 +23,7 @@ simple UePhy like LtePhy
         double srsDistance @unit(m) = default(600m);  
         // the offload power of the whole NIC module, not only the power carriered by the signal
         double offloadPower = default(2210);    // offloading power of vehicle NIC, default 2210mW
+        string nodeInfoModulePath = default("^.^.nodeInfo"); // path to the NodeInfo module
         
         // ================================
         // ========== LtePhyBase ========== 

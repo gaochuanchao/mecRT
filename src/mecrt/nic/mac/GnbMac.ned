@@ -24,6 +24,7 @@ simple GnbMac like LteMac
         bool srsDistanceCheck = default(false);  // whether checking the distance for SRS transmission
         // the distance for SRS transmission, if srsDistanceCheck is true, the SRS will only be sent to RSUs within this distance
         double srsDistance @unit(m) = default(600m);  
+        string nodeInfoModulePath = default("^.^.nodeInfo"); // path to the NodeInfo module
         
         // ================================
         // ========== LteMacBase ========== 

@@ -95,6 +95,7 @@ inline void doParsimUnpacking(omnetpp::cCommBuffer *b, JobPacket& obj) {obj.pars
  * {
  *     int inputSize;			// input data size of the job, 4 bytes
  *     int outputSize = 0;		// output data size, 4 bytes
+ *     uint32_t ueIpAddress;	// the IP address of the UE, 4 bytes
  *     simtime_t period;			// the deadline of single job or period of periodic task, 8 bytes
  *     unsigned short resourceType;	// whether using GPU or CPU, 2 bytes
  *     unsigned short service;			// the service name, 2 bytes
@@ -102,7 +103,7 @@ inline void doParsimUnpacking(omnetpp::cCommBuffer *b, JobPacket& obj) {obj.pars
  *     simtime_t stopTime;	// the time that this application stops
  *     double energy;	// the energy consumed by processing an application locally
  *     double offloadPower;	// the offloading power of the Gnb
- *     chunkLength = inet::B(40);
+ *     chunkLength = inet::B(44); // total size: 44 bytes
  * }
  * </pre>
  */
@@ -111,6 +112,7 @@ class VecRequest : public ::inet::FieldsChunk
   protected:
     int inputSize = 0;
     int outputSize = 0;
+    uint32_t ueIpAddress = 0;
     omnetpp::simtime_t period = SIMTIME_ZERO;
     unsigned short resourceType = 0;
     unsigned short service = 0;
@@ -139,6 +141,9 @@ class VecRequest : public ::inet::FieldsChunk
 
     virtual int getOutputSize() const;
     virtual void setOutputSize(int outputSize);
+
+    virtual uint32_t getUeIpAddress() const;
+    virtual void setUeIpAddress(uint32_t ueIpAddress);
 
     virtual omnetpp::simtime_t getPeriod() const;
     virtual void setPeriod(omnetpp::simtime_t period);

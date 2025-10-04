@@ -70,8 +70,8 @@ module NRUe
         //# Network Layer specs
         bool hasIpv4 = default(true);
         bool hasIpv6 = default(false);
-        *.interfaceTableModule = default(absPath(".interfaceTable"));
-        *.routingTableModule = default("^.ipv4.routingTable");
+        **.interfaceTableModule = default(absPath(".interfaceTable"));
+        **.routingTableModule = default(absPath(".ipv4.routingTable"));
         string nodeInfoModulePath = default(absPath(".nodeInfo"));
 
         //# External Ethernet interfaces

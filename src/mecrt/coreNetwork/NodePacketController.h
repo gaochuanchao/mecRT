@@ -23,14 +23,28 @@
 #include "common/binder/Binder.h"
 
 #include "mecrt/common/NodeInfo.h"
+#include "mecrt/packets/apps/VecPacket_m.h"
+
+
+using namespace std;
+using namespace omnetpp;
+using namespace inet;
 
 class NodePacketController : public omnetpp::cSimpleModule
 {
   protected:
-    inet::UdpSocket socket_;
+    UdpSocket socket_;
     int localPort_;
     NodeInfo *nodeInfo_; // node information module
     bool enableInitDebug_ = false;
+
+    // set a selfMessage to check whether the global scheduler is ready
+    cMessage *checkGlobalSchedulerTimer_ = nullptr;
+    double checkGlobalSchedulerInterval_ = 0.01; // in seconds, check every 0.01s
+
+    // =========== UE application related ===========
+    vector<AppId> pendingSrvReqs_; // service requests waiting for global scheduler ready
+    map<AppId, Ptr<VecRequest>> srvReqsBuffer_; // service requests buffer for global scheduler recovery
 
   protected:
 
@@ -41,9 +55,12 @@ class NodePacketController : public omnetpp::cSimpleModule
     // receive a GTP-U packet from Udp, reads the TEID and decides whether performing label switching or removal
     void handleFromUdp(inet::Packet * gtpMsg);
 
+    virtual void handleServiceRequest(inet::Packet *packet);
+    virtual void handleGlobalSchedulerTimer();
+
   public:
     NodePacketController();
-    virtual ~NodePacketController() {};
+    virtual ~NodePacketController();
 };
 
 

@@ -37,6 +37,7 @@ simple MecOspf
 
         string interfaceTableModule = default("^.interfaceTable"); // path to the interface table
         string routingTableModule = default("^.ipv4.routingTable");     // path to the routing table
+        string nodeInfoModulePath = default("^.nodeInfo"); // path to the node info module
         // string routingAlgorithm = default("dijkstra"); // you can extend later
 
         double helloInterval @unit(s) = default(5s);   // neighbor state detection interval

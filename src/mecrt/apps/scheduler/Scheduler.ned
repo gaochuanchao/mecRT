@@ -15,7 +15,6 @@ simple Scheduler like IApp
         @display("i=block/app2");
         int localPort = default(3000);
         bool periodicScheduling = default(true);
-        double scheduleInterval @unit(s) = default(1s); // in TTI, if the scheduler run periodically, specify the interval
 		double grantAckInterval @unit(s) = default(1s);	// 1s
 		double appStopInterval @unit(s) = default(0.05s);	// 50ms
 		double connOutdateInterval @unit(s) = default(0.5s);
@@ -30,6 +29,7 @@ simple Scheduler like IApp
         bool enableBackhaul = default(false); // whether to enable the backhaul network, default is false
         double virtualLinkRate = default(10000000); // the rate of the virtual link in the backhaul network, default is 10MBps
         double fairFactor = default(1.0); // the fairness factor for scheduling scheme with forwarding, default is 1.0
+        string nodeInfoModulePath = default("^.nodeInfo"); // path to the NodeInfo module
 
         @signal[schedulingTime](type="double");
         @signal[schemeTime](type="double");

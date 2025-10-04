@@ -33,6 +33,7 @@ simple SlientUeMac like LteMac
         int harqFbEvaluationTimer = default(4);              // number of slots for sending back HARQ FB
         //# Statistics display (in GUI)
         bool statDisplay = default(false);
+        string nodeInfoModulePath = default("^.^.nodeInfo"); // path to the NodeInfo module
         
         //#
         //# Statistics recording

@@ -18,12 +18,11 @@ simple UeApp like IApp
     parameters:
         int localPort = default(-1);
         int destPort = default(3000);
-        string schedulerAddr;
-        int schedulerPort;
         int inputSize = default(50000);	// 50 KB
         int resultSize = default(0);
         int tos = default(-1); // if not -1, set the Type Of Service (IPv4) / Traffic Class (IPv6) field of sent packets to this value
         double dlScale = default(1.0); // the scale for the deadline of the app, default is 1.0. dl = dl / deadlineScale
+        string nodeInfoModulePath = default("^.nodeInfo");
         
         @signal[localProcessCount];
         @statistic[localProcessCount](title="number of locally processed jobs"; source="localProcessCount"; record=timeavg,sum);

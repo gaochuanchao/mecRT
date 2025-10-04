@@ -42,8 +42,6 @@ class Server : public omnetpp::cSimpleModule
     bool enableInitDebug_ = false;
     inet::UdpSocket socket;
     int localPort_;
-    int schedulerPort_;
-    inet::L3Address schedulerAddr_;
     inet::L3Address serverAddr_;
 
     NodeInfo *nodeInfo_ = nullptr;
@@ -64,7 +62,6 @@ class Server : public omnetpp::cSimpleModule
 
     Binder *binder_;
     MacNodeId gnbId_;
-    int nicInterfaceId_;  // the interface id of the NIC module
     // int pppIfInterfaceId_; // the interface id of the PPP interface
 
     // a map store granted service on this RSU

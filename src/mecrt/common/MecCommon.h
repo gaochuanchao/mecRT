@@ -28,6 +28,18 @@ class MecProtocol {
 
 void registerMecOspfProtocol();
 
+static const inet::Ipv4Address MEC_UE_OFFLOAD_ADDR("192.168.0.0"); // the IPv4 address used by UE to offload data to MEC server
+static const int MEC_NPC_PORT = 37; // the port number used by Node Packet Controller (NPC) module
+static const int MEC_OSPF_PORT = 38; // the port number used by MecOspf module
+
+/***
+ * the next time when the scheduler should run
+ * updated by the MecOspf module when a new global scheduler is elected
+ * update by the global scheduler when it finishes a scheduling round
+ * referenced by the UePhy module when deciding whether to broadcast feedback
+ */
+extern omnetpp::simtime_t NEXT_SCHEDULING_TIME; 
+
 /***
  * Define the data struct used in MEC
  */
@@ -37,30 +49,6 @@ void registerMecOspfProtocol();
 // =================================
 
 typedef unsigned int AppId;
-
-struct RequestMeta {
-    int inputSize;          // input data size of the job
-    int outputSize;     // output data size
-    AppId appId;
-    MacNodeId vehId;
-    omnetpp::simtime_t period;          // in milliseconds, the deadline of single job or period of periodic task
-    int resourceType;  // whether using GPU or CPU
-    int service;            // the service name, app type
-    omnetpp::simtime_t stopTime;    // the time when the app left the simulation
-    double energy;  // the energy consumption for local processing
-    double offloadPower;    // the power used for data offloading
-};
-
-struct RsuResource {
-    int cmpUnits;          // the remaining free computing units in the RSU
-    int cmpCapacity;
-    int bands;             // remaining free bands in the RSU
-    int bandCapacity;
-    int resourceType;   // the resource type of the RSU, e.g., GPU
-    int deviceType;       // the device type of the RSU
-    omnetpp::simtime_t bandUpdateTime;  // the time of updating
-    omnetpp::simtime_t cmpUpdateTime;   // the time of updating
-};
 
 struct RsuAddr {
     inet::Ipv4Address rsuAddress;    // the Ipv4 address of the RSU

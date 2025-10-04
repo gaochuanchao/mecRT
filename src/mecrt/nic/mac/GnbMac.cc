@@ -203,9 +203,13 @@ void GnbMac::initialize(int stage)
             std::cout << "GnbMac::initialize - stage: INITSTAGE_PHYSICAL_ENVIRONMENT - begins" << std::endl;
 
         // get node info module
-        nodeInfo_ = getModuleFromPar<NodeInfo>(getAncestorPar("nodeInfoModulePath"), this);
-        nodeInfo_->setNodeId(nodeId_);
-
+        try {
+            nodeInfo_ = getModuleFromPar<NodeInfo>(par("nodeInfoModulePath"), this);
+            nodeInfo_->setNodeId(nodeId_);
+        } catch (cException &e) {
+            throw cRuntimeError("GnbMac:initialize - cannot find nodeInfo module\n");
+        }
+        
         // ========= LteMacEnb ===========
         /* Create and initialize AMC module */
         // std::string amcType = par("amcType").stdstringValue();  // default("NRAmc")
@@ -316,22 +320,14 @@ void GnbMac::initialize(int stage)
         if (enableInitDebug_)
             std::cout << "GnbMac::initialize - stage: INITSTAGE_LINK_LAYER - ends" << std::endl;
     }
-    else if (stage == INITSTAGE_APPLICATION_LAYER)
-    {
-        if (enableInitDebug_)
-            std::cout << "GnbMac::initialize - stage: INITSTAGE_APPLICATION_LAYER - begins" << std::endl;
-
-        gnbAddress_ = nodeInfo_->getNodeAddr();
-        EV << "GnbMac::initialize - gNB address " << gnbAddress_.toIpv4().str() << ", gNB MacNodeId " << nodeId_ << endl;
-        binder_->setMacNodeId(gnbAddress_.toIpv4(), nodeId_);
-
-        if (enableInitDebug_)
-            std::cout << "GnbMac::initialize - stage: INITSTAGE_APPLICATION_LAYER - ends" << std::endl;
-    }
     else if (stage == INITSTAGE_LAST)  // after all UEs have been initialized
     {
         if (enableInitDebug_)
             std::cout << "GnbMac::initialize - stage: INITSTAGE_LAST - begins" << std::endl;
+
+        gnbAddress_ = nodeInfo_->getNodeAddr();
+        EV << "GnbMac::initialize - gNB address " << gnbAddress_.toIpv4().str() << ", gNB MacNodeId " << nodeId_ << endl;
+        binder_->setMacNodeId(gnbAddress_.toIpv4(), nodeId_);
 
         // ========= LteMacEnb ===========
         /* Start TTI tick */

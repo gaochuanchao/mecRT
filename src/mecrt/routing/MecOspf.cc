@@ -60,6 +60,8 @@ MecOspf::MecOspf()
     selfLsa_ = nullptr;
     nodeInfo_ = nullptr;
 
+    scheduler_ = nullptr;
+
     indirectRoutes_ = map<uint32_t, Ipv4Route *>();
     neighborRoutes_ = map<uint32_t, Ipv4Route *>();
 }
@@ -143,20 +145,37 @@ void MecOspf::initialize(int stage)
         WATCH(neighborTimeout_);
         WATCH(routeComputationDelay_);
     }
-    else if (isInitializeStage(stage)) {
+    else if (stage == INITSTAGE_PHYSICAL_LAYER) {
+        // get node info module, as router may not constains this module, so we need to handle the exception
         if (enableInitDebug_)
-            EV_INFO << "MecOspf:initialize - initialize stage " << stage << "\n";
-
-        EV_INFO << "MecOspf:initialize - network-layer init at stage " << stage << "\n";
-
-        // get node info module
+            EV_INFO << "MecOspf:initialize - stage: INITSTAGE_PHYSICAL_LAYER - begins\n";
+        
         try {
-            nodeInfo_ = getModuleFromPar<NodeInfo>(getAncestorPar("nodeInfoModulePath"), this);
+            nodeInfo_ = getModuleFromPar<NodeInfo>(par("nodeInfoModulePath"), this);
         } catch (cException &e) {
             cerr << "MecOspf:initialize - cannot find nodeInfo module\n";
             nodeInfo_ = nullptr;
         }
 
+        try
+        {
+            scheduler_ = check_and_cast<Scheduler*>(getParentModule()->getSubmodule("scheduler"));
+        }
+        catch(cException &e)
+        {
+            cerr << "MecOspf:initialize - cannot find scheduler module\n";
+            scheduler_ = nullptr;
+        }
+
+        if (enableInitDebug_)
+            EV_INFO << "MecOspf:initialize - stage: INITSTAGE_PHYSICAL_LAYER - nodeInfo_ found: " 
+                    << (nodeInfo_ ? "yes" : "no") << "\n";
+    }
+    else if (isInitializeStage(stage)) {
+        if (enableInitDebug_)
+            EV_INFO << "MecOspf:initialize - initialize stage " << stage << "\n";
+
+        EV_INFO << "MecOspf:initialize - network-layer init at stage " << stage << "\n";
         // acquire required INET modules via parameters (StandardHost uses these params)
         try {
             ift_ = getModuleFromPar<IInterfaceTable>(par("interfaceTableModule"), this);
@@ -172,8 +191,7 @@ void MecOspf::initialize(int stage)
 
             EV_INFO << "MecOspf:initialize - interfaceTableModule found\n";
         } catch (cException &e) {
-            cerr << "MecOspf:initialize - cannot find interfaceTableModule param\n";
-            ift_ = nullptr;
+            throw cRuntimeError("MecOspf:initialize - cannot find interfaceTableModule param\n");
         }
         // get routing table module
         try {
@@ -186,8 +204,7 @@ void MecOspf::initialize(int stage)
 
             EV_INFO << "MecOspf:initialize - routingTableModule found, routerId=" << routerId_ << "\n";
         } catch (cException &e) {
-            cerr << "MecOspf:initialize - cannot find routingTableModule param\n";
-            rt_ = nullptr;
+            throw cRuntimeError("MecOspf:initialize - cannot find routingTableModule param\n");
         }
 
         // register protocol such that the IP layer can deliver packets to us
@@ -212,7 +229,7 @@ void MecOspf::initialize(int stage)
         WATCH_VECTOR(newNeighbors_);
         WATCH_MAP(indirectRoutes_);
         WATCH_MAP(neighborRoutes_);
-        // WATCH_MAP(lsaPacketCache_);
+        WATCH_MAP(lsaPacketCache_);
     }
 }
 
@@ -889,6 +906,9 @@ void MecOspf::recomputeIndirectRouting()
         EV_INFO << "MecOspf:recomputeIndirectRouting - this node is selected as the scheduler node (neighbors=" << maxNeighbors << ")\n";
         if (nodeInfo_) 
             nodeInfo_->setIsGlobalScheduler(true);
+
+        if (scheduler_)
+            scheduler_->globalSchedulerInit();
     }
     else
     {

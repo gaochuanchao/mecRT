@@ -59,8 +59,6 @@ class UeApp : public omnetpp::cSimpleModule
     // ----------------------------
 
     int localPort_;
-    inet::Ipv4Address destAddress_; // the address of the offloading RSU server
-    int npcPort_;  // the port of the node packet controller of the gNodeB
 
     int inputSize_;          // input data size of the job
     int outputSize_;     // output data size

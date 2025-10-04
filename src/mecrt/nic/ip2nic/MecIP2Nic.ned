@@ -33,6 +33,7 @@ simple MecIP2Nic like INetworkLayer2CellularNic
         string interfaceTableModule;
         string interfaceName = default("cellular"); 
         string routingTableModule;
+        string nodeInfoModulePath = default("^.^.nodeInfo");
         int mtu @unit(B) = default(1500B); // Maximum Transmission Unit
         @display("i=block/layer");
     gates:

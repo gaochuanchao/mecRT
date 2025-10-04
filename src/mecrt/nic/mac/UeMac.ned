@@ -18,6 +18,7 @@ simple UeMac like LteMac
         @class("UeMac");
         
         bool resAllocateMode = default(true);
+        string nodeInfoModulePath = default("^.^.nodeInfo"); // path to the NodeInfo module
         
         // ================================
         // ========== LteMacBase ========== 

@@ -23,14 +23,13 @@ package mecRT.mecrt.coreNetwork;
 simple NodePacketController
 {
     parameters:
-        string interfaceTableModule;            // path to the InterfaceTable module
-        int localPort = default(37);               // local port to listen on
+        // int localPort = default(37);         // set as global constant MEC_NPC_PORT in MECCommon.h
+        string nodeInfoModulePath = default("^.nodeInfo"); // path to the NodeInfo module
+        double checkGlobalSchedulerInterval @unit(s) = default(0.01s); // in seconds, check every 0.01s
         
         @display("i=block/tunnel");
 
     gates:
         output socketOut;
         input socketIn;
-
-        output pppGate;
 }

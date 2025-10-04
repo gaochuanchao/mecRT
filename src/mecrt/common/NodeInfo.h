@@ -15,13 +15,11 @@
 #ifndef _MECRT_COMMON_NODEINFO_H_
 #define _MECRT_COMMON_NODEINFO_H_
 
-
 #include <omnetpp.h>
 #include <inet/common/INETDefs.h>
 #include "inet/networklayer/ipv4/Ipv4RoutingTable.h"
 #include "mecrt/common/MecCommon.h"
 
-using namespace omnetpp;
 using namespace inet;
 
 /**
@@ -38,8 +36,7 @@ class NodeInfo : public omnetpp::cSimpleModule
         bool nodeState_; // whether this node is active (true) or inactive (false), used for fault simulation
 
         // =========== Routing related ===========
-        Ipv4Address nodeAddr_; // [MecOspf, UeMac] IPv4 address of the ipv4 module in this node
-        int npcPort_; // [NodePacketController] the port used by the Node Packet Controller (Npc) module
+        inet::Ipv4Address nodeAddr_; // [MecOspf, UeMac] IPv4 address of the ipv4 module in this node
         bool rtState_; // [MecOspf] whether the routing table has been set up by the routing protocol (e.g., OSPF)
 
         // =========== Wireless NIC module related ===========
@@ -53,13 +50,9 @@ class NodeInfo : public omnetpp::cSimpleModule
 
         // =========== Scheduler module related ===========
         bool isGlobalScheduler_; // [MecOspf] whether this scheduler is voted as the global scheduler
-        Ipv4Address globalSchedulerAddr_; // [MecOspf] the IPv4 address of the selected scheduler node
+        inet::Ipv4Address globalSchedulerAddr_; // [MecOspf] the IPv4 address of the selected scheduler node
         int localSchedulerPort_; //  the port number used by the local scheduler module
         double scheduleInterval_; // in seconds
-
-        // =========== UE related information ===========
-        MacNodeId masterNodeId_; // [UePhy] the macNodeId of the master gNB of this UE, only used in UE nodes
-        Ipv4Address masterNodeAddr_; // [UePhy] the IPv4 address of the master gNB of this UE, only used in UE nodes
 
     protected:
         virtual void initialize(int stage) override;
@@ -77,10 +70,8 @@ class NodeInfo : public omnetpp::cSimpleModule
         bool isNodeActive() {return nodeState_;}
 
         // methods to set/get routing related information
-        void setNodeAddr(Ipv4Address addr) {nodeAddr_ = addr;}
-        Ipv4Address getNodeAddr() {return nodeAddr_;}
-        void setNpcPort(int port) {npcPort_ = port;}
-        int getNpcPort() {return npcPort_;}
+        void setNodeAddr(inet::Ipv4Address addr) {nodeAddr_ = addr;}
+        inet::Ipv4Address getNodeAddr() {return nodeAddr_;}
         void setRtState(bool state) {rtState_ = state;}
         bool getRtState() {return rtState_;}
         bool isRtReady() {return rtState_;}
@@ -104,19 +95,12 @@ class NodeInfo : public omnetpp::cSimpleModule
         // methods to set/get scheduler module related information
         void setIsGlobalScheduler(bool isGlobal) {isGlobalScheduler_ = isGlobal;}
         bool getIsGlobalScheduler() {return isGlobalScheduler_;}
-        void setGlobalSchedulerAddr(Ipv4Address addr) {globalSchedulerAddr_ = addr;}
-        Ipv4Address getGlobalSchedulerAddr() {return globalSchedulerAddr_;}
+        void setGlobalSchedulerAddr(inet::Ipv4Address addr) {globalSchedulerAddr_ = addr;}
+        inet::Ipv4Address getGlobalSchedulerAddr() {return globalSchedulerAddr_;}
         void setLocalSchedulerPort(int port) {localSchedulerPort_ = port;}
         int getLocalSchedulerPort() {return localSchedulerPort_;}
         void setScheduleInterval(double interval) {scheduleInterval_ = interval;}
         double getScheduleInterval() {return scheduleInterval_;}
-
-
-        // methods to set/get UE related information
-        void setMasterNodeId(MacNodeId id) {masterNodeId_ = id;}
-        MacNodeId getMasterNodeId() {return masterNodeId_;}
-        void setMasterNodeAddr(Ipv4Address addr) {masterNodeAddr_ = addr;}
-        Ipv4Address getMasterNodeAddr() {return masterNodeAddr_;}
 };
 
 #endif /* _MECRT_COMMON_NODEINFO_H_ */

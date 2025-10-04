@@ -32,7 +32,6 @@ Define_Module(MecIP2Nic);
 
 MecIP2Nic::MecIP2Nic()
 {
-    gnbAddress_ = Ipv4Address::UNSPECIFIED_ADDRESS;
     nodeInfo_ = nullptr;
 }
 
@@ -60,97 +59,55 @@ void MecIP2Nic::initialize(int stage)
         
         // get node info module
         try {
-            nodeInfo_ = getModuleFromPar<NodeInfo>(getAncestorPar("nodeInfoModulePath"), this);
+            nodeInfo_ = getModuleFromPar<NodeInfo>(par("nodeInfoModulePath"), this);
         } catch (cException &e) {
-            cerr << "MecIP2Nic:initialize - cannot find nodeInfo module\n";
-            nodeInfo_ = nullptr;
+            throw cRuntimeError("MecIP2Nic:initialize - cannot find nodeInfo module\n");
         }
         registerInterface();
 
         if (enableInitDebug_)
             std::cout << "MecIP2Nic::initialize - registerInterface() done." << std::endl;
     }
-    else if (stage == INITSTAGE_APPLICATION_LAYER)
-    {
-        if (enableInitDebug_)
-            std::cout << "MecIP2Nic::initialize - stage: INITSTAGE_APPLICATION_LAYER - begins" << std::endl;
-
-        gnbAddress_ = inet::L3AddressResolver().resolve(getParentModule()->getParentModule()->getFullName());
-        EV << "MecIP2Nic::initialize - local gNB IP " << gnbAddress_.toIpv4() << endl;
-        // if (nodeType_ == ENODEB || nodeType_ == GNODEB)
-        // {
-        //     auto interfaceTable = check_and_cast<inet::IInterfaceTable *>(getParentModule()->getParentModule()->getSubmodule("interfaceTable"));
-        //     pppIfInterfaceId_ = interfaceTable->findInterfaceByName("pppIf")->getInterfaceId();
-        // }
-        
-        if (enableInitDebug_)
-            std::cout << "MecIP2Nic::initialize - stage: INITSTAGE_APPLICATION_LAYER - ends." << std::endl;
-    }
 }
 
 void MecIP2Nic::handleMessage(cMessage *msg)
 {
     if(nodeType_ == ENODEB || nodeType_ == GNODEB){
-        if (msg->getArrivalGate()->isName("stackNic$i"))
+        if (msg->getArrivalGate()->isName("stackNic$i"))    // message from stack (phy->mac->rrc->pdcprrc->ip2nic->npc)
         {
             // check if the destination Ipv4 address is the gNB address
             auto pkt = check_and_cast<Packet *>(msg);
-            auto ipHeader = pkt->peekAtFront<Ipv4Header>();
+            auto ipHeader = pkt->removeAtFront<Ipv4Header>();
             auto destAddress = ipHeader->getDestAddress();
 
-            if (destAddress == gnbAddress_.toIpv4())
+            if (destAddress == MEC_UE_OFFLOAD_ADDR)
             {
-                EV << "MecIP2Nic::handleMessage - dest IP " << destAddress << ", the destination is the current gNB." << endl;
-                EV << "MecIP2Nic::handleMessage - message from stack: send to IP layer" << endl;
-                removeAllSimu5GTags(pkt);
-               
-                auto networkProtocolInd = pkt->addTagIfAbsent<NetworkProtocolInd>();
-                networkProtocolInd->setProtocol(&Protocol::ipv4);
-                networkProtocolInd->setNetworkProtocolHeader(ipHeader);
-                // change protocol from LteProtocol::ipv4uu to Protocol::ipv4 such that the message will be delived to the RSU server
-                pkt->addTagIfAbsent<DispatchProtocolReq>()->setProtocol(&Protocol::ipv4);
-                pkt->addTagIfAbsent<PacketProtocolTag>()->setProtocol(&Protocol::ipv4);
-                // add Interface-Indication to indicate which interface this packet was received from
-                pkt->addTagIfAbsent<InterfaceInd>()->setInterfaceId(networkIf->getInterfaceId());
-                send(pkt,ipGateOut_);
+                EV << "MecIP2Nic::handleMessage - offloading packet " << pkt->getName() << " from UE, forward to the NPC module." << endl;
+                // set the ipv4 address of current gNB as the destination address
+                ipHeader->setDestAddress(nodeInfo_->getNodeAddr());
+                
             }
             else    // IP2Nic::handleMessage - message from stack: send to peer
             {
-                EV << "MecIP2Nic::handleMessage - dest IP " << destAddress << ", the destination is not the current gNB." << endl;
-
-                pkt->removeTagIfPresent<SocketInd>();
-                removeAllSimu5GTags(pkt);
-                
-                // toIpBs(pkt);
-                // pkt->addTagIfAbsent<InterfaceReq>()->setInterfaceId(pppIfInterfaceId_);
-                // add Interface-Indication to indicate which interface this packet was received from
-                pkt->addTagIfAbsent<InterfaceInd>()->setInterfaceId(networkIf->getInterfaceId());
-                EV << "IP2Nic::toIpBs - message from stack: send to node " << destAddress << endl;
-                send(pkt,ipGateOut_);
+                EV << "MecIP2Nic::handleMessage - the destination is not the current gNB, route to dest IP " << destAddress << endl;
             }
+
+            auto networkProtocolInd = pkt->addTagIfAbsent<NetworkProtocolInd>();
+            networkProtocolInd->setProtocol(&Protocol::ipv4);
+            networkProtocolInd->setNetworkProtocolHeader(ipHeader);
+            pkt->insertAtFront(ipHeader);
+            removeAllSimu5GTags(pkt);
+
+            prepareForIpv4(pkt);
+            EV << "MecIP2Nic::handleMessage - message from stack: send to IP layer" << endl;
+            send(pkt,ipGateOut_);
         }
-        else if (msg->getArrivalGate()->isName("upperLayerIn"))
+        else if (msg->getArrivalGate()->isName("upperLayerIn"))   // message from transport layer: send to stack
         {
             EV << "MecIP2Nic::handleMessage - Packet " << msg->getName() << " from IP layer." << endl;
             auto ipDatagram = check_and_cast<Packet *>(msg);
-            auto ipHeader = ipDatagram->peekAtFront<Ipv4Header>();
-            auto destAddress = ipHeader->getDestAddress();
 
-            if (!strcmp(ipDatagram->getName(), "VehGrant") && destAddress == gnbAddress_.toIpv4())
-            {
-                EV << "MecIP2Nic::handleMessage - dest IP " << destAddress << ", the destination is the current gNB, send to stack." << endl;
-                // Remove control info from IP datagram
-                ipDatagram->removeTagIfPresent<SocketInd>();
-                removeAllSimu5GTags(ipDatagram);
-                // Remove InterfaceReq Tag (we already are on an interface now)
-                ipDatagram->removeTagIfPresent<InterfaceReq>();
-    
-                toStackBs(ipDatagram);
-            }
-            else
-            {
-                fromIpBs(ipDatagram);
-            }
+            fromIpBs(ipDatagram);
         }
         else
         {
@@ -199,8 +156,8 @@ void MecIP2Nic::registerInterface()
         // get the routing table, add a default route (0.0.0.0/0) to point towards this gateway.
         auto rt = check_and_cast<Ipv4RoutingTable *>(getModuleByPath("^.^.ipv4.routingTable"));
         Ipv4Route *route = new Ipv4Route();
-        route->setDestination(Ipv4Address::UNSPECIFIED_ADDRESS); // default route
-        route->setNetmask(Ipv4Address::UNSPECIFIED_ADDRESS);
+        route->setDestination(MEC_UE_OFFLOAD_ADDR); // default route
+        route->setNetmask(Ipv4Address::ALLONES_ADDRESS);
         route->setInterface(networkIf);
         route->setSourceType(Ipv4Route::MANUAL);
         route->setMetric(1);

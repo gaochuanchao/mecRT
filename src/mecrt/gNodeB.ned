@@ -20,6 +20,7 @@ import inet.networklayer.ipv4.Ipv4NetworkLayer;
 import inet.networklayer.ipv6.Ipv6NetworkLayer;
 import inet.transportlayer.sctp.Sctp;
 import inet.transportlayer.tcp.Tcp;
+import mecRT.mecrt.apps.scheduler.Scheduler;
 import mecRT.mecrt.apps.server.Server;
 import mecRT.mecrt.common.NodeInfo;
 import mecRT.mecrt.coreNetwork.MecGtpUser;
@@ -75,8 +76,8 @@ module gNodeB
         //# Network Layer specs
         bool hasIpv4 = default(true);
         bool hasIpv6 = default(false);
-        *.interfaceTableModule = default(absPath(".interfaceTable"));
-        *.routingTableModule = default("^.ipv4.routingTable");
+        **.interfaceTableModule = default(absPath(".interfaceTable"));
+        **.routingTableModule = default(absPath(".ipv4.routingTable"));
         *.forwarding = true;
         *.multicastForwarding = false;
 
@@ -195,6 +196,10 @@ module gNodeB
             parameters:
                 @display("p=742.60004,75.840004,row,140");
         }
+        scheduler: Scheduler {
+            @display("p=873.74,75.840004");
+        }
+
         udp: MecUdp {
             parameters:
                 @display("p=494.54,211.72");
@@ -217,7 +222,7 @@ module gNodeB
 	    // =============== X2AP ============== //
         x2App[numX2Apps]: LteX2App {
             parameters:
-                @display("p=371.30002,75.840004,row");
+                @display("p=363.4,75.840004,row");
         }
         sctp: Sctp if hasSctp {
             parameters:
@@ -242,7 +247,7 @@ module gNodeB
 
         npc: NodePacketController {
             parameters:
-                @display("p=344.44,372.88");
+                @display("p=494.54,75.840004");
         }
 
         //# 
@@ -380,8 +385,9 @@ module gNodeB
 
         npc.socketOut --> IdealChannel --> at.in++;
         npc.socketIn <-- IdealChannel <-- at.out++;
-        npc.pppGate --> IdealChannel --> nl.in++;
-
         ospf.ipOut --> tn.in++ if hasOspf;
         ospf.ipIn <-- tn.out++ if hasOspf;
+
+        scheduler.socketOut --> at.in++;
+        scheduler.socketIn <-- at.out++;
 }

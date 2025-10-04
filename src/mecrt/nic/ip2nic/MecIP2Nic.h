@@ -26,7 +26,6 @@ class MecIP2Nic : public IP2Nic
   protected:
     bool enableInitDebug_ = false; // enable debug info during initialization
     RanNodeType nodeType_;      // node type: can be ENODEB, GNODEB, UE
-    inet::L3Address gnbAddress_;  // the Ipv4 address of the gNB (the cellularNic IP address)
     NodeInfo* nodeInfo_ = nullptr; // pointer to the NodeInfo instance of this node
     // int pppIfInterfaceId_; // the interface id of the neighboring PPP interface
 

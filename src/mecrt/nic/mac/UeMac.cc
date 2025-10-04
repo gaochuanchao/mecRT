@@ -181,7 +181,11 @@ void UeMac::initialize(int stage)
         // =========== LteMacUe ===========
         EV << "UeMac::initialize - MAC layer, stage INITSTAGE_LINK_LAYER" << endl;
 
-        nodeInfo_ = getModuleFromPar<NodeInfo>(getAncestorPar("nodeInfoModulePath"), this);
+        try {
+            nodeInfo_ = getModuleFromPar<NodeInfo>(par("nodeInfoModulePath"), this);
+        } catch (cException &e) {
+            throw cRuntimeError("UeMac::initialize - cannot find nodeInfo module\n");
+        }
 
         resAllocateMode_ = par("resAllocateMode");
 
