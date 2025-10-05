@@ -1,9 +1,10 @@
 # mecRT: Mobile Edge Computing Simulator for Real-Time Applications  
+(previously known as VecSim - Vehicular Edge Computing Simulator)
 
-**mecRT** is an open-source simulator for **Mobile Edge Computing (MEC)** scenarios (previously known as vecSim - vehicular edge computing simulator). It provides a comprehensive framework for modeling **task offloading** and **resource allocation** in heterogeneous 5G-enabled environments. By integrating realistic wireless communication (via **Simu5G**) with edge computing models, mecRT enables researchers to evaluate scheduling strategies for latency-sensitive applications under resource and deadline constraints.  
+**mecRT** is an open-source simulator for Mobile Edge Computing (MEC) scenarios (previously known as vecSim - vehicular edge computing simulator). It provides a comprehensive framework for modeling task offloading and resource allocation in heterogeneous 5G-enabled environments. By integrating realistic wireless communication (via Simu5G) with edge computing models, mecRT enables researchers to evaluate scheduling strategies for latency-sensitive applications under resource and deadline constraints.  
 
 <center>
-<img src="./doc/assets/architecture.png" alt="architecture" style="zoom:25%;" />
+<img src="./doc/assets/architecture.png" alt="architecture" style="zoom:20%;" />
 </center>
 
 ---
