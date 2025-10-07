@@ -27,10 +27,12 @@ class Grant2Rsu;
  * class Grant2Rsu extends inet::FieldsChunk
  * {
  *     unsigned int appId;				// the application id of the vehicle, 4 bytes
+ *     uint32 ueAddr;			// the IP address of the vehicle, 4 bytes
  *     unsigned short resourceType;	// the resource type of the server	(e.g., "GPU"), 2 bytes
  *     unsigned short service;			// the service name, 2 bytes
- *     unsigned short processGnbId;	// the id of processing gNB, 2 bytes
- *     unsigned short offloadGnbId;	// the id of offloading gNB, 2 bytes
+ *     unsigned short processGnbId;	// the gNB id of processing gNB, 2 bytes
+ *     unsigned short offloadGnbId;	// the gNB id of offloading gNB, 2 bytes
+ *     uint32 offloadGnbAddr;		// the IP address of offloading gNB, 4 bytes
  *     int cmpUnits;			// allocated computing units, 4 bytes
  *     int bands;		    // allocated number of bands, 4 bytes
  *     simtime_t exeTime;	// the time needed for app processing in seconds
@@ -41,7 +43,7 @@ class Grant2Rsu;
  *     bool start;
  *     bool stop;
  * 
- *     chunkLength = inet::B(40);
+ *     chunkLength = inet::B(48);
  * }
  * </pre>
  */
@@ -49,10 +51,12 @@ class Grant2Rsu : public ::inet::FieldsChunk
 {
   protected:
     unsigned int appId = 0;
+    uint32_t ueAddr = 0;
     unsigned short resourceType = 0;
     unsigned short service = 0;
     unsigned short processGnbId = 0;
     unsigned short offloadGnbId = 0;
+    uint32_t offloadGnbAddr = 0;
     int cmpUnits = 0;
     int bands = 0;
     omnetpp::simtime_t exeTime = SIMTIME_ZERO;
@@ -81,6 +85,9 @@ class Grant2Rsu : public ::inet::FieldsChunk
     virtual unsigned int getAppId() const;
     virtual void setAppId(unsigned int appId);
 
+    virtual uint32_t getUeAddr() const;
+    virtual void setUeAddr(uint32_t ueAddr);
+
     virtual unsigned short getResourceType() const;
     virtual void setResourceType(unsigned short resourceType);
 
@@ -92,6 +99,9 @@ class Grant2Rsu : public ::inet::FieldsChunk
 
     virtual unsigned short getOffloadGnbId() const;
     virtual void setOffloadGnbId(unsigned short offloadGnbId);
+
+    virtual uint32_t getOffloadGnbAddr() const;
+    virtual void setOffloadGnbAddr(uint32_t offloadGnbAddr);
 
     virtual int getCmpUnits() const;
     virtual void setCmpUnits(int cmpUnits);

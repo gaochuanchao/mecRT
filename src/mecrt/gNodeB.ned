@@ -111,7 +111,7 @@ module gNodeB
         string mnc = default("01");  // Test network
 
     gates:
-        inout ppp @loose;         // connection to the Core Network
+        inout pppg[] @loose;         // connection to the Core Network
         input radioIn @directIn;  // connection to the radio interface
         inout x2[];               // connection to the X2 interface
 
@@ -147,29 +147,25 @@ module gNodeB
         //#
         cellularNic: GnbNic {
             parameters:
-                @display("p=494.54,519.82");
+                @display("p=363.4,519.82");
                 nodeType = parent.nodeType;
         }
 
-        // pppIf[sizeof(ppp)]: PppInterface {
-        //     parameters:
-        //         @display("p=824.76,519.82");
-        // }
-        pppIf: PppInterface {
+        pppIf[sizeof(pppg)]: PppInterface {
             parameters:
-                @display("p=824.76,519.82");
+                @display("p=477.16,519.82,row,120;q=txQueue");
         }
 
         x2ppp[sizeof(x2)]: PppInterface {
             parameters:
-                @display("p=979.60004,519.82");
+                @display("p=921.14,519.82");
         }
 
         //#
         //# Mec interface	
         //#
         pppMEHostIf: PppInterface if enableMecHost {
-            @display("p=657.28,519.82");
+            @display("p=679.4,519.82");
         }
 
         //#
@@ -278,14 +274,11 @@ module gNodeB
         //#
         //# Ppp interface to network layer connections
         //#
-        // for i=0..sizeof(ppp)-1 {
-        //     pppIf[i].phys <--> ppp[i];
-        //     pppIf[i].upperLayerOut --> nl.in++;
-        //     pppIf[i].upperLayerIn <-- nl.out++;
-        // }    
-        pppIf.phys <--> ppp;
-        pppIf.upperLayerOut --> nl.in++;
-        pppIf.upperLayerIn <-- nl.out++;
+        for i=0..sizeof(pppg)-1 {
+            pppIf[i].phys <--> pppg[i];
+            pppIf[i].upperLayerOut --> nl.in++;
+            pppIf[i].upperLayerIn <-- nl.out++;
+        }
 
         //#
         //# X2 interface to network layer connections

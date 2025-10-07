@@ -38,7 +38,7 @@ static const int MEC_OSPF_PORT = 38; // the port number used by MecOspf module
  * update by the global scheduler when it finishes a scheduling round
  * referenced by the UePhy module when deciding whether to broadcast feedback
  */
-extern omnetpp::simtime_t NEXT_SCHEDULING_TIME; 
+extern double NEXT_SCHEDULING_TIME; 
 
 /***
  * Define the data struct used in MEC
@@ -49,11 +49,6 @@ extern omnetpp::simtime_t NEXT_SCHEDULING_TIME;
 // =================================
 
 typedef unsigned int AppId;
-
-struct RsuAddr {
-    inet::Ipv4Address rsuAddress;    // the Ipv4 address of the RSU
-    int serverPort;     // the port of the server
-};
 
 struct ServiceInstance {
     AppId appId;
@@ -71,21 +66,6 @@ struct ServiceInstance {
 // ======== for RSU Server =========
 // =================================
 
-struct Service
-{
-    AppId appId;    // the application id
-    int resourceType;  // whether using GPU or CPU
-    int service;        // the service name
-    MacNodeId processGnbId;  // the id of processing gNB
-    MacNodeId offloadGnbId;  // the id of offloading gNB
-    omnetpp::simtime_t exeTime;    // service execution time
-    int cmpUnits;        // the allocated computing units for the service in RSU
-    int bands;           // the allocated bands for the service in RSU
-    omnetpp::simtime_t deadline;  // the deadline of the service
-    int inputSize;  // the input data size of the job, in bytes
-    int outputSize;  // the output data size of the job, in bytes
-    bool initComplete;
-    omnetpp::simtime_t maxOffloadTime;  // the maximum offloading time results in positive energy saving
-};
+
 
 #endif // _MECRT_MECCOMMON_H_

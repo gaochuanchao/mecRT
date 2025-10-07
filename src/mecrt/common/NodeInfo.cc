@@ -26,6 +26,7 @@ NodeInfo::NodeInfo()
 
     nodeAddr_ = inet::Ipv4Address::UNSPECIFIED_ADDRESS;
     rtState_ = false;
+    npcSocketId_ = -1;
 
     nodeId_ = -1;
     nicInterfaceId_ = -1;
@@ -33,11 +34,13 @@ NodeInfo::NodeInfo()
 
     serverState_ = true;
     serverPort_ = -1;
+    serverSocketId_ = -1;
 
     isGlobalScheduler_ = false;
     localSchedulerPort_ = -1;
     globalSchedulerAddr_ = inet::Ipv4Address::UNSPECIFIED_ADDRESS;
     scheduleInterval_ = 10.0; // default 10 seconds
+    localSchedulerSocketId_ = -1;
 }
 
 
@@ -59,15 +62,18 @@ void NodeInfo::initialize(int stage)
         WATCH(nodeState_);
         WATCH(nodeAddr_);
         WATCH(rtState_);
+        WATCH(npcSocketId_);
         WATCH(nodeId_);
         WATCH(nicInterfaceId_);
         WATCH(nicState_);
         WATCH(serverState_);
         WATCH(serverPort_);
+        WATCH(serverSocketId_);
         WATCH(isGlobalScheduler_);
         WATCH(globalSchedulerAddr_);
         WATCH(localSchedulerPort_);
         WATCH(scheduleInterval_);
+        WATCH(localSchedulerSocketId_);
 
         if (enableInitDebug_)
             std::cout << "NodeInfo:initialize - stage: INITSTAGE_LOCAL - ends\n";

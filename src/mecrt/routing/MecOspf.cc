@@ -148,7 +148,7 @@ void MecOspf::initialize(int stage)
     else if (stage == INITSTAGE_PHYSICAL_LAYER) {
         // get node info module, as router may not constains this module, so we need to handle the exception
         if (enableInitDebug_)
-            EV_INFO << "MecOspf:initialize - stage: INITSTAGE_PHYSICAL_LAYER - begins\n";
+            cout << "MecOspf:initialize - stage: INITSTAGE_PHYSICAL_LAYER - begins\n";
         
         try {
             nodeInfo_ = getModuleFromPar<NodeInfo>(par("nodeInfoModulePath"), this);
@@ -168,12 +168,34 @@ void MecOspf::initialize(int stage)
         }
 
         if (enableInitDebug_)
-            EV_INFO << "MecOspf:initialize - stage: INITSTAGE_PHYSICAL_LAYER - nodeInfo_ found: " 
+            cout << "MecOspf:initialize - stage: INITSTAGE_PHYSICAL_LAYER - nodeInfo_ found: " 
                     << (nodeInfo_ ? "yes" : "no") << "\n";
+    }
+    else if (stage == INITSTAGE_NETWORK_LAYER)
+    {
+        if (enableInitDebug_)
+            cout << "MecOspf:initialize - stage: INITSTAGE_NETWORK_LAYER - begins\n";
+
+        try {
+            rt_ = getModuleFromPar<Ipv4RoutingTable>(par("routingTableModule"), this);
+            routerId_ = rt_->getRouterId();
+            routerIdKey_ = routerId_.getInt();
+
+            if (nodeInfo_)
+                nodeInfo_->setNodeAddr(routerId_);
+
+            EV_INFO << "MecOspf:initialize - routingTableModule found, routerId=" << routerId_ << "\n";
+        } catch (cException &e) {
+            throw cRuntimeError("MecOspf:initialize - cannot find routingTableModule param\n");
+        }
+
+        // nothing to do here, just for logging purpose
+        if (enableInitDebug_)
+            cout << "MecOspf:initialize - stage: INITSTAGE_NETWORK_LAYER - routerId=" << routerId_ << "\n";
     }
     else if (isInitializeStage(stage)) {
         if (enableInitDebug_)
-            EV_INFO << "MecOspf:initialize - initialize stage " << stage << "\n";
+            cout << "MecOspf:initialize - initialize stage " << stage << "\n";
 
         EV_INFO << "MecOspf:initialize - network-layer init at stage " << stage << "\n";
         // acquire required INET modules via parameters (StandardHost uses these params)
@@ -193,19 +215,6 @@ void MecOspf::initialize(int stage)
         } catch (cException &e) {
             throw cRuntimeError("MecOspf:initialize - cannot find interfaceTableModule param\n");
         }
-        // get routing table module
-        try {
-            rt_ = getModuleFromPar<Ipv4RoutingTable>(par("routingTableModule"), this);
-            routerId_ = rt_->getRouterId();
-            routerIdKey_ = routerId_.getInt();
-
-            if (nodeInfo_)
-                nodeInfo_->setNodeAddr(routerId_);
-
-            EV_INFO << "MecOspf:initialize - routingTableModule found, routerId=" << routerId_ << "\n";
-        } catch (cException &e) {
-            throw cRuntimeError("MecOspf:initialize - cannot find routingTableModule param\n");
-        }
 
         // register protocol such that the IP layer can deliver packets to us
         registerProtocol(*MecProtocol::mecOspf, gate("ipOut"), gate("ipIn"));
@@ -216,9 +225,10 @@ void MecOspf::initialize(int stage)
         // initialize its Link State Advertisement (LSA) info
         seqNum_ = 0;
         selfLsa_ = makeShared<OspfLsa>();
-        selfLsa_->setOrigin(routerId_);
+        selfLsa_->setOrigin(routerIdKey_);
         selfLsa_->setSeqNum(seqNum_);
         selfLsa_->setInstallTime(simTime());
+        selfLsa_->setNodeId(nodeInfo_ ? nodeInfo_->getNodeId() : -1);   // set nodeId if nodeInfo_ is available (gNB), otherwise -1
         lsaPacketCache_[routerIdKey_] = selfLsa_;
 
         WATCH(routerId_);
@@ -230,6 +240,9 @@ void MecOspf::initialize(int stage)
         WATCH_MAP(indirectRoutes_);
         WATCH_MAP(neighborRoutes_);
         WATCH_MAP(lsaPacketCache_);
+
+        if (enableInitDebug_)
+            cout << "MecOspf:initialize - stage: INITSTAGE_NETWORK_LAYER - done\n";
     }
 }
 
@@ -313,7 +326,7 @@ void MecOspf::handleSelfTimer(cMessage *msg)
             selfLsa_->setCostArraySize(neighborCount);
             int idx = 0;
             for (const auto& n : neighbors_) {
-                selfLsa_->setNeighbor(idx, n.second.destIp);
+                selfLsa_->setNeighbor(idx, n.second.destIp.getInt());
                 selfLsa_->setCost(idx, n.second.cost);
                 idx++;
             }
@@ -609,8 +622,7 @@ void MecOspf::handleReceivedLsa(Packet *packet)
     // Check if LSA is new (higher seqNum)
     bool needUpdate = false;
     // if the origin router is not in cache, add it
-    Ipv4Address origin = lsa->getOrigin();
-    uint32_t originKey = ipKey(origin);
+    uint32_t originKey = lsa->getOrigin();
     if (lsaPacketCache_.find(originKey) == lsaPacketCache_.end())   // first time seeing this origin
         needUpdate = true;
 
@@ -621,7 +633,7 @@ void MecOspf::handleReceivedLsa(Packet *packet)
     if (needUpdate) {
         // Update LSA database
         lsaPacketCache_[originKey] = makeShared<OspfLsa>(*lsa);
-        EV_INFO << "MecOspf:handleReceivedLsa - received updated LSA from " << origin << "\n";
+        EV_INFO << "MecOspf:handleReceivedLsa - received updated LSA from " << Ipv4Address(originKey) << "\n";
 
         resetGlobalScheduler(); // reset global scheduler info
         // Update topology graph
@@ -653,7 +665,7 @@ void MecOspf::handleReceivedLsa(Packet *packet)
             scheduleAt(largestLsaTime_ + routeComputationDelay_, routeComputationTimer_);
         }
     } else {
-        EV_INFO << "MecOspf:handleReceivedLsa - received old LSA from " << origin << ", ignore it!\n";
+        EV_INFO << "MecOspf:handleReceivedLsa - received old LSA from " << Ipv4Address(originKey) << ", ignore it!\n";
     }
 }
 
@@ -665,18 +677,16 @@ void MecOspf::handleReceivedLsa(Packet *packet)
 void MecOspf::updateTopologyFromLsa(inet::Ptr<const OspfLsa>& lsa)
 {
     if (!lsa) return;
-    Ipv4Address origin = lsa->getOrigin();
-    uint32_t originKey = ipKey(origin);
+    uint32_t originKey = lsa->getOrigin();
 
     int neighborCount = lsa->getNeighborArraySize();
     topology_[originKey].clear();
     for (int i = 0; i < neighborCount; i++) {
-        Ipv4Address nbrIp = lsa->getNeighbor(i);
+        uint32_t nbrKey = lsa->getNeighbor(i);
         double cost = lsa->getCost(i);
-        uint32_t nbrKey = ipKey(nbrIp);
         topology_[originKey][nbrKey] = cost;
     }
-    EV_DETAIL << "MecOspf:updateTopologyFromLsa - updated topology for " << origin << ":\n";
+    EV_DETAIL << "MecOspf:updateTopologyFromLsa - updated topology for " << Ipv4Address(originKey) << ":\n";
     for (const auto& kv : topology_[originKey]) {
         Ipv4Address nbrIp = Ipv4Address(kv.first);
         double cost = kv.second;
@@ -884,6 +894,9 @@ void MecOspf::recomputeIndirectRouting()
     // because 
     size_t maxNeighbors = 0;
     for (auto nodeKey : reachableNodes) {
+        // only consider nodes has positive nodeId (i.e., gNBs)
+        if (lsaPacketCache_[nodeKey]->getNodeId() <= 0) continue;
+
         size_t nbrCount = topology_[nodeKey].size();
         if (nbrCount > maxNeighbors) {
             maxNeighbors = nbrCount;
@@ -912,7 +925,9 @@ void MecOspf::recomputeIndirectRouting()
     }
     else
     {
-        EV_INFO << "MecOspf:recomputeIndirectRouting - selected scheduler node: " << schedulerNode_ << " (neighbors=" << maxNeighbors << ")\n";
+        int globalSchedulerNodeId = lsaPacketCache_[schedulerNode_.getInt()]->getNodeId();
+        EV_INFO << "MecOspf:recomputeIndirectRouting - selected gNB node " << globalSchedulerNodeId
+        << " (IP address: " << schedulerNode_ << ", neighbors=" << maxNeighbors << ") as the global scheduler.\n";
     }
 }
 

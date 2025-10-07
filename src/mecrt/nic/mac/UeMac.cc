@@ -181,11 +181,25 @@ void UeMac::initialize(int stage)
         // =========== LteMacUe ===========
         EV << "UeMac::initialize - MAC layer, stage INITSTAGE_LINK_LAYER" << endl;
 
+        // =========== LteMacUe ===========
+        /***
+         * the default value of NRUe->par("nrMacNodeId") is 0, specified in NRUe.ned;
+         * its value is updated in IP2Nic::initialize(), which calls Binder::registerNode().
+         * in Binder::registerNode(), the nrMacNodeId of NRUe is set started from value 2049, i.e., 2049, 2050, ...;
+         * if there is only one NRUe, its corresponding NRUe->par("nrMacNodeId") will be set as 2049.
+         * because IP2Nic is initialized before UeMac, the value of nodeId_ will be 2049.
+         */
+        if (strcmp(getFullName(),"nrMac") == 0)
+            nodeId_ = getAncestorPar("nrMacNodeId");
+        else
+            nodeId_ = getAncestorPar("macNodeId");
+
         try {
             nodeInfo_ = getModuleFromPar<NodeInfo>(par("nodeInfoModulePath"), this);
         } catch (cException &e) {
             throw cRuntimeError("UeMac::initialize - cannot find nodeInfo module\n");
         }
+        nodeInfo_->setNodeId(nodeId_);
 
         resAllocateMode_ = par("resAllocateMode");
 
@@ -207,20 +221,7 @@ void UeMac::initialize(int stage)
         if (enableInitDebug_)
             std::cout << "UeMac::initialize - stage: INITSTAGE_NETWORK_LAYER - begins" << std::endl;
 
-        // =========== LteMacUe ===========
-        /***
-         * the default value of NRUe->par("nrMacNodeId") is 0, specified in NRUe.ned;
-         * its value is updated in IP2Nic::initialize(), which calls Binder::registerNode().
-         * in Binder::registerNode(), the nrMacNodeId of NRUe is set started from value 2049, i.e., 2049, 2050, ...;
-         * if there is only one NRUe, its corresponding NRUe->par("nrMacNodeId") will be set as 2049.
-         * because IP2Nic is initialized before UeMac, the value of nodeId_ will be 2049.
-         */
-        if (strcmp(getFullName(),"nrMac") == 0)
-            nodeId_ = getAncestorPar("nrMacNodeId");
-        else
-            nodeId_ = getAncestorPar("macNodeId");
 
-        nodeInfo_->setNodeId(nodeId_);
 
         /* Insert UeInfo in the Binder */
         UeInfo* info = new UeInfo();

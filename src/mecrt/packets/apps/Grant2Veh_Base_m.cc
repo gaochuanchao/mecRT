@@ -154,7 +154,7 @@ Register_Class(Grant2Veh_Base)
 
 Grant2Veh_Base::Grant2Veh_Base() : ::inet::FieldsChunk()
 {
-    this->setChunkLength(inet::B(36));
+    this->setChunkLength(inet::B(40));
 
 }
 
@@ -178,10 +178,12 @@ Grant2Veh_Base& Grant2Veh_Base::operator=(const Grant2Veh_Base& other)
 void Grant2Veh_Base::copy(const Grant2Veh_Base& other)
 {
     this->appId = other.appId;
+    this->ueAddr = other.ueAddr;
     this->maxOffloadTime = other.maxOffloadTime;
     this->bands = other.bands;
     this->processGnbId = other.processGnbId;
     this->offloadGnbId = other.offloadGnbId;
+    this->processGnbAddr = other.processGnbAddr;
     this->processGnbPort = other.processGnbPort;
     this->inputSize = other.inputSize;
     this->outputSize = other.outputSize;
@@ -192,10 +194,12 @@ void Grant2Veh_Base::parsimPack(omnetpp::cCommBuffer *b) const
 {
     ::inet::FieldsChunk::parsimPack(b);
     doParsimPacking(b,this->appId);
+    doParsimPacking(b,this->ueAddr);
     doParsimPacking(b,this->maxOffloadTime);
     doParsimPacking(b,this->bands);
     doParsimPacking(b,this->processGnbId);
     doParsimPacking(b,this->offloadGnbId);
+    doParsimPacking(b,this->processGnbAddr);
     doParsimPacking(b,this->processGnbPort);
     doParsimPacking(b,this->inputSize);
     doParsimPacking(b,this->outputSize);
@@ -206,10 +210,12 @@ void Grant2Veh_Base::parsimUnpack(omnetpp::cCommBuffer *b)
 {
     ::inet::FieldsChunk::parsimUnpack(b);
     doParsimUnpacking(b,this->appId);
+    doParsimUnpacking(b,this->ueAddr);
     doParsimUnpacking(b,this->maxOffloadTime);
     doParsimUnpacking(b,this->bands);
     doParsimUnpacking(b,this->processGnbId);
     doParsimUnpacking(b,this->offloadGnbId);
+    doParsimUnpacking(b,this->processGnbAddr);
     doParsimUnpacking(b,this->processGnbPort);
     doParsimUnpacking(b,this->inputSize);
     doParsimUnpacking(b,this->outputSize);
@@ -225,6 +231,17 @@ void Grant2Veh_Base::setAppId(unsigned int appId)
 {
     handleChange();
     this->appId = appId;
+}
+
+uint32_t Grant2Veh_Base::getUeAddr() const
+{
+    return this->ueAddr;
+}
+
+void Grant2Veh_Base::setUeAddr(uint32_t ueAddr)
+{
+    handleChange();
+    this->ueAddr = ueAddr;
 }
 
 omnetpp::simtime_t Grant2Veh_Base::getMaxOffloadTime() const
@@ -269,6 +286,17 @@ void Grant2Veh_Base::setOffloadGnbId(unsigned short offloadGnbId)
 {
     handleChange();
     this->offloadGnbId = offloadGnbId;
+}
+
+uint32_t Grant2Veh_Base::getProcessGnbAddr() const
+{
+    return this->processGnbAddr;
+}
+
+void Grant2Veh_Base::setProcessGnbAddr(uint32_t processGnbAddr)
+{
+    handleChange();
+    this->processGnbAddr = processGnbAddr;
 }
 
 int Grant2Veh_Base::getProcessGnbPort() const
@@ -321,10 +349,12 @@ class Grant2Veh_BaseDescriptor : public omnetpp::cClassDescriptor
     mutable const char **propertyNames;
     enum FieldConstants {
         FIELD_appId,
+        FIELD_ueAddr,
         FIELD_maxOffloadTime,
         FIELD_bands,
         FIELD_processGnbId,
         FIELD_offloadGnbId,
+        FIELD_processGnbAddr,
         FIELD_processGnbPort,
         FIELD_inputSize,
         FIELD_outputSize,
@@ -395,7 +425,7 @@ const char *Grant2Veh_BaseDescriptor::getProperty(const char *propertyName) cons
 int Grant2Veh_BaseDescriptor::getFieldCount() const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
-    return base ? 9+base->getFieldCount() : 9;
+    return base ? 11+base->getFieldCount() : 11;
 }
 
 unsigned int Grant2Veh_BaseDescriptor::getFieldTypeFlags(int field) const
@@ -408,16 +438,18 @@ unsigned int Grant2Veh_BaseDescriptor::getFieldTypeFlags(int field) const
     }
     static unsigned int fieldTypeFlags[] = {
         FD_ISEDITABLE,    // FIELD_appId
+        FD_ISEDITABLE,    // FIELD_ueAddr
         FD_ISEDITABLE,    // FIELD_maxOffloadTime
         FD_ISEDITABLE,    // FIELD_bands
         FD_ISEDITABLE,    // FIELD_processGnbId
         FD_ISEDITABLE,    // FIELD_offloadGnbId
+        FD_ISEDITABLE,    // FIELD_processGnbAddr
         FD_ISEDITABLE,    // FIELD_processGnbPort
         FD_ISEDITABLE,    // FIELD_inputSize
         FD_ISEDITABLE,    // FIELD_outputSize
         FD_ISEDITABLE,    // FIELD_bytePerTTI
     };
-    return (field >= 0 && field < 9) ? fieldTypeFlags[field] : 0;
+    return (field >= 0 && field < 11) ? fieldTypeFlags[field] : 0;
 }
 
 const char *Grant2Veh_BaseDescriptor::getFieldName(int field) const
@@ -430,16 +462,18 @@ const char *Grant2Veh_BaseDescriptor::getFieldName(int field) const
     }
     static const char *fieldNames[] = {
         "appId",
+        "ueAddr",
         "maxOffloadTime",
         "bands",
         "processGnbId",
         "offloadGnbId",
+        "processGnbAddr",
         "processGnbPort",
         "inputSize",
         "outputSize",
         "bytePerTTI",
     };
-    return (field >= 0 && field < 9) ? fieldNames[field] : nullptr;
+    return (field >= 0 && field < 11) ? fieldNames[field] : nullptr;
 }
 
 int Grant2Veh_BaseDescriptor::findField(const char *fieldName) const
@@ -447,14 +481,16 @@ int Grant2Veh_BaseDescriptor::findField(const char *fieldName) const
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     int baseIndex = base ? base->getFieldCount() : 0;
     if (strcmp(fieldName, "appId") == 0) return baseIndex + 0;
-    if (strcmp(fieldName, "maxOffloadTime") == 0) return baseIndex + 1;
-    if (strcmp(fieldName, "bands") == 0) return baseIndex + 2;
-    if (strcmp(fieldName, "processGnbId") == 0) return baseIndex + 3;
-    if (strcmp(fieldName, "offloadGnbId") == 0) return baseIndex + 4;
-    if (strcmp(fieldName, "processGnbPort") == 0) return baseIndex + 5;
-    if (strcmp(fieldName, "inputSize") == 0) return baseIndex + 6;
-    if (strcmp(fieldName, "outputSize") == 0) return baseIndex + 7;
-    if (strcmp(fieldName, "bytePerTTI") == 0) return baseIndex + 8;
+    if (strcmp(fieldName, "ueAddr") == 0) return baseIndex + 1;
+    if (strcmp(fieldName, "maxOffloadTime") == 0) return baseIndex + 2;
+    if (strcmp(fieldName, "bands") == 0) return baseIndex + 3;
+    if (strcmp(fieldName, "processGnbId") == 0) return baseIndex + 4;
+    if (strcmp(fieldName, "offloadGnbId") == 0) return baseIndex + 5;
+    if (strcmp(fieldName, "processGnbAddr") == 0) return baseIndex + 6;
+    if (strcmp(fieldName, "processGnbPort") == 0) return baseIndex + 7;
+    if (strcmp(fieldName, "inputSize") == 0) return baseIndex + 8;
+    if (strcmp(fieldName, "outputSize") == 0) return baseIndex + 9;
+    if (strcmp(fieldName, "bytePerTTI") == 0) return baseIndex + 10;
     return base ? base->findField(fieldName) : -1;
 }
 
@@ -468,16 +504,18 @@ const char *Grant2Veh_BaseDescriptor::getFieldTypeString(int field) const
     }
     static const char *fieldTypeStrings[] = {
         "unsigned int",    // FIELD_appId
+        "uint32",    // FIELD_ueAddr
         "omnetpp::simtime_t",    // FIELD_maxOffloadTime
         "int",    // FIELD_bands
         "unsigned short",    // FIELD_processGnbId
         "unsigned short",    // FIELD_offloadGnbId
+        "uint32",    // FIELD_processGnbAddr
         "int",    // FIELD_processGnbPort
         "int",    // FIELD_inputSize
         "int",    // FIELD_outputSize
         "int",    // FIELD_bytePerTTI
     };
-    return (field >= 0 && field < 9) ? fieldTypeStrings[field] : nullptr;
+    return (field >= 0 && field < 11) ? fieldTypeStrings[field] : nullptr;
 }
 
 const char **Grant2Veh_BaseDescriptor::getFieldPropertyNames(int field) const
@@ -561,10 +599,12 @@ std::string Grant2Veh_BaseDescriptor::getFieldValueAsString(omnetpp::any_ptr obj
     Grant2Veh_Base *pp = omnetpp::fromAnyPtr<Grant2Veh_Base>(object); (void)pp;
     switch (field) {
         case FIELD_appId: return ulong2string(pp->getAppId());
+        case FIELD_ueAddr: return ulong2string(pp->getUeAddr());
         case FIELD_maxOffloadTime: return simtime2string(pp->getMaxOffloadTime());
         case FIELD_bands: return long2string(pp->getBands());
         case FIELD_processGnbId: return ulong2string(pp->getProcessGnbId());
         case FIELD_offloadGnbId: return ulong2string(pp->getOffloadGnbId());
+        case FIELD_processGnbAddr: return ulong2string(pp->getProcessGnbAddr());
         case FIELD_processGnbPort: return long2string(pp->getProcessGnbPort());
         case FIELD_inputSize: return long2string(pp->getInputSize());
         case FIELD_outputSize: return long2string(pp->getOutputSize());
@@ -586,10 +626,12 @@ void Grant2Veh_BaseDescriptor::setFieldValueAsString(omnetpp::any_ptr object, in
     Grant2Veh_Base *pp = omnetpp::fromAnyPtr<Grant2Veh_Base>(object); (void)pp;
     switch (field) {
         case FIELD_appId: pp->setAppId(string2ulong(value)); break;
+        case FIELD_ueAddr: pp->setUeAddr(string2ulong(value)); break;
         case FIELD_maxOffloadTime: pp->setMaxOffloadTime(string2simtime(value)); break;
         case FIELD_bands: pp->setBands(string2long(value)); break;
         case FIELD_processGnbId: pp->setProcessGnbId(string2ulong(value)); break;
         case FIELD_offloadGnbId: pp->setOffloadGnbId(string2ulong(value)); break;
+        case FIELD_processGnbAddr: pp->setProcessGnbAddr(string2ulong(value)); break;
         case FIELD_processGnbPort: pp->setProcessGnbPort(string2long(value)); break;
         case FIELD_inputSize: pp->setInputSize(string2long(value)); break;
         case FIELD_outputSize: pp->setOutputSize(string2long(value)); break;
@@ -609,10 +651,12 @@ omnetpp::cValue Grant2Veh_BaseDescriptor::getFieldValue(omnetpp::any_ptr object,
     Grant2Veh_Base *pp = omnetpp::fromAnyPtr<Grant2Veh_Base>(object); (void)pp;
     switch (field) {
         case FIELD_appId: return (omnetpp::intval_t)(pp->getAppId());
+        case FIELD_ueAddr: return (omnetpp::intval_t)(pp->getUeAddr());
         case FIELD_maxOffloadTime: return pp->getMaxOffloadTime().dbl();
         case FIELD_bands: return pp->getBands();
         case FIELD_processGnbId: return (omnetpp::intval_t)(pp->getProcessGnbId());
         case FIELD_offloadGnbId: return (omnetpp::intval_t)(pp->getOffloadGnbId());
+        case FIELD_processGnbAddr: return (omnetpp::intval_t)(pp->getProcessGnbAddr());
         case FIELD_processGnbPort: return pp->getProcessGnbPort();
         case FIELD_inputSize: return pp->getInputSize();
         case FIELD_outputSize: return pp->getOutputSize();
@@ -634,10 +678,12 @@ void Grant2Veh_BaseDescriptor::setFieldValue(omnetpp::any_ptr object, int field,
     Grant2Veh_Base *pp = omnetpp::fromAnyPtr<Grant2Veh_Base>(object); (void)pp;
     switch (field) {
         case FIELD_appId: pp->setAppId(omnetpp::checked_int_cast<unsigned int>(value.intValue())); break;
+        case FIELD_ueAddr: pp->setUeAddr(omnetpp::checked_int_cast<uint32_t>(value.intValue())); break;
         case FIELD_maxOffloadTime: pp->setMaxOffloadTime(value.doubleValue()); break;
         case FIELD_bands: pp->setBands(omnetpp::checked_int_cast<int>(value.intValue())); break;
         case FIELD_processGnbId: pp->setProcessGnbId(omnetpp::checked_int_cast<unsigned short>(value.intValue())); break;
         case FIELD_offloadGnbId: pp->setOffloadGnbId(omnetpp::checked_int_cast<unsigned short>(value.intValue())); break;
+        case FIELD_processGnbAddr: pp->setProcessGnbAddr(omnetpp::checked_int_cast<uint32_t>(value.intValue())); break;
         case FIELD_processGnbPort: pp->setProcessGnbPort(omnetpp::checked_int_cast<int>(value.intValue())); break;
         case FIELD_inputSize: pp->setInputSize(omnetpp::checked_int_cast<int>(value.intValue())); break;
         case FIELD_outputSize: pp->setOutputSize(omnetpp::checked_int_cast<int>(value.intValue())); break;

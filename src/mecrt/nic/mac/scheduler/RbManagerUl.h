@@ -32,7 +32,8 @@ struct AppGrantInfo
     int processGnbPort;  // the port of the processing gNB
     MacNodeId processGnbId;  // the id of processing gNB
     MacNodeId offloadGnbId;  // the id of offloading gNB
-    L3Address processGnbAddr;  // the address of processing gNB
+    Ipv4Address processGnbAddr;  // the address of processing gNB
+    Ipv4Address ueAddr;  // the address of the vehicle
 };
 
 class RbManagerUl

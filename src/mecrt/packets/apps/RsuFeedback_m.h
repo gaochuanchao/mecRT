@@ -34,6 +34,7 @@ class RsuFeedback;
  *     int bytePerBand;	// bytes that can be delived within 1 TTI for each band, 4 bytes
  *     int availBands;	// number of bands, 2 bytes
  *     int totalBands;	// total bands can be used for scheduling, 2 bytes
+ *     uint32 rsuAddr;	// the IPv4 address of the RSU, 4 bytes
  * 
  *     // ===== specified in the server app of the gNB ===========
  *     int freeCmpUnits;	// the available computing units in the RSU server, 2 bytes
@@ -58,6 +59,7 @@ class RsuFeedback : public ::inet::FieldsChunk
     int bytePerBand = 0;
     int availBands = 0;
     int totalBands = 0;
+    uint32_t rsuAddr = 0;
     int freeCmpUnits = 0;
     int totalCmpUnits = 0;
     unsigned short deviceType = 0;
@@ -100,6 +102,9 @@ class RsuFeedback : public ::inet::FieldsChunk
 
     virtual int getTotalBands() const;
     virtual void setTotalBands(int totalBands);
+
+    virtual uint32_t getRsuAddr() const;
+    virtual void setRsuAddr(uint32_t rsuAddr);
 
     virtual int getFreeCmpUnits() const;
     virtual void setFreeCmpUnits(int freeCmpUnits);

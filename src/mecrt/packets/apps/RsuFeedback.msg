@@ -25,6 +25,7 @@ class RsuFeedback extends inet::FieldsChunk {
     int bytePerBand;	// bytes that can be delived within 1 TTI for each band, 4 bytes
     int availBands;	// number of bands, 2 bytes
     int totalBands;	// total bands can be used for scheduling, 2 bytes
+    uint32 rsuAddr;	// the IPv4 address of the RSU, 4 bytes
 	
 	// ===== specified in the server app of the gNB ===========
 	int freeCmpUnits;	// the available computing units in the RSU server, 2 bytes

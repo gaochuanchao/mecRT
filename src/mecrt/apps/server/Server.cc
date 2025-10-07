@@ -21,6 +21,7 @@
 #include "inet/common/TimeTag_m.h"
 #include "corenetwork/gtp/GtpUserMsg_m.h"
 #include <inet/linklayer/common/InterfaceTag_m.h>
+#include "inet/common/socket/SocketTag_m.h"
 
 Define_Module(Server);
 
@@ -91,16 +92,22 @@ void Server::initialize(int stage)
         {
             socket.setOutputGate(gate("socketOut"));
             socket.bind(localPort_);
+            socketId_ = socket.getSocketId();
         }
 
-        nodeInfo_ = getModuleFromPar<NodeInfo>(par("nodeInfoModulePath"), this);
-        nodeInfo_->setServerPort(localPort_);
+        try
+        {
+            nodeInfo_ = getModuleFromPar<NodeInfo>(par("nodeInfoModulePath"), this);
+            nodeInfo_->setServerPort(localPort_);
+            nodeInfo_->setServerSocketId(socketId_);
+        }
+        catch(cRuntimeError& e){
+            throw cRuntimeError(this, "Server::initialize - cannot find nodeInfo module, please check the parameter setting");
+            nodeInfo_ = nullptr;
+        }
 
         binder_ = getBinder();
         gnbId_ = getAncestorPar("macNodeId");
-
-        serverAddr_ = inet::L3AddressResolver().resolve(getParentModule()->getFullName());
-        EV << "Server::initialize - RSU server local address " << serverAddr_.toIpv4().str() << ", RSU MacNodeId " << gnbId_ << endl;
 
         srvInitComplete_ = new cMessage("ServiceInitComplete");
         srvInitComplete_->setSchedulingPriority(1);  // after other messages
@@ -154,7 +161,15 @@ void Server::handleMessage(cMessage *msg)
         }
     }
     else if(!strcmp(msg->getName(), "RsuFD")){
-        updateRsuFeedback(msg);
+        if (!nodeInfo_->getGlobalSchedulerAddr().isUnspecified())
+        {
+            auto pkt = check_and_cast<Packet *>(msg);
+            updateRsuFeedback(pkt);
+        }
+
+        delete msg;
+        msg = nullptr;
+        return;
     }
     else if(!strcmp(msg->getName(), "SrvGrant")){
         auto pkt = check_and_cast<Packet *>(msg);
@@ -167,6 +182,8 @@ void Server::handleMessage(cMessage *msg)
             stopService(appId);
         
         delete msg;
+        msg = nullptr;
+        return;
     }
     else if(!strcmp(msg->getName(), "SrvFD")){
         updateServiceStatus(msg);
@@ -204,31 +221,37 @@ void Server::handleMessage(cMessage *msg)
         }
 
         delete msg;
+        msg = nullptr;
+        return;
     }
 }
 
-void Server::updateRsuFeedback(omnetpp::cMessage *msg)
+void Server::updateRsuFeedback(inet::Packet *pkt)
 {
     EV << "Server::updateRsuFeedback - update RSU status feedback and send it to the scheduler " << endl;
+    auto rsuFd = pkt->peekAtFront<RsuFeedback>();
 
-    auto pkt = check_and_cast<Packet *>(msg);
-    pkt->trim();
-    pkt->clearTags();
-    auto rsuFd = pkt->removeAtFront<RsuFeedback>();
+    auto rsuFdCopy = makeShared<RsuFeedback>(*rsuFd);
+    rsuFdCopy->setFreeCmpUnits(cmpUnitFree_);
+    rsuFdCopy->setDeviceType(deviceType_);
+    rsuFdCopy->setResourceType(resourceType_);
+    rsuFdCopy->setTotalCmpUnits(cmpUnitTotal_);
+    rsuFdCopy->setCmpUnitUpdateTime(simTime());
 
-    rsuFd->setFreeCmpUnits(cmpUnitFree_);
-    rsuFd->setDeviceType(deviceType_);
-    rsuFd->setResourceType(resourceType_);
-    rsuFd->setTotalCmpUnits(cmpUnitTotal_);
-    rsuFd->setCmpUnitUpdateTime(simTime());
-    pkt->insertAtFront(rsuFd);
-
-    auto vehAddr = binder_->getIPv4Address(rsuFd->getVehId());
-
-    // addHeaders(pkt, schedulerAddr_, schedulerPort_, vehAddr);
-    // socket.sendTo(pkt, gwAddress_, tunnelPeerPort_);
-    // pkt->addTagIfAbsent<InterfaceReq>()->setInterfaceId(pppIfInterfaceId_);
-    socket.sendTo(pkt, nodeInfo_->getGlobalSchedulerAddr(), MEC_NPC_PORT);
+    Packet* packet = new Packet("RsuFD");
+    packet->insertAtFront(rsuFdCopy);
+    if (nodeInfo_->getIsGlobalScheduler())
+    {
+        EV << "Server::updateRsuFeedback - local scheduler is global scheduler, send feedback to local scheduler." << endl;
+        packet->addTagIfAbsent<SocketInd>()->setSocketId(nodeInfo_->getLocalSchedulerSocketId());
+        send(packet, "socketOut");
+    }
+    else 
+    {
+        EV << "Server::updateRsuFeedback - local scheduler is not global scheduler, send feedback to global scheduler " 
+        << nodeInfo_->getGlobalSchedulerAddr() << endl;
+        socket.sendTo(packet, nodeInfo_->getGlobalSchedulerAddr(), MEC_NPC_PORT);
+    }
 }
 
 void Server::updateServiceStatus(omnetpp::cMessage *msg)
@@ -285,11 +308,13 @@ void Server::sendGrant2Vehicle(AppId appId, bool isStop)
     Packet* packet = new Packet("VehGrant");
     auto grant = makeShared<Grant2Veh>();
     grant->setAppId(appId);
+    grant->setUeAddr(srv.ueAddr.getInt());
     grant->setMaxOffloadTime(srv.maxOffloadTime);
     grant->setBands(srv.bands);
     grant->setProcessGnbId(srv.processGnbId);
     grant->setOffloadGnbId(srv.offloadGnbId);
     grant->setProcessGnbPort(localPort_);
+    grant->setProcessGnbAddr(nodeInfo_->getNodeAddr().getInt());
     grant->setInputSize(srv.inputSize);
     grant->setOutputSize(srv.outputSize);
     grant->setGrantStop(isStop);
@@ -299,8 +324,6 @@ void Server::sendGrant2Vehicle(AppId appId, bool isStop)
      * if the processGnbId and offloadGnbId are the same, then the packet is sent to the NIC interface of the gNodeB
      * otherwise, the packet is forwarded to the NIC interface of the gNodeB
      */
-    MacNodeId vehId = MacCidToNodeId(appId);
-    auto vehAddr = binder_->getIPv4Address(vehId);
     int appPort = MacCidToLcid(appId);
     if (srv.processGnbId == srv.offloadGnbId)
     {
@@ -309,48 +332,18 @@ void Server::sendGrant2Vehicle(AppId appId, bool isStop)
            << " is the same as processing gNodeB " << srv.processGnbId << ", send grant to NIC interface " << nicInterfaceId << endl;
         // find the NIC interface id of the gNodeB
         packet->addTagIfAbsent<InterfaceReq>()->setInterfaceId(nicInterfaceId);
-        socket.sendTo(packet, vehAddr, appPort);
+        socket.sendTo(packet, srv.ueAddr, appPort);
     }
     else
     {
         EV << "Server::sendGrant2Vehicle - offloading gNodeB " << srv.offloadGnbId 
-           << " is different from processing gNodeB " << srv.processGnbId << ", forward grant to offloading gNodeB" << endl;
-
-        // get the offloading gNodeB module by its MacNodeId
-        cModule *offloadGnb = binder_->getModuleByMacNodeId(srv.offloadGnbId);
-        if (offloadGnb == nullptr)
-        {
-            std::stringstream errorMsg;
-            errorMsg << "Time: " << NOW << " Server::sendGrant2Vehicle - cannot find the offloading gNodeB module by its MacNodeId " << srv.offloadGnbId;
-            throw cRuntimeError("%s", errorMsg.str().c_str());
-        }
-        // get the offloading gNodeB address and its server port
-        L3Address offloadGnbAddr = L3AddressResolver().resolve(offloadGnb->getFullName()).toIpv4();
-        EV << "Server::sendGrant2Vehicle - forwarding to the NPC module of the offloading gNodeB" << endl;
+           << " is different from processing gNodeB " << srv.processGnbId 
+           << ", forward to the NPC module of the offloading gNodeB" << endl;
         // packet->addTagIfAbsent<InterfaceReq>()->setInterfaceId(pppIfInterfaceId_);
-        socket.sendTo(packet, offloadGnbAddr, MEC_NPC_PORT);
+        socket.sendTo(packet, srv.offloadGnbAddr, MEC_NPC_PORT);
     }
 }
 
-
-void Server::addHeaders(Packet* packet, const inet::L3Address& destAddr, int destPort, const inet::Ipv4Address& srcAddr)
-{
-    inet::Ptr<UdpHeader> udpHeader = makeShared<UdpHeader>();
-    udpHeader->setDestinationPort(destPort);
-    udpHeader->setTotalLengthField(udpHeader->getChunkLength() + packet->getTotalLength());
-    udpHeader->setCrcMode(CRC_DECLARED_CORRECT);
-    udpHeader->setCrc(0xC00D);
-    packet->insertAtFront(udpHeader);
-
-    inet::Ptr<Ipv4Header> ipv4Header = makeShared<Ipv4Header>();
-    ipv4Header->setProtocolId(IP_PROT_UDP);
-    ipv4Header->setDestAddress(destAddr.toIpv4());
-    ipv4Header->setSrcAddress(srcAddr);   // vehicle address
-    ipv4Header->addChunkLength(B(20));
-    ipv4Header->setHeaderLength(B(20));
-    ipv4Header->setTotalLengthField(ipv4Header->getChunkLength() + packet->getDataLength());
-    packet->insertAtFront(ipv4Header);
-}
 
 void Server::initializeService(inet::Ptr<const Grant2Rsu> pkt)
 {
@@ -368,12 +361,9 @@ void Server::initializeService(inet::Ptr<const Grant2Rsu> pkt)
         srvStatus->setAppId(appId);
         srvStatus->setProcessGnbId(processGnbId);
         srvStatus->setOffloadGnbId(pkt->getOffloadGnbId());
-        srvStatus->setGrantedBand(pkt->getBands());
         srvStatus->setAvailCmpUnit(cmpUnitFree_);
-        srvStatus->addTag<CreationTimeTag>()->setCreationTime(simTime());
+        srvStatus->setProcessGnbCuUpdateTime(simTime());
         packet->insertAtFront(srvStatus);
-        // addHeaders(packet, schedulerAddr_, schedulerPort_, serverAddr_.toIpv4());
-        // packet->addTagIfAbsent<InterfaceReq>()->setInterfaceId(pppIfInterfaceId_);
         socket.sendTo(packet, nodeInfo_->getGlobalSchedulerAddr(), MEC_NPC_PORT);
 
         grantedService_.erase(appId);
@@ -390,12 +380,10 @@ void Server::initializeService(inet::Ptr<const Grant2Rsu> pkt)
         srvStatus->setAppId(appId);
         srvStatus->setProcessGnbId(processGnbId);
         srvStatus->setOffloadGnbId(offloadGnbId);
-        srvStatus->setGrantedBand(pkt->getBands());
         srvStatus->setAvailCmpUnit(cmpUnitFree_);
+        srvStatus->setProcessGnbCuUpdateTime(simTime());
         srvStatus->addTag<CreationTimeTag>()->setCreationTime(simTime());
         packet->insertAtFront(srvStatus);
-        // addHeaders(packet, schedulerAddr_, schedulerPort_, serverAddr_.toIpv4());
-        // packet->addTagIfAbsent<InterfaceReq>()->setInterfaceId(pppIfInterfaceId_);
         socket.sendTo(packet, nodeInfo_->getGlobalSchedulerAddr(), MEC_NPC_PORT);
 
         grantedService_.erase(appId);
@@ -405,6 +393,7 @@ void Server::initializeService(inet::Ptr<const Grant2Rsu> pkt)
     Service srv;
     srv.processGnbId = processGnbId;
     srv.offloadGnbId = offloadGnbId;
+    srv.offloadGnbAddr = Ipv4Address(pkt->getOffloadGnbAddr());
     srv.resourceType = static_cast<VecResourceType>(pkt->getResourceType());
     srv.service = static_cast<VecServiceType>(pkt->getService());
     srv.cmpUnits = pkt->getCmpUnits();
@@ -413,6 +402,7 @@ void Server::initializeService(inet::Ptr<const Grant2Rsu> pkt)
     srv.outputSize = pkt->getOutputSize();
     srv.inputSize = pkt->getInputSize();
     srv.appId = appId;
+    srv.ueAddr = Ipv4Address(pkt->getUeAddr());
     srv.exeTime = pkt->getExeTime();
     srv.initComplete = false;
     double time = pkt->getMaxOffloadTime().dbl();

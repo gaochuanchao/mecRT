@@ -184,6 +184,7 @@ void RsuFeedback::copy(const RsuFeedback& other)
     this->bytePerBand = other.bytePerBand;
     this->availBands = other.availBands;
     this->totalBands = other.totalBands;
+    this->rsuAddr = other.rsuAddr;
     this->freeCmpUnits = other.freeCmpUnits;
     this->totalCmpUnits = other.totalCmpUnits;
     this->deviceType = other.deviceType;
@@ -202,6 +203,7 @@ void RsuFeedback::parsimPack(omnetpp::cCommBuffer *b) const
     doParsimPacking(b,this->bytePerBand);
     doParsimPacking(b,this->availBands);
     doParsimPacking(b,this->totalBands);
+    doParsimPacking(b,this->rsuAddr);
     doParsimPacking(b,this->freeCmpUnits);
     doParsimPacking(b,this->totalCmpUnits);
     doParsimPacking(b,this->deviceType);
@@ -220,6 +222,7 @@ void RsuFeedback::parsimUnpack(omnetpp::cCommBuffer *b)
     doParsimUnpacking(b,this->bytePerBand);
     doParsimUnpacking(b,this->availBands);
     doParsimUnpacking(b,this->totalBands);
+    doParsimUnpacking(b,this->rsuAddr);
     doParsimUnpacking(b,this->freeCmpUnits);
     doParsimUnpacking(b,this->totalCmpUnits);
     doParsimUnpacking(b,this->deviceType);
@@ -305,6 +308,17 @@ void RsuFeedback::setTotalBands(int totalBands)
     this->totalBands = totalBands;
 }
 
+uint32_t RsuFeedback::getRsuAddr() const
+{
+    return this->rsuAddr;
+}
+
+void RsuFeedback::setRsuAddr(uint32_t rsuAddr)
+{
+    handleChange();
+    this->rsuAddr = rsuAddr;
+}
+
 int RsuFeedback::getFreeCmpUnits() const
 {
     return this->freeCmpUnits;
@@ -383,6 +397,7 @@ class RsuFeedbackDescriptor : public omnetpp::cClassDescriptor
         FIELD_bytePerBand,
         FIELD_availBands,
         FIELD_totalBands,
+        FIELD_rsuAddr,
         FIELD_freeCmpUnits,
         FIELD_totalCmpUnits,
         FIELD_deviceType,
@@ -455,7 +470,7 @@ const char *RsuFeedbackDescriptor::getProperty(const char *propertyName) const
 int RsuFeedbackDescriptor::getFieldCount() const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
-    return base ? 13+base->getFieldCount() : 13;
+    return base ? 14+base->getFieldCount() : 14;
 }
 
 unsigned int RsuFeedbackDescriptor::getFieldTypeFlags(int field) const
@@ -474,6 +489,7 @@ unsigned int RsuFeedbackDescriptor::getFieldTypeFlags(int field) const
         FD_ISEDITABLE,    // FIELD_bytePerBand
         FD_ISEDITABLE,    // FIELD_availBands
         FD_ISEDITABLE,    // FIELD_totalBands
+        FD_ISEDITABLE,    // FIELD_rsuAddr
         FD_ISEDITABLE,    // FIELD_freeCmpUnits
         FD_ISEDITABLE,    // FIELD_totalCmpUnits
         FD_ISEDITABLE,    // FIELD_deviceType
@@ -481,7 +497,7 @@ unsigned int RsuFeedbackDescriptor::getFieldTypeFlags(int field) const
         FD_ISEDITABLE,    // FIELD_bandUpdateTime
         FD_ISEDITABLE,    // FIELD_cmpUnitUpdateTime
     };
-    return (field >= 0 && field < 13) ? fieldTypeFlags[field] : 0;
+    return (field >= 0 && field < 14) ? fieldTypeFlags[field] : 0;
 }
 
 const char *RsuFeedbackDescriptor::getFieldName(int field) const
@@ -500,6 +516,7 @@ const char *RsuFeedbackDescriptor::getFieldName(int field) const
         "bytePerBand",
         "availBands",
         "totalBands",
+        "rsuAddr",
         "freeCmpUnits",
         "totalCmpUnits",
         "deviceType",
@@ -507,7 +524,7 @@ const char *RsuFeedbackDescriptor::getFieldName(int field) const
         "bandUpdateTime",
         "cmpUnitUpdateTime",
     };
-    return (field >= 0 && field < 13) ? fieldNames[field] : nullptr;
+    return (field >= 0 && field < 14) ? fieldNames[field] : nullptr;
 }
 
 int RsuFeedbackDescriptor::findField(const char *fieldName) const
@@ -521,12 +538,13 @@ int RsuFeedbackDescriptor::findField(const char *fieldName) const
     if (strcmp(fieldName, "bytePerBand") == 0) return baseIndex + 4;
     if (strcmp(fieldName, "availBands") == 0) return baseIndex + 5;
     if (strcmp(fieldName, "totalBands") == 0) return baseIndex + 6;
-    if (strcmp(fieldName, "freeCmpUnits") == 0) return baseIndex + 7;
-    if (strcmp(fieldName, "totalCmpUnits") == 0) return baseIndex + 8;
-    if (strcmp(fieldName, "deviceType") == 0) return baseIndex + 9;
-    if (strcmp(fieldName, "resourceType") == 0) return baseIndex + 10;
-    if (strcmp(fieldName, "bandUpdateTime") == 0) return baseIndex + 11;
-    if (strcmp(fieldName, "cmpUnitUpdateTime") == 0) return baseIndex + 12;
+    if (strcmp(fieldName, "rsuAddr") == 0) return baseIndex + 7;
+    if (strcmp(fieldName, "freeCmpUnits") == 0) return baseIndex + 8;
+    if (strcmp(fieldName, "totalCmpUnits") == 0) return baseIndex + 9;
+    if (strcmp(fieldName, "deviceType") == 0) return baseIndex + 10;
+    if (strcmp(fieldName, "resourceType") == 0) return baseIndex + 11;
+    if (strcmp(fieldName, "bandUpdateTime") == 0) return baseIndex + 12;
+    if (strcmp(fieldName, "cmpUnitUpdateTime") == 0) return baseIndex + 13;
     return base ? base->findField(fieldName) : -1;
 }
 
@@ -546,6 +564,7 @@ const char *RsuFeedbackDescriptor::getFieldTypeString(int field) const
         "int",    // FIELD_bytePerBand
         "int",    // FIELD_availBands
         "int",    // FIELD_totalBands
+        "uint32",    // FIELD_rsuAddr
         "int",    // FIELD_freeCmpUnits
         "int",    // FIELD_totalCmpUnits
         "unsigned short",    // FIELD_deviceType
@@ -553,7 +572,7 @@ const char *RsuFeedbackDescriptor::getFieldTypeString(int field) const
         "omnetpp::simtime_t",    // FIELD_bandUpdateTime
         "omnetpp::simtime_t",    // FIELD_cmpUnitUpdateTime
     };
-    return (field >= 0 && field < 13) ? fieldTypeStrings[field] : nullptr;
+    return (field >= 0 && field < 14) ? fieldTypeStrings[field] : nullptr;
 }
 
 const char **RsuFeedbackDescriptor::getFieldPropertyNames(int field) const
@@ -643,6 +662,7 @@ std::string RsuFeedbackDescriptor::getFieldValueAsString(omnetpp::any_ptr object
         case FIELD_bytePerBand: return long2string(pp->getBytePerBand());
         case FIELD_availBands: return long2string(pp->getAvailBands());
         case FIELD_totalBands: return long2string(pp->getTotalBands());
+        case FIELD_rsuAddr: return ulong2string(pp->getRsuAddr());
         case FIELD_freeCmpUnits: return long2string(pp->getFreeCmpUnits());
         case FIELD_totalCmpUnits: return long2string(pp->getTotalCmpUnits());
         case FIELD_deviceType: return ulong2string(pp->getDeviceType());
@@ -672,6 +692,7 @@ void RsuFeedbackDescriptor::setFieldValueAsString(omnetpp::any_ptr object, int f
         case FIELD_bytePerBand: pp->setBytePerBand(string2long(value)); break;
         case FIELD_availBands: pp->setAvailBands(string2long(value)); break;
         case FIELD_totalBands: pp->setTotalBands(string2long(value)); break;
+        case FIELD_rsuAddr: pp->setRsuAddr(string2ulong(value)); break;
         case FIELD_freeCmpUnits: pp->setFreeCmpUnits(string2long(value)); break;
         case FIELD_totalCmpUnits: pp->setTotalCmpUnits(string2long(value)); break;
         case FIELD_deviceType: pp->setDeviceType(string2ulong(value)); break;
@@ -699,6 +720,7 @@ omnetpp::cValue RsuFeedbackDescriptor::getFieldValue(omnetpp::any_ptr object, in
         case FIELD_bytePerBand: return pp->getBytePerBand();
         case FIELD_availBands: return pp->getAvailBands();
         case FIELD_totalBands: return pp->getTotalBands();
+        case FIELD_rsuAddr: return (omnetpp::intval_t)(pp->getRsuAddr());
         case FIELD_freeCmpUnits: return pp->getFreeCmpUnits();
         case FIELD_totalCmpUnits: return pp->getTotalCmpUnits();
         case FIELD_deviceType: return (omnetpp::intval_t)(pp->getDeviceType());
@@ -728,6 +750,7 @@ void RsuFeedbackDescriptor::setFieldValue(omnetpp::any_ptr object, int field, in
         case FIELD_bytePerBand: pp->setBytePerBand(omnetpp::checked_int_cast<int>(value.intValue())); break;
         case FIELD_availBands: pp->setAvailBands(omnetpp::checked_int_cast<int>(value.intValue())); break;
         case FIELD_totalBands: pp->setTotalBands(omnetpp::checked_int_cast<int>(value.intValue())); break;
+        case FIELD_rsuAddr: pp->setRsuAddr(omnetpp::checked_int_cast<uint32_t>(value.intValue())); break;
         case FIELD_freeCmpUnits: pp->setFreeCmpUnits(omnetpp::checked_int_cast<int>(value.intValue())); break;
         case FIELD_totalCmpUnits: pp->setTotalCmpUnits(omnetpp::checked_int_cast<int>(value.intValue())); break;
         case FIELD_deviceType: pp->setDeviceType(omnetpp::checked_int_cast<unsigned short>(value.intValue())); break;

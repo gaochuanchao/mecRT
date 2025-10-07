@@ -32,6 +32,26 @@
 #include "mecrt/packets/apps/VecPacket_m.h"
 #include "mecrt/common/NodeInfo.h"
 
+
+struct Service
+{
+    AppId appId;    // the application id
+    Ipv4Address ueAddr; // the IP address of the vehicle
+    int resourceType;  // whether using GPU or CPU
+    int service;        // the service name
+    MacNodeId processGnbId;  // the id of processing gNB
+    MacNodeId offloadGnbId;  // the id of offloading gNB
+    Ipv4Address offloadGnbAddr; // the IP address of offloading gNB
+    omnetpp::simtime_t exeTime;    // service execution time
+    int cmpUnits;        // the allocated computing units for the service in RSU
+    int bands;           // the allocated bands for the service in RSU
+    omnetpp::simtime_t deadline;  // the deadline of the service
+    int inputSize;  // the input data size of the job, in bytes
+    int outputSize;  // the output data size of the job, in bytes
+    bool initComplete;
+    omnetpp::simtime_t maxOffloadTime;  // the maximum offloading time results in positive energy saving
+};
+
 class GnbMac;
 
 class Server : public omnetpp::cSimpleModule
@@ -41,8 +61,8 @@ class Server : public omnetpp::cSimpleModule
   protected:
     bool enableInitDebug_ = false;
     inet::UdpSocket socket;
+    int socketId_;
     int localPort_;
-    inet::L3Address serverAddr_;
 
     NodeInfo *nodeInfo_ = nullptr;
 
@@ -102,7 +122,7 @@ class Server : public omnetpp::cSimpleModule
 
     virtual void finish() override;
 
-    virtual void updateRsuFeedback(omnetpp::cMessage *msg);
+    virtual void updateRsuFeedback(inet::Packet *pkt);
 
     virtual void updateServiceStatus(omnetpp::cMessage *msg);
 
@@ -111,8 +131,6 @@ class Server : public omnetpp::cSimpleModule
     virtual void initializeService(inet::Ptr<const Grant2Rsu> pkt);
 
     virtual void stopService(AppId appId);
-
-    virtual void addHeaders(inet::Packet *pkt, const inet::L3Address& destAddr, int destPort, const inet::Ipv4Address& srcAddr);
 
 };
 #endif

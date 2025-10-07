@@ -19,10 +19,12 @@ import inet.common.packet.chunk.Chunk;
 class Grant2Rsu extends inet::FieldsChunk
 {
 	unsigned int appId;				// the application id of the vehicle, 4 bytes
+	uint32 ueAddr;			// the IP address of the vehicle, 4 bytes
 	unsigned short resourceType;	// the resource type of the server	(e.g., "GPU"), 2 bytes
 	unsigned short service;			// the service name, 2 bytes
-	unsigned short processGnbId;	// the id of processing gNB, 2 bytes
-	unsigned short offloadGnbId;	// the id of offloading gNB, 2 bytes
+	unsigned short processGnbId;	// the gNB id of processing gNB, 2 bytes
+	unsigned short offloadGnbId;	// the gNB id of offloading gNB, 2 bytes
+	uint32 offloadGnbAddr;		// the IP address of offloading gNB, 4 bytes
 	int cmpUnits;			// allocated computing units, 4 bytes
 	int bands;		    // allocated number of bands, 4 bytes
 	simtime_t exeTime;	// the time needed for app processing in seconds
@@ -33,5 +35,5 @@ class Grant2Rsu extends inet::FieldsChunk
 	bool start;
 	bool stop;
 	
-	chunkLength = inet::B(40);
+	chunkLength = inet::B(48);
 }

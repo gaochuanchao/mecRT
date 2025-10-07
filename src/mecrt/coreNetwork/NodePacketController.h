@@ -19,6 +19,7 @@
 #include <omnetpp.h>
 #include "inet/transportlayer/contract/udp/UdpSocket.h"
 #include <inet/linklayer/common/InterfaceTag_m.h>
+#include "inet/common/socket/SocketTag_m.h"
 #include <inet/networklayer/common/NetworkInterface.h>
 #include "common/binder/Binder.h"
 
@@ -34,6 +35,7 @@ class NodePacketController : public omnetpp::cSimpleModule
 {
   protected:
     UdpSocket socket_;
+    int socketId_;
     int localPort_;
     NodeInfo *nodeInfo_; // node information module
     bool enableInitDebug_ = false;
@@ -52,10 +54,10 @@ class NodePacketController : public omnetpp::cSimpleModule
     virtual void initialize(int stage) override;
     virtual void handleMessage(omnetpp::cMessage *msg) override;
 
-    // receive a GTP-U packet from Udp, reads the TEID and decides whether performing label switching or removal
-    void handleFromUdp(inet::Packet * gtpMsg);
-
     virtual void handleServiceRequest(inet::Packet *packet);
+    virtual void handleServiceGrant(inet::Packet *packet);
+    virtual void handleServiceFeedback(inet::Packet *packet);
+    virtual void handleVehicleGrant(inet::Packet *packet);
     virtual void handleGlobalSchedulerTimer();
 
   public:

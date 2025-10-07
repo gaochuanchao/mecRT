@@ -21,30 +21,30 @@ class OspfLsa;
 
 #include "inet/common/packet/chunk/Chunk_m.h" // import inet.common.packet.chunk.Chunk
 
-#include "inet/networklayer/contract/ipv4/Ipv4Address_m.h" // import inet.networklayer.contract.ipv4.Ipv4Address
-
 /**
- * Class generated from <tt>mecrt/packets/routing/OspfLsa.msg:20</tt> by opp_msgtool.
+ * Class generated from <tt>mecrt/packets/routing/OspfLsa.msg:19</tt> by opp_msgtool.
  * <pre>
  * class OspfLsa extends inet::FieldsChunk
  * {
- *     inet::Ipv4Address origin;
+ *     uint32 origin;  // the int format of the origin node's IP address
+ *     int nodeId; // the origin node's ID
  *     uint32 seqNum;
  *     simtime_t installTime;
- *     inet::Ipv4Address neighbor[]; // neighbor IP addresses
+ *     uint32 neighbor[]; // the int format of the neighbor IP addresses
  *     double cost[];                // corresponding costs
  * 
- *     chunkLength = inet::B(12); // base + origin + neighbor + cost
+ *     chunkLength = inet::B(28); // origin + nodeId + seqNum + installTime + neighbor + cost
  * }
  * </pre>
  */
 class OspfLsa : public ::inet::FieldsChunk
 {
   protected:
-    inet::Ipv4Address origin;
+    uint32_t origin = 0;
+    int nodeId = 0;
     uint32_t seqNum = 0;
     omnetpp::simtime_t installTime = SIMTIME_ZERO;
-    inet::Ipv4Address *neighbor = nullptr;
+    uint32_t *neighbor = nullptr;
     size_t neighbor_arraysize = 0;
     double *cost = nullptr;
     size_t cost_arraysize = 0;
@@ -64,9 +64,11 @@ class OspfLsa : public ::inet::FieldsChunk
     virtual void parsimPack(omnetpp::cCommBuffer *b) const override;
     virtual void parsimUnpack(omnetpp::cCommBuffer *b) override;
 
-    virtual const inet::Ipv4Address& getOrigin() const;
-    virtual inet::Ipv4Address& getOriginForUpdate() { handleChange();return const_cast<inet::Ipv4Address&>(const_cast<OspfLsa*>(this)->getOrigin());}
-    virtual void setOrigin(const inet::Ipv4Address& origin);
+    virtual uint32_t getOrigin() const;
+    virtual void setOrigin(uint32_t origin);
+
+    virtual int getNodeId() const;
+    virtual void setNodeId(int nodeId);
 
     virtual uint32_t getSeqNum() const;
     virtual void setSeqNum(uint32_t seqNum);
@@ -76,12 +78,11 @@ class OspfLsa : public ::inet::FieldsChunk
 
     virtual void setNeighborArraySize(size_t size);
     virtual size_t getNeighborArraySize() const;
-    virtual const inet::Ipv4Address& getNeighbor(size_t k) const;
-    virtual inet::Ipv4Address& getNeighborForUpdate(size_t k) { handleChange();return const_cast<inet::Ipv4Address&>(const_cast<OspfLsa*>(this)->getNeighbor(k));}
-    virtual void setNeighbor(size_t k, const inet::Ipv4Address& neighbor);
-    virtual void insertNeighbor(size_t k, const inet::Ipv4Address& neighbor);
-    [[deprecated]] void insertNeighbor(const inet::Ipv4Address& neighbor) {appendNeighbor(neighbor);}
-    virtual void appendNeighbor(const inet::Ipv4Address& neighbor);
+    virtual uint32_t getNeighbor(size_t k) const;
+    virtual void setNeighbor(size_t k, uint32_t neighbor);
+    virtual void insertNeighbor(size_t k, uint32_t neighbor);
+    [[deprecated]] void insertNeighbor(uint32_t neighbor) {appendNeighbor(neighbor);}
+    virtual void appendNeighbor(uint32_t neighbor);
     virtual void eraseNeighbor(size_t k);
 
     virtual void setCostArraySize(size_t size);

@@ -14,15 +14,15 @@
 
 import inet.common.INETDefs;
 import inet.common.packet.chunk.Chunk;
-import inet.networklayer.contract.ipv4.Ipv4Address;
 
 class OspfLsa extends inet::FieldsChunk
 {
-    inet::Ipv4Address origin;
+    uint32 origin;  // the int format of the origin node's IP address
+    int nodeId; // the origin node's ID
     uint32 seqNum;
     simtime_t installTime;
-    inet::Ipv4Address neighbor[]; // neighbor IP addresses
+    uint32 neighbor[]; // the int format of the neighbor IP addresses
     double cost[];                // corresponding costs
 
-    chunkLength = inet::B(12); // base + origin + neighbor + cost
+    chunkLength = inet::B(28); // origin + nodeId + seqNum + installTime + neighbor + cost
 }

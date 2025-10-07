@@ -81,7 +81,7 @@ network VEC
         }
     connections:
         for i=0..numGnb-1 {
-            gnb[i].ppp <--> Eth100G <--> upf.pppg++;
+            gnb[i].pppg++ <--> Eth100G <--> upf.pppg++;
         }
 
         upf.filterGate <--> Eth100G <--> schedulerHost.ppp++;

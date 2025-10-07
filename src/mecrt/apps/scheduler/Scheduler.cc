@@ -28,6 +28,7 @@
 
 #include "mecrt/packets/apps/Grant2Rsu_m.h"
 #include "mecrt/packets/apps/ServiceStatus_m.h"
+#include "inet/common/socket/SocketTag_m.h"
 #include "inet/common/TimeTag_m.h"
 #include "inet/networklayer/common/L3AddressTag_m.h" // Include the header for L3AddressInd
 
@@ -122,6 +123,20 @@ void Scheduler::initialize(int stage)
         {
             socket_.setOutputGate(gate("socketOut"));
             socket_.bind(localPort_);
+            socketId_ = socket_.getSocketId();
+        }
+
+        try
+        {
+            nodeInfo_ = check_and_cast<NodeInfo*>(getModuleByPath(par("nodeInfoModulePath").stringValue()));
+            nodeInfo_->setLocalSchedulerPort(localPort_);
+            nodeInfo_->setScheduleInterval(schedulingInterval_.dbl());
+            nodeInfo_->setLocalSchedulerSocketId(socketId_);
+        }
+        catch (std::exception &e)
+        {
+            EV_WARN << "Scheduler::initialize - cannot find the NodeInfo module" << endl;
+            nodeInfo_ = nullptr;
         }
 
         db_ = check_and_cast<Database*>(getSimulation()->getModuleByPath("database"));
@@ -134,18 +149,6 @@ void Scheduler::initialize(int stage)
     else if (stage == INITSTAGE_LAST){
         if (enableInitDebug_)
             std::cout << "Scheduler::initialize - stage: INITSTAGE_LAST - begins" << std::endl;
-
-        try
-        {
-            nodeInfo_ = check_and_cast<NodeInfo*>(getModuleByPath(par("nodeInfoModulePath").stringValue()));
-            nodeInfo_->setLocalSchedulerPort(localPort_);
-            nodeInfo_->setScheduleInterval(schedulingInterval_.dbl());
-        }
-        catch (std::exception &e)
-        {
-            EV_WARN << "Scheduler::initialize - cannot find the NodeInfo module" << endl;
-            nodeInfo_ = nullptr;
-        }
 
         binder_ = getBinder();
         NumerologyIndex numerologyIndex = par("numerologyIndex");
@@ -207,6 +210,7 @@ void Scheduler::initialize(int stage)
         WATCH(rbStep_);
         WATCH(fairFactor_);
         WATCH(localPort_);
+        WATCH(socketId_);
         WATCH(schedulingInterval_);
 
         if (enableInitDebug_)
@@ -273,9 +277,9 @@ void Scheduler::handleMessage(cMessage *msg)
 
             if (periodicScheduling_)
             {
-                NEXT_SCHEDULING_TIME = NEXT_SCHEDULING_TIME + schedulingInterval_;
+                NEXT_SCHEDULING_TIME = NEXT_SCHEDULING_TIME + schedulingInterval_.dbl();
                 scheduleAt(NEXT_SCHEDULING_TIME, schedStarter_);
-                scheduleAt(NEXT_SCHEDULING_TIME - appStopInterval_, preSchedCheck_);
+                scheduleAt(NEXT_SCHEDULING_TIME - appStopInterval_.dbl(), preSchedCheck_);
                 EV << NOW << " Scheduler::handleMessage - next scheduling time: " << NEXT_SCHEDULING_TIME << endl;
             }
         }
@@ -341,6 +345,7 @@ void Scheduler::handleMessage(cMessage *msg)
     {
         recordVehRequest(msg);
         delete msg;
+        msg = nullptr;
     }
     else if (!strcmp(msg->getName(), "RsuFD"))  // feedback from RSU
     {
@@ -349,11 +354,13 @@ void Scheduler::handleMessage(cMessage *msg)
          */
         recordRsuStatus(msg);
         delete msg;
+        msg = nullptr;
     }
     else if (!strcmp(msg->getName(), "SrvFD"))    // service status report from RSU
     {
         updateRsuSrvStatusFeedback(msg);
         delete msg;
+        msg = nullptr;
     }
 }
 
@@ -364,7 +371,9 @@ void Scheduler::globalSchedulerInit()
 
     if (periodicScheduling_)
     {
-        NEXT_SCHEDULING_TIME = simTime() + appStopInterval_;
+        // get the time in milliseconds
+        int timeNow = int(simTime().dbl() * 1000) + 1;
+        NEXT_SCHEDULING_TIME = appStopInterval_.dbl() + timeNow / 1000.0;
         scheduleAt(NEXT_SCHEDULING_TIME, schedStarter_);
         scheduleAt(simTime(), preSchedCheck_);
 
@@ -441,7 +450,8 @@ void Scheduler::recordVehRequest(cMessage *msg)
 
     EV << NOW << " Scheduler::recordVehRequest - request from Veh[nodeId=" << vehId << "] is received, appId: " << appId
         << ", inputSize: " << reqMeta.inputSize << ", outputSize: " << reqMeta.outputSize
-        << ", period: " << reqMeta.period << ", stop time: " <<  reqMeta.stopTime <<  ", resourceType: " 
+        << ", period: " << reqMeta.period << ", stop time: " <<  reqMeta.stopTime << ", ue address: " 
+        << Ipv4Address(reqMeta.ueIpv4Address) <<  ", resourceType: " 
         << db_->resourceType.at(reqMeta.resourceType)
         << ", service: " << db_->appType.at(reqMeta.service) << endl;
 
@@ -486,23 +496,14 @@ void Scheduler::recordRsuStatus(cMessage *msg)
         rsuRes.cmpCapacity = rsuStat->getTotalCmpUnits();
         rsuRes.deviceType = static_cast<VecDeviceType>(rsuStat->getDeviceType());
         rsuRes.resourceType = static_cast<VecResourceType>(rsuStat->getResourceType());
+        rsuRes.rsuAddress = Ipv4Address(rsuStat->getRsuAddr());
         rsuRes.bandUpdateTime = bandUpdateTime;
         rsuRes.cmpUpdateTime = cmpUnitUpdateTime;
         rsuStatus_[gnbId] = rsuRes;
 
-        // update rsu address related information
-        RsuAddr addr;
-        auto l3Addr = pkt->getTag<L3AddressInd>();
-        addr.rsuAddress = l3Addr->getSrcAddress().toIpv4();
-        addr.serverPort = rsuStat->getServerPort();
-        rsuAddr_[gnbId] = addr;
-
-        EV << NOW << " Scheduler::addRsuAddr - add new RSU address, RSU[" << gnbIndex << "] nodeId=" << gnbId << " address: "
-            << addr.rsuAddress.str() << ":" << addr.serverPort << endl;
-
         EV << NOW << " Scheduler::recordRsuStatus - RSU[" << gnbIndex << "] nodeId=" << gnbId << " status recorded for the first time, bands: " << rsuRes.bands
         << ", cmpUnits: " << rsuRes.cmpUnits << ", deviceType: " << db_->deviceType.at(rsuRes.deviceType)
-        << ", resourceType: " << db_->resourceType.at(rsuRes.resourceType) << endl;
+        << ", resourceType: " << db_->resourceType.at(rsuRes.resourceType) << ", rsuAddress: " << rsuRes.rsuAddress << endl;
 
         rsuWaitInitFbApps_[gnbId] = set<AppId>();
         // initialize the onhold resource blocks and computing units
@@ -563,23 +564,6 @@ void Scheduler::recordRsuStatus(cMessage *msg)
         << veh2RsuRate_[make_tuple(vehId, gnbId)] << endl;
 }
 
-void Scheduler::addRsuAddr(inet::Ptr<const RsuFeedback> rsuStat)
-{
-    MacNodeId gnbId = rsuStat->getGnbId();
-
-    // check if the RSU address is already in the list
-    if (rsuAddr_.find(gnbId) == rsuAddr_.end())
-    {
-        RsuAddr addr;
-        // binder_->getModuleNameByMacNodeId(gnbId) -> "VehicularEdgeComputing.gnb[0]"
-        addr.rsuAddress = inet::L3AddressResolver().resolve(binder_->getModuleNameByMacNodeId(gnbId)).toIpv4();
-        addr.serverPort = rsuStat->getServerPort();
-        rsuAddr_[gnbId] = addr;
-
-        EV << "Scheduler::addRsuAddr - add new RSU address, RSU[nodeId=" << gnbId << "] address: "
-            << addr.rsuAddress.str() << ":" << addr.serverPort << endl;
-    }
-}
 
 void Scheduler::updateRsuSrvStatusFeedback(cMessage *msg)
 {
@@ -597,7 +581,7 @@ void Scheduler::updateRsuSrvStatusFeedback(cMessage *msg)
 
     MacNodeId processGnbId = srvStatus->getProcessGnbId();
     MacNodeId offloadGnbId = srvStatus->getOffloadGnbId();
-    
+
     // update rsu resource
     simtime_t bandUpdateTime = srvStatus->getOffloadGnbRbUpdateTime();
     simtime_t cmpUnitUpdateTime = srvStatus->getProcessGnbCuUpdateTime();
@@ -847,7 +831,9 @@ void Scheduler::sendGrantPacket(ServiceInstance& srv, bool isStart, bool isStop)
     Packet* pkt = new Packet("SrvGrant");
     auto grant = makeShared<Grant2Rsu>();
     grant->setAppId(appId);
+    grant->setUeAddr(appInfo_[appId].ueIpv4Address);
     grant->setOffloadGnbId(offloadGnbId);
+    grant->setOffloadGnbAddr(rsuStatus_[offloadGnbId].rsuAddress.getInt());
     grant->setProcessGnbId(processGnbId);
     grant->setResourceType(appInfo_[appId].resourceType);
     grant->setService(appInfo_[appId].service);
@@ -871,8 +857,16 @@ void Scheduler::sendGrantPacket(ServiceInstance& srv, bool isStart, bool isStop)
         << ", service: " << db_->appType.at(appInfo_[appId].service) 
         << endl;
 
-    auto addr = rsuAddr_[processGnbId];
-    socket_.sendTo(pkt, addr.rsuAddress, addr.serverPort);
+    // check if the processing server is the local server
+    Ipv4Address processGnbAddr = rsuStatus_[processGnbId].rsuAddress;
+    if (processGnbAddr == nodeInfo_->getNodeAddr())  // the processing RSU is the local RSU
+    {
+        EV << NOW << " Scheduler::sendGrantPacket - the processing RSU is the local RSU, send to local processing module" << endl;
+        pkt->addTagIfAbsent<SocketInd>()->setSocketId(nodeInfo_->getServerSocketId());
+        send(pkt, "socketOut");
+        return;
+    }
+    socket_.sendTo(pkt, Ipv4Address(processGnbAddr), MEC_NPC_PORT);
 }
 
 void Scheduler::stopRunningService(AppId appId)

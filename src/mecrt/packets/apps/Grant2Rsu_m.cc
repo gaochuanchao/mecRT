@@ -154,7 +154,7 @@ Register_Class(Grant2Rsu)
 
 Grant2Rsu::Grant2Rsu() : ::inet::FieldsChunk()
 {
-    this->setChunkLength(inet::B(40));
+    this->setChunkLength(inet::B(48));
 
 }
 
@@ -178,10 +178,12 @@ Grant2Rsu& Grant2Rsu::operator=(const Grant2Rsu& other)
 void Grant2Rsu::copy(const Grant2Rsu& other)
 {
     this->appId = other.appId;
+    this->ueAddr = other.ueAddr;
     this->resourceType = other.resourceType;
     this->service = other.service;
     this->processGnbId = other.processGnbId;
     this->offloadGnbId = other.offloadGnbId;
+    this->offloadGnbAddr = other.offloadGnbAddr;
     this->cmpUnits = other.cmpUnits;
     this->bands = other.bands;
     this->exeTime = other.exeTime;
@@ -197,10 +199,12 @@ void Grant2Rsu::parsimPack(omnetpp::cCommBuffer *b) const
 {
     ::inet::FieldsChunk::parsimPack(b);
     doParsimPacking(b,this->appId);
+    doParsimPacking(b,this->ueAddr);
     doParsimPacking(b,this->resourceType);
     doParsimPacking(b,this->service);
     doParsimPacking(b,this->processGnbId);
     doParsimPacking(b,this->offloadGnbId);
+    doParsimPacking(b,this->offloadGnbAddr);
     doParsimPacking(b,this->cmpUnits);
     doParsimPacking(b,this->bands);
     doParsimPacking(b,this->exeTime);
@@ -216,10 +220,12 @@ void Grant2Rsu::parsimUnpack(omnetpp::cCommBuffer *b)
 {
     ::inet::FieldsChunk::parsimUnpack(b);
     doParsimUnpacking(b,this->appId);
+    doParsimUnpacking(b,this->ueAddr);
     doParsimUnpacking(b,this->resourceType);
     doParsimUnpacking(b,this->service);
     doParsimUnpacking(b,this->processGnbId);
     doParsimUnpacking(b,this->offloadGnbId);
+    doParsimUnpacking(b,this->offloadGnbAddr);
     doParsimUnpacking(b,this->cmpUnits);
     doParsimUnpacking(b,this->bands);
     doParsimUnpacking(b,this->exeTime);
@@ -240,6 +246,17 @@ void Grant2Rsu::setAppId(unsigned int appId)
 {
     handleChange();
     this->appId = appId;
+}
+
+uint32_t Grant2Rsu::getUeAddr() const
+{
+    return this->ueAddr;
+}
+
+void Grant2Rsu::setUeAddr(uint32_t ueAddr)
+{
+    handleChange();
+    this->ueAddr = ueAddr;
 }
 
 unsigned short Grant2Rsu::getResourceType() const
@@ -284,6 +301,17 @@ void Grant2Rsu::setOffloadGnbId(unsigned short offloadGnbId)
 {
     handleChange();
     this->offloadGnbId = offloadGnbId;
+}
+
+uint32_t Grant2Rsu::getOffloadGnbAddr() const
+{
+    return this->offloadGnbAddr;
+}
+
+void Grant2Rsu::setOffloadGnbAddr(uint32_t offloadGnbAddr)
+{
+    handleChange();
+    this->offloadGnbAddr = offloadGnbAddr;
 }
 
 int Grant2Rsu::getCmpUnits() const
@@ -391,10 +419,12 @@ class Grant2RsuDescriptor : public omnetpp::cClassDescriptor
     mutable const char **propertyNames;
     enum FieldConstants {
         FIELD_appId,
+        FIELD_ueAddr,
         FIELD_resourceType,
         FIELD_service,
         FIELD_processGnbId,
         FIELD_offloadGnbId,
+        FIELD_offloadGnbAddr,
         FIELD_cmpUnits,
         FIELD_bands,
         FIELD_exeTime,
@@ -470,7 +500,7 @@ const char *Grant2RsuDescriptor::getProperty(const char *propertyName) const
 int Grant2RsuDescriptor::getFieldCount() const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
-    return base ? 14+base->getFieldCount() : 14;
+    return base ? 16+base->getFieldCount() : 16;
 }
 
 unsigned int Grant2RsuDescriptor::getFieldTypeFlags(int field) const
@@ -483,10 +513,12 @@ unsigned int Grant2RsuDescriptor::getFieldTypeFlags(int field) const
     }
     static unsigned int fieldTypeFlags[] = {
         FD_ISEDITABLE,    // FIELD_appId
+        FD_ISEDITABLE,    // FIELD_ueAddr
         FD_ISEDITABLE,    // FIELD_resourceType
         FD_ISEDITABLE,    // FIELD_service
         FD_ISEDITABLE,    // FIELD_processGnbId
         FD_ISEDITABLE,    // FIELD_offloadGnbId
+        FD_ISEDITABLE,    // FIELD_offloadGnbAddr
         FD_ISEDITABLE,    // FIELD_cmpUnits
         FD_ISEDITABLE,    // FIELD_bands
         FD_ISEDITABLE,    // FIELD_exeTime
@@ -497,7 +529,7 @@ unsigned int Grant2RsuDescriptor::getFieldTypeFlags(int field) const
         FD_ISEDITABLE,    // FIELD_start
         FD_ISEDITABLE,    // FIELD_stop
     };
-    return (field >= 0 && field < 14) ? fieldTypeFlags[field] : 0;
+    return (field >= 0 && field < 16) ? fieldTypeFlags[field] : 0;
 }
 
 const char *Grant2RsuDescriptor::getFieldName(int field) const
@@ -510,10 +542,12 @@ const char *Grant2RsuDescriptor::getFieldName(int field) const
     }
     static const char *fieldNames[] = {
         "appId",
+        "ueAddr",
         "resourceType",
         "service",
         "processGnbId",
         "offloadGnbId",
+        "offloadGnbAddr",
         "cmpUnits",
         "bands",
         "exeTime",
@@ -524,7 +558,7 @@ const char *Grant2RsuDescriptor::getFieldName(int field) const
         "start",
         "stop",
     };
-    return (field >= 0 && field < 14) ? fieldNames[field] : nullptr;
+    return (field >= 0 && field < 16) ? fieldNames[field] : nullptr;
 }
 
 int Grant2RsuDescriptor::findField(const char *fieldName) const
@@ -532,19 +566,21 @@ int Grant2RsuDescriptor::findField(const char *fieldName) const
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     int baseIndex = base ? base->getFieldCount() : 0;
     if (strcmp(fieldName, "appId") == 0) return baseIndex + 0;
-    if (strcmp(fieldName, "resourceType") == 0) return baseIndex + 1;
-    if (strcmp(fieldName, "service") == 0) return baseIndex + 2;
-    if (strcmp(fieldName, "processGnbId") == 0) return baseIndex + 3;
-    if (strcmp(fieldName, "offloadGnbId") == 0) return baseIndex + 4;
-    if (strcmp(fieldName, "cmpUnits") == 0) return baseIndex + 5;
-    if (strcmp(fieldName, "bands") == 0) return baseIndex + 6;
-    if (strcmp(fieldName, "exeTime") == 0) return baseIndex + 7;
-    if (strcmp(fieldName, "maxOffloadTime") == 0) return baseIndex + 8;
-    if (strcmp(fieldName, "deadline") == 0) return baseIndex + 9;
-    if (strcmp(fieldName, "outputSize") == 0) return baseIndex + 10;
-    if (strcmp(fieldName, "inputSize") == 0) return baseIndex + 11;
-    if (strcmp(fieldName, "start") == 0) return baseIndex + 12;
-    if (strcmp(fieldName, "stop") == 0) return baseIndex + 13;
+    if (strcmp(fieldName, "ueAddr") == 0) return baseIndex + 1;
+    if (strcmp(fieldName, "resourceType") == 0) return baseIndex + 2;
+    if (strcmp(fieldName, "service") == 0) return baseIndex + 3;
+    if (strcmp(fieldName, "processGnbId") == 0) return baseIndex + 4;
+    if (strcmp(fieldName, "offloadGnbId") == 0) return baseIndex + 5;
+    if (strcmp(fieldName, "offloadGnbAddr") == 0) return baseIndex + 6;
+    if (strcmp(fieldName, "cmpUnits") == 0) return baseIndex + 7;
+    if (strcmp(fieldName, "bands") == 0) return baseIndex + 8;
+    if (strcmp(fieldName, "exeTime") == 0) return baseIndex + 9;
+    if (strcmp(fieldName, "maxOffloadTime") == 0) return baseIndex + 10;
+    if (strcmp(fieldName, "deadline") == 0) return baseIndex + 11;
+    if (strcmp(fieldName, "outputSize") == 0) return baseIndex + 12;
+    if (strcmp(fieldName, "inputSize") == 0) return baseIndex + 13;
+    if (strcmp(fieldName, "start") == 0) return baseIndex + 14;
+    if (strcmp(fieldName, "stop") == 0) return baseIndex + 15;
     return base ? base->findField(fieldName) : -1;
 }
 
@@ -558,10 +594,12 @@ const char *Grant2RsuDescriptor::getFieldTypeString(int field) const
     }
     static const char *fieldTypeStrings[] = {
         "unsigned int",    // FIELD_appId
+        "uint32",    // FIELD_ueAddr
         "unsigned short",    // FIELD_resourceType
         "unsigned short",    // FIELD_service
         "unsigned short",    // FIELD_processGnbId
         "unsigned short",    // FIELD_offloadGnbId
+        "uint32",    // FIELD_offloadGnbAddr
         "int",    // FIELD_cmpUnits
         "int",    // FIELD_bands
         "omnetpp::simtime_t",    // FIELD_exeTime
@@ -572,7 +610,7 @@ const char *Grant2RsuDescriptor::getFieldTypeString(int field) const
         "bool",    // FIELD_start
         "bool",    // FIELD_stop
     };
-    return (field >= 0 && field < 14) ? fieldTypeStrings[field] : nullptr;
+    return (field >= 0 && field < 16) ? fieldTypeStrings[field] : nullptr;
 }
 
 const char **Grant2RsuDescriptor::getFieldPropertyNames(int field) const
@@ -656,10 +694,12 @@ std::string Grant2RsuDescriptor::getFieldValueAsString(omnetpp::any_ptr object, 
     Grant2Rsu *pp = omnetpp::fromAnyPtr<Grant2Rsu>(object); (void)pp;
     switch (field) {
         case FIELD_appId: return ulong2string(pp->getAppId());
+        case FIELD_ueAddr: return ulong2string(pp->getUeAddr());
         case FIELD_resourceType: return ulong2string(pp->getResourceType());
         case FIELD_service: return ulong2string(pp->getService());
         case FIELD_processGnbId: return ulong2string(pp->getProcessGnbId());
         case FIELD_offloadGnbId: return ulong2string(pp->getOffloadGnbId());
+        case FIELD_offloadGnbAddr: return ulong2string(pp->getOffloadGnbAddr());
         case FIELD_cmpUnits: return long2string(pp->getCmpUnits());
         case FIELD_bands: return long2string(pp->getBands());
         case FIELD_exeTime: return simtime2string(pp->getExeTime());
@@ -686,10 +726,12 @@ void Grant2RsuDescriptor::setFieldValueAsString(omnetpp::any_ptr object, int fie
     Grant2Rsu *pp = omnetpp::fromAnyPtr<Grant2Rsu>(object); (void)pp;
     switch (field) {
         case FIELD_appId: pp->setAppId(string2ulong(value)); break;
+        case FIELD_ueAddr: pp->setUeAddr(string2ulong(value)); break;
         case FIELD_resourceType: pp->setResourceType(string2ulong(value)); break;
         case FIELD_service: pp->setService(string2ulong(value)); break;
         case FIELD_processGnbId: pp->setProcessGnbId(string2ulong(value)); break;
         case FIELD_offloadGnbId: pp->setOffloadGnbId(string2ulong(value)); break;
+        case FIELD_offloadGnbAddr: pp->setOffloadGnbAddr(string2ulong(value)); break;
         case FIELD_cmpUnits: pp->setCmpUnits(string2long(value)); break;
         case FIELD_bands: pp->setBands(string2long(value)); break;
         case FIELD_exeTime: pp->setExeTime(string2simtime(value)); break;
@@ -714,10 +756,12 @@ omnetpp::cValue Grant2RsuDescriptor::getFieldValue(omnetpp::any_ptr object, int 
     Grant2Rsu *pp = omnetpp::fromAnyPtr<Grant2Rsu>(object); (void)pp;
     switch (field) {
         case FIELD_appId: return (omnetpp::intval_t)(pp->getAppId());
+        case FIELD_ueAddr: return (omnetpp::intval_t)(pp->getUeAddr());
         case FIELD_resourceType: return (omnetpp::intval_t)(pp->getResourceType());
         case FIELD_service: return (omnetpp::intval_t)(pp->getService());
         case FIELD_processGnbId: return (omnetpp::intval_t)(pp->getProcessGnbId());
         case FIELD_offloadGnbId: return (omnetpp::intval_t)(pp->getOffloadGnbId());
+        case FIELD_offloadGnbAddr: return (omnetpp::intval_t)(pp->getOffloadGnbAddr());
         case FIELD_cmpUnits: return pp->getCmpUnits();
         case FIELD_bands: return pp->getBands();
         case FIELD_exeTime: return pp->getExeTime().dbl();
@@ -744,10 +788,12 @@ void Grant2RsuDescriptor::setFieldValue(omnetpp::any_ptr object, int field, int 
     Grant2Rsu *pp = omnetpp::fromAnyPtr<Grant2Rsu>(object); (void)pp;
     switch (field) {
         case FIELD_appId: pp->setAppId(omnetpp::checked_int_cast<unsigned int>(value.intValue())); break;
+        case FIELD_ueAddr: pp->setUeAddr(omnetpp::checked_int_cast<uint32_t>(value.intValue())); break;
         case FIELD_resourceType: pp->setResourceType(omnetpp::checked_int_cast<unsigned short>(value.intValue())); break;
         case FIELD_service: pp->setService(omnetpp::checked_int_cast<unsigned short>(value.intValue())); break;
         case FIELD_processGnbId: pp->setProcessGnbId(omnetpp::checked_int_cast<unsigned short>(value.intValue())); break;
         case FIELD_offloadGnbId: pp->setOffloadGnbId(omnetpp::checked_int_cast<unsigned short>(value.intValue())); break;
+        case FIELD_offloadGnbAddr: pp->setOffloadGnbAddr(omnetpp::checked_int_cast<uint32_t>(value.intValue())); break;
         case FIELD_cmpUnits: pp->setCmpUnits(omnetpp::checked_int_cast<int>(value.intValue())); break;
         case FIELD_bands: pp->setBands(omnetpp::checked_int_cast<int>(value.intValue())); break;
         case FIELD_exeTime: pp->setExeTime(value.doubleValue()); break;

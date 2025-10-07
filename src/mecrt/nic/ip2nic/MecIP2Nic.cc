@@ -80,9 +80,9 @@ void MecIP2Nic::handleMessage(cMessage *msg)
             auto ipHeader = pkt->removeAtFront<Ipv4Header>();
             auto destAddress = ipHeader->getDestAddress();
 
-            if (destAddress == MEC_UE_OFFLOAD_ADDR)
+            if (destAddress == MEC_UE_OFFLOAD_ADDR || destAddress == nodeInfo_->getNodeAddr())   // offloading packet from UE to the MEC server
             {
-                EV << "MecIP2Nic::handleMessage - offloading packet " << pkt->getName() << " from UE, forward to the NPC module." << endl;
+                EV << "MecIP2Nic::handleMessage - the destination is the current gNB, send to ipv4 module." << endl;
                 // set the ipv4 address of current gNB as the destination address
                 ipHeader->setDestAddress(nodeInfo_->getNodeAddr());
                 

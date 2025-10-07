@@ -154,7 +154,7 @@ Register_Class(OspfLsa)
 
 OspfLsa::OspfLsa() : ::inet::FieldsChunk()
 {
-    this->setChunkLength(inet::B(12));
+    this->setChunkLength(inet::B(28));
 
 }
 
@@ -180,10 +180,11 @@ OspfLsa& OspfLsa::operator=(const OspfLsa& other)
 void OspfLsa::copy(const OspfLsa& other)
 {
     this->origin = other.origin;
+    this->nodeId = other.nodeId;
     this->seqNum = other.seqNum;
     this->installTime = other.installTime;
     delete [] this->neighbor;
-    this->neighbor = (other.neighbor_arraysize==0) ? nullptr : new inet::Ipv4Address[other.neighbor_arraysize];
+    this->neighbor = (other.neighbor_arraysize==0) ? nullptr : new uint32_t[other.neighbor_arraysize];
     neighbor_arraysize = other.neighbor_arraysize;
     for (size_t i = 0; i < neighbor_arraysize; i++) {
         this->neighbor[i] = other.neighbor[i];
@@ -200,6 +201,7 @@ void OspfLsa::parsimPack(omnetpp::cCommBuffer *b) const
 {
     ::inet::FieldsChunk::parsimPack(b);
     doParsimPacking(b,this->origin);
+    doParsimPacking(b,this->nodeId);
     doParsimPacking(b,this->seqNum);
     doParsimPacking(b,this->installTime);
     b->pack(neighbor_arraysize);
@@ -212,6 +214,7 @@ void OspfLsa::parsimUnpack(omnetpp::cCommBuffer *b)
 {
     ::inet::FieldsChunk::parsimUnpack(b);
     doParsimUnpacking(b,this->origin);
+    doParsimUnpacking(b,this->nodeId);
     doParsimUnpacking(b,this->seqNum);
     doParsimUnpacking(b,this->installTime);
     delete [] this->neighbor;
@@ -219,7 +222,7 @@ void OspfLsa::parsimUnpack(omnetpp::cCommBuffer *b)
     if (neighbor_arraysize == 0) {
         this->neighbor = nullptr;
     } else {
-        this->neighbor = new inet::Ipv4Address[neighbor_arraysize];
+        this->neighbor = new uint32_t[neighbor_arraysize];
         doParsimArrayUnpacking(b,this->neighbor,neighbor_arraysize);
     }
     delete [] this->cost;
@@ -232,15 +235,26 @@ void OspfLsa::parsimUnpack(omnetpp::cCommBuffer *b)
     }
 }
 
-const inet::Ipv4Address& OspfLsa::getOrigin() const
+uint32_t OspfLsa::getOrigin() const
 {
     return this->origin;
 }
 
-void OspfLsa::setOrigin(const inet::Ipv4Address& origin)
+void OspfLsa::setOrigin(uint32_t origin)
 {
     handleChange();
     this->origin = origin;
+}
+
+int OspfLsa::getNodeId() const
+{
+    return this->nodeId;
+}
+
+void OspfLsa::setNodeId(int nodeId)
+{
+    handleChange();
+    this->nodeId = nodeId;
 }
 
 uint32_t OspfLsa::getSeqNum() const
@@ -270,7 +284,7 @@ size_t OspfLsa::getNeighborArraySize() const
     return neighbor_arraysize;
 }
 
-const inet::Ipv4Address& OspfLsa::getNeighbor(size_t k) const
+uint32_t OspfLsa::getNeighbor(size_t k) const
 {
     if (k >= neighbor_arraysize) throw omnetpp::cRuntimeError("Array of size %lu indexed by %lu", (unsigned long)neighbor_arraysize, (unsigned long)k);
     return this->neighbor[k];
@@ -279,28 +293,30 @@ const inet::Ipv4Address& OspfLsa::getNeighbor(size_t k) const
 void OspfLsa::setNeighborArraySize(size_t newSize)
 {
     handleChange();
-    inet::Ipv4Address *neighbor2 = (newSize==0) ? nullptr : new inet::Ipv4Address[newSize];
+    uint32_t *neighbor2 = (newSize==0) ? nullptr : new uint32_t[newSize];
     size_t minSize = neighbor_arraysize < newSize ? neighbor_arraysize : newSize;
     for (size_t i = 0; i < minSize; i++)
         neighbor2[i] = this->neighbor[i];
+    for (size_t i = minSize; i < newSize; i++)
+        neighbor2[i] = 0;
     delete [] this->neighbor;
     this->neighbor = neighbor2;
     neighbor_arraysize = newSize;
 }
 
-void OspfLsa::setNeighbor(size_t k, const inet::Ipv4Address& neighbor)
+void OspfLsa::setNeighbor(size_t k, uint32_t neighbor)
 {
     if (k >= neighbor_arraysize) throw omnetpp::cRuntimeError("Array of size %lu indexed by %lu", (unsigned long)neighbor_arraysize, (unsigned long)k);
     handleChange();
     this->neighbor[k] = neighbor;
 }
 
-void OspfLsa::insertNeighbor(size_t k, const inet::Ipv4Address& neighbor)
+void OspfLsa::insertNeighbor(size_t k, uint32_t neighbor)
 {
     if (k > neighbor_arraysize) throw omnetpp::cRuntimeError("Array of size %lu indexed by %lu", (unsigned long)neighbor_arraysize, (unsigned long)k);
     handleChange();
     size_t newSize = neighbor_arraysize + 1;
-    inet::Ipv4Address *neighbor2 = new inet::Ipv4Address[newSize];
+    uint32_t *neighbor2 = new uint32_t[newSize];
     size_t i;
     for (i = 0; i < k; i++)
         neighbor2[i] = this->neighbor[i];
@@ -312,7 +328,7 @@ void OspfLsa::insertNeighbor(size_t k, const inet::Ipv4Address& neighbor)
     neighbor_arraysize = newSize;
 }
 
-void OspfLsa::appendNeighbor(const inet::Ipv4Address& neighbor)
+void OspfLsa::appendNeighbor(uint32_t neighbor)
 {
     insertNeighbor(neighbor_arraysize, neighbor);
 }
@@ -322,7 +338,7 @@ void OspfLsa::eraseNeighbor(size_t k)
     if (k >= neighbor_arraysize) throw omnetpp::cRuntimeError("Array of size %lu indexed by %lu", (unsigned long)neighbor_arraysize, (unsigned long)k);
     handleChange();
     size_t newSize = neighbor_arraysize - 1;
-    inet::Ipv4Address *neighbor2 = (newSize == 0) ? nullptr : new inet::Ipv4Address[newSize];
+    uint32_t *neighbor2 = (newSize == 0) ? nullptr : new uint32_t[newSize];
     size_t i;
     for (i = 0; i < k; i++)
         neighbor2[i] = this->neighbor[i];
@@ -409,6 +425,7 @@ class OspfLsaDescriptor : public omnetpp::cClassDescriptor
     mutable const char **propertyNames;
     enum FieldConstants {
         FIELD_origin,
+        FIELD_nodeId,
         FIELD_seqNum,
         FIELD_installTime,
         FIELD_neighbor,
@@ -479,7 +496,7 @@ const char *OspfLsaDescriptor::getProperty(const char *propertyName) const
 int OspfLsaDescriptor::getFieldCount() const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
-    return base ? 5+base->getFieldCount() : 5;
+    return base ? 6+base->getFieldCount() : 6;
 }
 
 unsigned int OspfLsaDescriptor::getFieldTypeFlags(int field) const
@@ -491,13 +508,14 @@ unsigned int OspfLsaDescriptor::getFieldTypeFlags(int field) const
         field -= base->getFieldCount();
     }
     static unsigned int fieldTypeFlags[] = {
-        0,    // FIELD_origin
+        FD_ISEDITABLE,    // FIELD_origin
+        FD_ISEDITABLE,    // FIELD_nodeId
         FD_ISEDITABLE,    // FIELD_seqNum
         FD_ISEDITABLE,    // FIELD_installTime
-        FD_ISARRAY | FD_ISRESIZABLE,    // FIELD_neighbor
+        FD_ISARRAY | FD_ISEDITABLE | FD_ISRESIZABLE,    // FIELD_neighbor
         FD_ISARRAY | FD_ISEDITABLE | FD_ISRESIZABLE,    // FIELD_cost
     };
-    return (field >= 0 && field < 5) ? fieldTypeFlags[field] : 0;
+    return (field >= 0 && field < 6) ? fieldTypeFlags[field] : 0;
 }
 
 const char *OspfLsaDescriptor::getFieldName(int field) const
@@ -510,12 +528,13 @@ const char *OspfLsaDescriptor::getFieldName(int field) const
     }
     static const char *fieldNames[] = {
         "origin",
+        "nodeId",
         "seqNum",
         "installTime",
         "neighbor",
         "cost",
     };
-    return (field >= 0 && field < 5) ? fieldNames[field] : nullptr;
+    return (field >= 0 && field < 6) ? fieldNames[field] : nullptr;
 }
 
 int OspfLsaDescriptor::findField(const char *fieldName) const
@@ -523,10 +542,11 @@ int OspfLsaDescriptor::findField(const char *fieldName) const
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     int baseIndex = base ? base->getFieldCount() : 0;
     if (strcmp(fieldName, "origin") == 0) return baseIndex + 0;
-    if (strcmp(fieldName, "seqNum") == 0) return baseIndex + 1;
-    if (strcmp(fieldName, "installTime") == 0) return baseIndex + 2;
-    if (strcmp(fieldName, "neighbor") == 0) return baseIndex + 3;
-    if (strcmp(fieldName, "cost") == 0) return baseIndex + 4;
+    if (strcmp(fieldName, "nodeId") == 0) return baseIndex + 1;
+    if (strcmp(fieldName, "seqNum") == 0) return baseIndex + 2;
+    if (strcmp(fieldName, "installTime") == 0) return baseIndex + 3;
+    if (strcmp(fieldName, "neighbor") == 0) return baseIndex + 4;
+    if (strcmp(fieldName, "cost") == 0) return baseIndex + 5;
     return base ? base->findField(fieldName) : -1;
 }
 
@@ -539,13 +559,14 @@ const char *OspfLsaDescriptor::getFieldTypeString(int field) const
         field -= base->getFieldCount();
     }
     static const char *fieldTypeStrings[] = {
-        "inet::Ipv4Address",    // FIELD_origin
+        "uint32",    // FIELD_origin
+        "int",    // FIELD_nodeId
         "uint32",    // FIELD_seqNum
         "omnetpp::simtime_t",    // FIELD_installTime
-        "inet::Ipv4Address",    // FIELD_neighbor
+        "uint32",    // FIELD_neighbor
         "double",    // FIELD_cost
     };
-    return (field >= 0 && field < 5) ? fieldTypeStrings[field] : nullptr;
+    return (field >= 0 && field < 6) ? fieldTypeStrings[field] : nullptr;
 }
 
 const char **OspfLsaDescriptor::getFieldPropertyNames(int field) const
@@ -632,10 +653,11 @@ std::string OspfLsaDescriptor::getFieldValueAsString(omnetpp::any_ptr object, in
     }
     OspfLsa *pp = omnetpp::fromAnyPtr<OspfLsa>(object); (void)pp;
     switch (field) {
-        case FIELD_origin: return pp->getOrigin().str();
+        case FIELD_origin: return ulong2string(pp->getOrigin());
+        case FIELD_nodeId: return long2string(pp->getNodeId());
         case FIELD_seqNum: return ulong2string(pp->getSeqNum());
         case FIELD_installTime: return simtime2string(pp->getInstallTime());
-        case FIELD_neighbor: return pp->getNeighbor(i).str();
+        case FIELD_neighbor: return ulong2string(pp->getNeighbor(i));
         case FIELD_cost: return double2string(pp->getCost(i));
         default: return "";
     }
@@ -653,8 +675,11 @@ void OspfLsaDescriptor::setFieldValueAsString(omnetpp::any_ptr object, int field
     }
     OspfLsa *pp = omnetpp::fromAnyPtr<OspfLsa>(object); (void)pp;
     switch (field) {
+        case FIELD_origin: pp->setOrigin(string2ulong(value)); break;
+        case FIELD_nodeId: pp->setNodeId(string2long(value)); break;
         case FIELD_seqNum: pp->setSeqNum(string2ulong(value)); break;
         case FIELD_installTime: pp->setInstallTime(string2simtime(value)); break;
+        case FIELD_neighbor: pp->setNeighbor(i,string2ulong(value)); break;
         case FIELD_cost: pp->setCost(i,string2double(value)); break;
         default: throw omnetpp::cRuntimeError("Cannot set field %d of class 'OspfLsa'", field);
     }
@@ -670,10 +695,11 @@ omnetpp::cValue OspfLsaDescriptor::getFieldValue(omnetpp::any_ptr object, int fi
     }
     OspfLsa *pp = omnetpp::fromAnyPtr<OspfLsa>(object); (void)pp;
     switch (field) {
-        case FIELD_origin: return omnetpp::toAnyPtr(&pp->getOrigin()); break;
+        case FIELD_origin: return (omnetpp::intval_t)(pp->getOrigin());
+        case FIELD_nodeId: return pp->getNodeId();
         case FIELD_seqNum: return (omnetpp::intval_t)(pp->getSeqNum());
         case FIELD_installTime: return pp->getInstallTime().dbl();
-        case FIELD_neighbor: return omnetpp::toAnyPtr(&pp->getNeighbor(i)); break;
+        case FIELD_neighbor: return (omnetpp::intval_t)(pp->getNeighbor(i));
         case FIELD_cost: return pp->getCost(i);
         default: throw omnetpp::cRuntimeError("Cannot return field %d of class 'OspfLsa' as cValue -- field index out of range?", field);
     }
@@ -691,8 +717,11 @@ void OspfLsaDescriptor::setFieldValue(omnetpp::any_ptr object, int field, int i,
     }
     OspfLsa *pp = omnetpp::fromAnyPtr<OspfLsa>(object); (void)pp;
     switch (field) {
+        case FIELD_origin: pp->setOrigin(omnetpp::checked_int_cast<uint32_t>(value.intValue())); break;
+        case FIELD_nodeId: pp->setNodeId(omnetpp::checked_int_cast<int>(value.intValue())); break;
         case FIELD_seqNum: pp->setSeqNum(omnetpp::checked_int_cast<uint32_t>(value.intValue())); break;
         case FIELD_installTime: pp->setInstallTime(value.doubleValue()); break;
+        case FIELD_neighbor: pp->setNeighbor(i,omnetpp::checked_int_cast<uint32_t>(value.intValue())); break;
         case FIELD_cost: pp->setCost(i,value.doubleValue()); break;
         default: throw omnetpp::cRuntimeError("Cannot set field %d of class 'OspfLsa'", field);
     }
@@ -721,8 +750,6 @@ omnetpp::any_ptr OspfLsaDescriptor::getFieldStructValuePointer(omnetpp::any_ptr 
     }
     OspfLsa *pp = omnetpp::fromAnyPtr<OspfLsa>(object); (void)pp;
     switch (field) {
-        case FIELD_origin: return omnetpp::toAnyPtr(&pp->getOrigin()); break;
-        case FIELD_neighbor: return omnetpp::toAnyPtr(&pp->getNeighbor(i)); break;
         default: return omnetpp::any_ptr(nullptr);
     }
 }

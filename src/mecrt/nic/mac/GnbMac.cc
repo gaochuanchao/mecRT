@@ -279,8 +279,6 @@ void GnbMac::initialize(int stage)
          */
         
         resAllocateMode_ = par("resAllocateMode");
-        serverPort_ = nodeInfo_->getServerPort();
-        // std::cout << "server port: " << serverPort_ << endl;
         rbPerBand_ = par("numRbPerBand");
         EV << "GnbMac::initialize - number of resource blocks per Band " << rbPerBand_ << endl;
 
@@ -325,6 +323,8 @@ void GnbMac::initialize(int stage)
         if (enableInitDebug_)
             std::cout << "GnbMac::initialize - stage: INITSTAGE_LAST - begins" << std::endl;
 
+        serverPort_ = nodeInfo_->getServerPort();
+        // std::cout << "server port: " << serverPort_ << endl;
         gnbAddress_ = nodeInfo_->getNodeAddr();
         EV << "GnbMac::initialize - gNB address " << gnbAddress_.toIpv4().str() << ", gNB MacNodeId " << nodeId_ << endl;
         binder_->setMacNodeId(gnbAddress_.toIpv4(), nodeId_);
@@ -1076,7 +1076,7 @@ void GnbMac::vecUpdateRsuFeedback(double carrierFreq, MacNodeId ueId, bool isBro
         }
 
         // if the data rate is not 0, update the latest data rate to the scheduler
-        if (bytePerBand > 0)
+        if (bytePerBand > 0 && !nodeInfo_->getGlobalSchedulerAddr().isUnspecified())
         {
             Packet* packet = new Packet("RsuFD");
             auto rsuFd = makeShared<RsuFeedback>();
@@ -1087,6 +1087,7 @@ void GnbMac::vecUpdateRsuFeedback(double carrierFreq, MacNodeId ueId, bool isBro
             rsuFd->setAvailBands(rbManagerUl_->getAvailableBands());
             rsuFd->setTotalBands(rbManagerUl_->getNumBands());
             rsuFd->setBytePerBand(rbManagerUl_->getVehDataRate(ueId));
+            rsuFd->setRsuAddr(nodeInfo_->getNodeAddr().getInt());
             rsuFd->setBandUpdateTime(simTime());
             rsuFd->addTag<CreationTimeTag>()->setCreationTime(simTime());
             packet->insertAtBack(rsuFd);
@@ -1233,7 +1234,7 @@ void GnbMac::vecSendDataToServer(Packet* packet, MacNodeId ueId, int port, L3Add
     const auto& ipv4Header = makeShared<Ipv4Header>();
     ipv4Header->setProtocolId(IP_PROT_UDP);
     ipv4Header->setDestAddress(targetAddr.toIpv4());   // gnb address
-    ipv4Header->setSrcAddress(binder_->getIPv4Address(ueId));   // vehicle address
+    // ipv4Header->setSrcAddress(binder_->getIPv4Address(ueId));   // vehicle address
     ipv4Header->addChunkLength(B(20));
     ipv4Header->setHeaderLength(B(20));
     ipv4Header->setTotalLengthField(ipv4Header->getChunkLength() + packet->getDataLength());
@@ -1325,9 +1326,8 @@ void GnbMac::vecHandleGrantFromRsu(omnetpp::cPacket* pktAux)
     appGrant.processGnbPort = grant->getProcessGnbPort();
     appGrant.offloadGnbId = grant->getOffloadGnbId();
     appGrant.processGnbId = grant->getProcessGnbId();
-    // get the offloading gNodeB address and its server port
-    cModule *processGnb = binder_->getModuleByMacNodeId(appGrant.processGnbId);
-    appGrant.processGnbAddr = L3AddressResolver().resolve(processGnb->getFullName());
+    appGrant.processGnbAddr = Ipv4Address(grant->getProcessGnbAddr());
+    appGrant.ueAddr = Ipv4Address(grant->getUeAddr());
 
     rbManagerUl_->setAppGrantInfo(appId, appGrant);
 
@@ -1367,6 +1367,7 @@ void GnbMac::vecSendGrantToVeh(AppId appId, bool isNewGrant, bool isUpdate, bool
     grant->setProcessGnbId(srv.processGnbId);
     grant->setOffloadGnbId(srv.offloadGnbId);
     grant->setProcessGnbPort(srv.processGnbPort);
+    grant->setProcessGnbAddr(srv.processGnbAddr.getInt());
     grant->setMaxOffloadTime(srv.maxOffloadTime);
     grant->setBands(srv.numGrantedBands);
     grant->setInputSize(srv.inputSize);
@@ -1405,10 +1406,9 @@ void GnbMac::vecSendGrantToVeh(AppId appId, bool isNewGrant, bool isUpdate, bool
     udpHeader->setCrc(0xC00D);
     pkt->insertAtFront(udpHeader);
 
-    L3Address destAddr = binder_->getIPv4Address(ueId);
     auto ipv4Header = makeShared<Ipv4Header>();
     ipv4Header->setProtocolId(IP_PROT_UDP);
-    ipv4Header->setDestAddress(destAddr.toIpv4());
+    ipv4Header->setDestAddress(srv.ueAddr);
     ipv4Header->addChunkLength(B(20));
     ipv4Header->setHeaderLength(B(20));
     ipv4Header->setTotalLengthField(ipv4Header->getChunkLength() + pkt->getDataLength());

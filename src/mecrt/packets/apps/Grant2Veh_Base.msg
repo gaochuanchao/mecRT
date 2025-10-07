@@ -21,14 +21,16 @@ import inet.common.packet.chunk.Chunk;
 class Grant2Veh_Base extends inet::FieldsChunk
 {
 	unsigned int appId;				// the application id of the vehicle, 4 bytes
+	uint32 ueAddr;			// the IP address of the vehicle, 4 bytes
 	simtime_t maxOffloadTime;		// maximum offloading time in seconds, 8 bytes
 	int bands;			// allocated number of bands, 4 bytes
 	unsigned short processGnbId;	// the id of processing gNB, 2 bytes
 	unsigned short offloadGnbId;	// the id of offloading gNB,
+	uint32 processGnbAddr;	// the ipv4 address of processing gNB, 4 bytes
 	int processGnbPort;		// rsu server port, 4 bytes
 	int inputSize;		// application input size, 4 bytes
 	int outputSize;		// application output size, 4 bytes
 	int bytePerTTI;		// granted bytes can be transferred within each TTI
 	
-	chunkLength = inet::B(36);
+	chunkLength = inet::B(40);
 }

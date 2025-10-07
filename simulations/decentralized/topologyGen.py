@@ -9,7 +9,7 @@
 # the corresponding gnbRouter to gnbRouter connection lines.
 
 
-def generate_connections_from_file(filename, channel="Eth100G", prefix="gnbRouter"):
+def generate_connections_from_file(filename, channel="Eth100G", prefix="gnb"):
     # Read adjacency matrix from file
     with open(filename, "r") as f:
         lines = f.readlines()

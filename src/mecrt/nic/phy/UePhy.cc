@@ -472,6 +472,8 @@ void UePhy::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVector f
          * 5 TTI is to ensure that the last broadcast feedback is not too close to the scheduling time such that 
          * it has enough time to be sent to the scheduler.
          */
+        EV << "UePhy::sendFeedback - NOW: " << NOW << ", fbPeriod_: " << fbPeriod_ 
+            << ", NEXT_SCHEDULING_TIME: " << NEXT_SCHEDULING_TIME << endl;
         if (NOW + fbPeriod_ + 5 * TTI >= NEXT_SCHEDULING_TIME)     
         {
             EV << "UePhy::sendFeedback - broadcast feedback to the air channel for carrier " << carrierFrequency << endl;

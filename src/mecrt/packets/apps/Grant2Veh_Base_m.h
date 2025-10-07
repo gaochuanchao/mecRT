@@ -27,16 +27,18 @@ class Grant2Veh_Base;
  * class Grant2Veh_Base extends inet::FieldsChunk
  * {
  *     unsigned int appId;				// the application id of the vehicle, 4 bytes
+ *     uint32 ueAddr;			// the IP address of the vehicle, 4 bytes
  *     simtime_t maxOffloadTime;		// maximum offloading time in seconds, 8 bytes
  *     int bands;			// allocated number of bands, 4 bytes
  *     unsigned short processGnbId;	// the id of processing gNB, 2 bytes
  *     unsigned short offloadGnbId;	// the id of offloading gNB,
+ *     uint32 processGnbAddr;	// the ipv4 address of processing gNB, 4 bytes
  *     int processGnbPort;		// rsu server port, 4 bytes
  *     int inputSize;		// application input size, 4 bytes
  *     int outputSize;		// application output size, 4 bytes
  *     int bytePerTTI;		// granted bytes can be transferred within each TTI
  * 
- *     chunkLength = inet::B(36);
+ *     chunkLength = inet::B(40);
  * }
  * </pre>
  */
@@ -44,10 +46,12 @@ class Grant2Veh_Base : public ::inet::FieldsChunk
 {
   protected:
     unsigned int appId = 0;
+    uint32_t ueAddr = 0;
     omnetpp::simtime_t maxOffloadTime = SIMTIME_ZERO;
     int bands = 0;
     unsigned short processGnbId = 0;
     unsigned short offloadGnbId = 0;
+    uint32_t processGnbAddr = 0;
     int processGnbPort = 0;
     int inputSize = 0;
     int outputSize = 0;
@@ -71,6 +75,9 @@ class Grant2Veh_Base : public ::inet::FieldsChunk
     virtual unsigned int getAppId() const;
     virtual void setAppId(unsigned int appId);
 
+    virtual uint32_t getUeAddr() const;
+    virtual void setUeAddr(uint32_t ueAddr);
+
     virtual omnetpp::simtime_t getMaxOffloadTime() const;
     virtual void setMaxOffloadTime(omnetpp::simtime_t maxOffloadTime);
 
@@ -82,6 +89,9 @@ class Grant2Veh_Base : public ::inet::FieldsChunk
 
     virtual unsigned short getOffloadGnbId() const;
     virtual void setOffloadGnbId(unsigned short offloadGnbId);
+
+    virtual uint32_t getProcessGnbAddr() const;
+    virtual void setProcessGnbAddr(uint32_t processGnbAddr);
 
     virtual int getProcessGnbPort() const;
     virtual void setProcessGnbPort(int processGnbPort);
