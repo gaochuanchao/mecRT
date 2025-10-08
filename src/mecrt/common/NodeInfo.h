@@ -22,6 +22,9 @@
 
 using namespace inet;
 
+class NodePacketController;
+class GnbMac;
+
 /**
  * @class NodeInfo
  * @brief There is one NodeInfo module for each node. Keeps cross-layer information about the node
@@ -56,6 +59,10 @@ class NodeInfo : public omnetpp::cSimpleModule
         int localSchedulerPort_; // [Scheduler] the port number used by the local scheduler module
         int localSchedulerSocketId_; // [Scheduler] the socket id used by the local scheduler module
         double scheduleInterval_; // in seconds
+
+        // =========== reference to other modules ===========
+        GnbMac* gnbMac_ = nullptr;
+        NodePacketController* npc_ = nullptr;
 
     protected:
         virtual void initialize(int stage) override;
@@ -111,6 +118,13 @@ class NodeInfo : public omnetpp::cSimpleModule
         double getScheduleInterval() {return scheduleInterval_;}
         void setLocalSchedulerSocketId(int id) {localSchedulerSocketId_ = id;}
         int getLocalSchedulerSocketId() {return localSchedulerSocketId_;}
+
+
+        // modules reference related methods
+        void setGnbMac(GnbMac* mac) {gnbMac_ = mac;}
+        virtual void recoverRsuStatus();
+        void setNpc(NodePacketController* npc) {npc_ = npc;}
+        virtual void recoverServiceRequests();
 };
 
 #endif /* _MECRT_COMMON_NODEINFO_H_ */

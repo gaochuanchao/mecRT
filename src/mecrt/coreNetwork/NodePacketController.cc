@@ -90,6 +90,7 @@ void NodePacketController::initialize(int stage)
         try {
             nodeInfo_ = getModuleFromPar<NodeInfo>(par("nodeInfoModulePath"), this);
             nodeInfo_->setNpcSocketId(socketId_);
+            nodeInfo_->setNpc(this);
         } catch (cException &e) {
             throw cRuntimeError("NodePacketController:initialize - cannot find nodeInfo module\n");
         }
@@ -161,9 +162,9 @@ void NodePacketController::handleMessage(cMessage *msg)
             handleServiceFeedback(pkt);
             return;
         }
-        else if (strcmp(pkt->getName(), "VehGrant") == 0) // vehicle grant packet from the global scheduler
+        else if (strcmp(pkt->getName(), "NicGrant") == 0) // NIC grant packet from the processing server
         {
-            handleVehicleGrant(pkt);
+            handleOffloadingNicGrant(pkt);
             return;
         }
         else
@@ -175,6 +176,31 @@ void NodePacketController::handleMessage(cMessage *msg)
         }
     }
 }
+
+
+void NodePacketController::handleServiceFeedback(inet::Packet *packet)
+{
+    auto srvStatus = packet->peekAtFront<ServiceStatus>();
+    AppId appId = srvStatus->getAppId();
+    EV << NOW << " NodePacketController::handleFromUdp - Received a service feedback packet for app " << appId << endl;
+
+    // check if we are the global scheduler
+    if (nodeInfo_->getIsGlobalScheduler())
+    {
+        EV << NOW << " NodePacketController::handleFromUdp - we are the global scheduler, forward the service feedback packet to the global scheduler." << endl;
+        packet->addTagIfAbsent<SocketInd>()->setSocketId(nodeInfo_->getLocalSchedulerSocketId());
+        send(packet, "socketOut");
+        return;
+    }
+    else
+    {
+        EV << NOW << " NodePacketController::handleFromUdp - we are not the global scheduler, drop the service feedback packet." << endl;
+        delete packet;
+        packet = nullptr;
+        return;
+    }
+}
+
 
 void NodePacketController::handleServiceRequest(Packet *pkt)
 {
@@ -236,6 +262,7 @@ void NodePacketController::handleServiceGrant(Packet *pkt)
     if (processGnbId == nodeInfo_->getNodeId() && !nodeInfo_->getIsGlobalScheduler())
     {
         EV << NOW << " NodePacketController::handleFromUdp - the processing RSU is the local RSU, send to local processing module" << endl;
+        pkt->clearTags(); // clear all tags first
         pkt->addTagIfAbsent<SocketInd>()->setSocketId(nodeInfo_->getServerSocketId());
         send(pkt, "socketOut");
         return;
@@ -262,25 +289,25 @@ void NodePacketController::handleServiceGrant(Packet *pkt)
 }
 
 
-void NodePacketController::handleVehicleGrant(Packet *pkt)
+void NodePacketController::handleOffloadingNicGrant(Packet *pkt)
 {
-    auto vehGrant = pkt->peekAtFront<Grant2Veh>();
-    AppId appId = vehGrant->getAppId();
-    EV << NOW << " NodePacketController::handleFromUdp - Received a vehicle grant packet for app " << appId << endl;
+    auto nicGrant = pkt->peekAtFront<Grant2Veh>();
+    AppId appId = nicGrant->getAppId();
+    EV << NOW << " NodePacketController::handleFromUdp - Received a NIC grant packet for app " << appId << endl;
 
     // first check if we are the offloading RSU
-    MacNodeId offloadGnbId = vehGrant->getOffloadGnbId();
+    MacNodeId offloadGnbId = nicGrant->getOffloadGnbId();
     if (offloadGnbId != nodeInfo_->getNodeId())
     {
-        EV << NOW << " NodePacketController::handleFromUdp - we are not the offloading RSU, drop the vehicle grant packet and send a failure feedback to the processing gNB." << endl;
+        EV << NOW << " NodePacketController::handleFromUdp - we are not the offloading RSU, drop the NIC grant packet and send a failure feedback to the processing gNB." << endl;
         Packet* fbPacket = new Packet("SrvFD");
         auto srvStatus = makeShared<ServiceStatus>();
         srvStatus->setSuccess(false);
         srvStatus->setAppId(appId);
-        srvStatus->setProcessGnbId(vehGrant->getProcessGnbId());
-        srvStatus->setOffloadGnbId(vehGrant->getOffloadGnbId());
+        srvStatus->setProcessGnbId(nicGrant->getProcessGnbId());
+        srvStatus->setOffloadGnbId(nicGrant->getOffloadGnbId());
         fbPacket->insertAtFront(srvStatus);
-        socket_.sendTo(fbPacket, Ipv4Address(vehGrant->getProcessGnbAddr()), MEC_NPC_PORT);
+        socket_.sendTo(fbPacket, Ipv4Address(nicGrant->getProcessGnbAddr()), MEC_NPC_PORT);
 
         delete pkt;
         pkt = nullptr;
@@ -290,9 +317,10 @@ void NodePacketController::handleVehicleGrant(Packet *pkt)
     int nicInterfaceId = nodeInfo_->getNicInterfaceId();
     EV << "NodePacketController::handleFromUdp - send grant to NIC interface " << nicInterfaceId << endl;
     // find the NIC interface id of the gNodeB
+    pkt->clearTags(); // clear all tags first
     int appPort = MacCidToLcid(appId);
     pkt->addTagIfAbsent<InterfaceReq>()->setInterfaceId(nicInterfaceId);
-    socket_.sendTo(pkt, Ipv4Address(vehGrant->getUeAddr()), appPort);
+    socket_.sendTo(pkt, Ipv4Address(nicGrant->getUeAddr()), appPort);
 }
 
 
@@ -330,5 +358,38 @@ void NodePacketController::handleGlobalSchedulerTimer()
         if (!checkGlobalSchedulerTimer_->isScheduled())
             scheduleAt(simTime() + checkGlobalSchedulerInterval_, checkGlobalSchedulerTimer_);
     }
+}
+
+
+void NodePacketController::recoverServiceRequests()
+{
+    // resend all buffered service request packets to the global scheduler
+    if (nodeInfo_->getIsGlobalScheduler())
+        return;
+
+    if (nodeInfo_->getGlobalSchedulerAddr().isUnspecified())
+        return;
+
+    EV << NOW << "NodePacketController::recoverServiceRequests - resend all buffered service request packets to the global scheduler." << endl;
+    vector<AppId> toRemove;
+    for (auto it = srvReqsBuffer_.begin(); it != srvReqsBuffer_.end(); ++it)
+    {
+        AppId appId = it->first;
+        Ptr<VecRequest> srvReq = it->second;
+        if (srvReq->getStopTime() <= simTime())
+        {
+            toRemove.push_back(appId);
+            continue;
+        }
+        Packet* packetToGlobal = new Packet("SrvReq");
+        packetToGlobal->insertAtBack(srvReq);
+        socket_.sendTo(packetToGlobal, nodeInfo_->getGlobalSchedulerAddr(), MEC_NPC_PORT);
+    }
+
+    for (auto appId : toRemove)
+    {
+        srvReqsBuffer_.erase(appId);
+    }
+    pendingSrvReqs_.clear();
 }
 

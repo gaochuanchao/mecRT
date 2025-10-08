@@ -40,32 +40,7 @@ static const int MEC_OSPF_PORT = 38; // the port number used by MecOspf module
  */
 extern double NEXT_SCHEDULING_TIME; 
 
-/***
- * Define the data struct used in MEC
- */
-
-// =================================
-// ======== for scheduler ==========
-// =================================
 
 typedef unsigned int AppId;
-
-struct ServiceInstance {
-    AppId appId;
-    MacNodeId offloadGnbId; 
-    MacNodeId processGnbId;
-    int cmpUnits;      // allocated computing units of the service
-    int bands;         // allocated bands for accessing the service
-    omnetpp::simtime_t srvGrantTime;    // the time when the grant of the service is sended
-    double energySaved;
-    double exeTime; // the execution time of the service
-    double maxOffloadTime;  // the maximum offloading time results in positive energy saving
-};
-
-// =================================
-// ======== for RSU Server =========
-// =================================
-
-
 
 #endif // _MECRT_MECCOMMON_H_

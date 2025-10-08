@@ -155,6 +155,8 @@ void MecIP2Nic::registerInterface()
     {
         // get the routing table, add a default route (0.0.0.0/0) to point towards this gateway.
         auto rt = check_and_cast<Ipv4RoutingTable *>(getModuleByPath("^.^.ipv4.routingTable"));
+
+        // add a default offloading route to the routing table
         Ipv4Route *route = new Ipv4Route();
         route->setDestination(MEC_UE_OFFLOAD_ADDR); // default route
         route->setNetmask(Ipv4Address::ALLONES_ADDRESS);
@@ -162,6 +164,17 @@ void MecIP2Nic::registerInterface()
         route->setSourceType(Ipv4Route::MANUAL);
         route->setMetric(1);
         rt->addRoute(route);
+
+        // add a default route to all other IP gNBs, the IP address assignment of gNBs is 
+        // specified in the omnetpp.ini file: 
+        //      *.configurator.config = xmldoc("./demo.xml")
+        Ipv4Route *defaultRoute = new Ipv4Route();
+        defaultRoute->setDestination(Ipv4Address("10.0.0.0")); // specified in "demo.xml"
+        defaultRoute->setNetmask(Ipv4Address("255.0.0.0"));    // specified in "demo.xml"
+        defaultRoute->setInterface(networkIf);
+        defaultRoute->setSourceType(Ipv4Route::MANUAL);
+        defaultRoute->setMetric(1);
+        rt->addRoute(defaultRoute);
     }
 
 

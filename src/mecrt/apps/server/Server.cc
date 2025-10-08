@@ -17,6 +17,7 @@
 #include "mecrt/packets/apps/RsuFeedback_m.h"
 #include "mecrt/packets/apps/ServiceStatus_m.h"
 #include "mecrt/packets/apps/Grant2Veh.h"
+// #include "mecrt/common/NodeInfo.h"
 
 #include "inet/common/TimeTag_m.h"
 #include "corenetwork/gtp/GtpUserMsg_m.h"
@@ -155,7 +156,7 @@ void Server::handleMessage(cMessage *msg)
                 EV << "Server::handleMessage - service initialization complete for application " << appId << endl;
                 // send the grant message to the vehicle
                 grantedService_[appId].initComplete = true;
-                sendGrant2Vehicle(appId, false);
+                sendGrant2OffloadingNic(appId, false);
                 appsWaitMacInitFb_.insert(appId);
             }
         }
@@ -300,12 +301,12 @@ void Server::updateServiceStatus(omnetpp::cMessage *msg)
     socket.sendTo(pkt, nodeInfo_->getGlobalSchedulerAddr(), MEC_NPC_PORT);
 }
 
-void Server::sendGrant2Vehicle(AppId appId, bool isStop)
+void Server::sendGrant2OffloadingNic(AppId appId, bool isStop)
 {
-    EV << "Server::sendGrant2Vehicle - send grant to the vehicle " << endl;
+    EV << "Server::sendGrant2OffloadingNic - send grant to the offloading NIC " << endl;
     Service& srv = grantedService_[appId];
 
-    Packet* packet = new Packet("VehGrant");
+    Packet* packet = new Packet("NicGrant");
     auto grant = makeShared<Grant2Veh>();
     grant->setAppId(appId);
     grant->setUeAddr(srv.ueAddr.getInt());
@@ -328,7 +329,7 @@ void Server::sendGrant2Vehicle(AppId appId, bool isStop)
     if (srv.processGnbId == srv.offloadGnbId)
     {
         int nicInterfaceId = nodeInfo_->getNicInterfaceId();
-        EV << "Server::sendGrant2Vehicle - offloading gNodeB " << srv.offloadGnbId 
+        EV << "Server::sendGrant2OffloadingNic - offloading gNodeB " << srv.offloadGnbId 
            << " is the same as processing gNodeB " << srv.processGnbId << ", send grant to NIC interface " << nicInterfaceId << endl;
         // find the NIC interface id of the gNodeB
         packet->addTagIfAbsent<InterfaceReq>()->setInterfaceId(nicInterfaceId);
@@ -336,7 +337,7 @@ void Server::sendGrant2Vehicle(AppId appId, bool isStop)
     }
     else
     {
-        EV << "Server::sendGrant2Vehicle - offloading gNodeB " << srv.offloadGnbId 
+        EV << "Server::sendGrant2OffloadingNic - offloading gNodeB " << srv.offloadGnbId 
            << " is different from processing gNodeB " << srv.processGnbId 
            << ", forward to the NPC module of the offloading gNodeB" << endl;
         // packet->addTagIfAbsent<InterfaceReq>()->setInterfaceId(pppIfInterfaceId_);
@@ -360,9 +361,7 @@ void Server::initializeService(inet::Ptr<const Grant2Rsu> pkt)
         srvStatus->setSuccess(false);
         srvStatus->setAppId(appId);
         srvStatus->setProcessGnbId(processGnbId);
-        srvStatus->setOffloadGnbId(pkt->getOffloadGnbId());
-        srvStatus->setAvailCmpUnit(cmpUnitFree_);
-        srvStatus->setProcessGnbCuUpdateTime(simTime());
+        srvStatus->setOffloadGnbId(offloadGnbId);
         packet->insertAtFront(srvStatus);
         socket.sendTo(packet, nodeInfo_->getGlobalSchedulerAddr(), MEC_NPC_PORT);
 
@@ -437,7 +436,7 @@ void Server::stopService(AppId appId)
     if (srv.initComplete)   // the service is running
     {
         EV << "Server::stopService - stop the running service for application " << appId << endl;
-        sendGrant2Vehicle(appId, true); // send the stop grant to the vehicle
+        sendGrant2OffloadingNic(appId, true); // send the stop grant to the vehicle
     }
     else    // the service is still in initializing status
     {

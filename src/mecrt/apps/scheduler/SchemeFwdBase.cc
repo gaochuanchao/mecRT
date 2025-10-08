@@ -48,11 +48,13 @@ void SchemeFwdBase::generateScheduleInstances()
 
     initializeData();  // transform the scheduling data
 
+    // int indexDebug = 11977;
     for (int appIndex = 0; appIndex < appIds_.size(); appIndex++)    // enumerate the unscheduled apps
     {
         AppId appId = appIds_[appIndex];  // get the application ID
         
         double period = appInfo_[appId].period.dbl();
+        EV << NOW << " SchemeFwdBase::generateScheduleInstances - AppId=" << appId << ", Period=" << period << endl;
         if (period <= 0)
         {
             EV << NOW << " SchemeFwdBase::generateScheduleInstances - invalid period for application " << appId << ", skip" << endl;
@@ -126,6 +128,20 @@ void SchemeFwdBase::generateScheduleInstances()
                             instCUs_.push_back(cmpUnits);
                             instUtility_.push_back(utility);  // energy savings for the instance
                             instMaxOffTime_.push_back(period - fwdDelay - exeDelay - offloadOverhead_);  // maximum offloading time for the instance
+
+                            // if (instAppIndex_.size() == (indexDebug+1))  // debug
+                            // {
+                            //     EV << NOW << " SchemeFwdBase::generateScheduleInstances - Debug instance: AppIdx=" << instAppIndex_[indexDebug] 
+                            //        << ", OffRsuIdx=" << instOffRsuIndex_[indexDebug] << ", ProRsuIdx=" << instProRsuIndex_[indexDebug]
+                            //        << ", RBs=" << instRBs_[indexDebug] << ", CUs=" << instCUs_[indexDebug]
+                            //        << ", OffDelay=" << offloadDelay << ", FwdDelay=" << fwdDelay 
+                            //        << ", ExeDelay=" << exeDelay << ", TotalDelay=" << totalDelay 
+                            //        << ", Utility=" << instUtility_[indexDebug] 
+                            //        << ", MaxOffTime=" << (period - fwdDelay - exeDelay - offloadOverhead_) << endl;
+                            //     EV << "\t AppId=" << appId
+                            //        << ", OffRsuId=" << offRsuId
+                            //        << ", ProRsuId=" << procRsuId << endl;
+                            // }
                         }
                     }
                 }
@@ -162,17 +178,15 @@ vector<srvInstance> SchemeFwdBase::scheduleRequests()
         double cu = instCUs_[instIdx];
         double availableRB = rsuRBs_[instOffRsuIndex_[instIdx]];
         double availableCU = rsuCUs_[instProRsuIndex_[instIdx]];
+        sortedInst[instIdx] = instIdx;  // fill sortedInstIdx with indices from 0 to size-1
         if (availableRB <= 0 || availableCU <= 0)   // if the available resources are not enough, skip
         {
             instEfficiency[instIdx] = 0;  // set efficiency to 0 if resources are not enough
-            sortedInst[instIdx] = instIdx;  // fill sortedInstIdx with indices from 0 to size-1
             continue;
         }
-        double rbUtil = rb / rsuRBs_[instOffRsuIndex_[instIdx]];  // band utilization
-        double cuUtil = cu / rsuCUs_[instProRsuIndex_[instIdx]];  // computing unit utilization
+        double rbUtil = rb / availableRB;  // band utilization
+        double cuUtil = cu / availableCU;  // computing unit utilization
         instEfficiency[instIdx] = instUtility_[instIdx] / (rbUtil * cuUtil);
-
-        sortedInst[instIdx] = instIdx;  // fill sortedInstIdx with indices from 0 to size-1
     }
 
     // sort the instances by efficiency in descending order
@@ -197,6 +211,17 @@ vector<srvInstance> SchemeFwdBase::scheduleRequests()
         // check if the RSU has enough resources
         if (rsuRBs_[rsuOffIndex] < resBlocks || rsuCUs_[rsuProIndex] < cmpUnits)
             continue;
+
+        // EV << NOW << "  Scheduled instance: AppIdx=" << appIndex << ", OffRsuIdx=" << rsuOffIndex 
+        //    << ", ProRsuIdx=" << rsuProIndex << ", RBs=" << resBlocks << ", CUs=" << cmpUnits << endl;
+
+        // EV << "\t Period=" << appInfo_[appIds_[appIndex]].period.dbl() << "s, MaxOffTime="
+        //     << instMaxOffTime_[instIdx] << "s, Utility=" << instUtility_[instIdx] << endl;
+        // EV << "\t Execution Delay=" << computeExeDelay(appIds_[appIndex], rsuIds_[rsuProIndex], cmpUnits) << endl;
+        // EV << "\t SelectedIndex=" << instIdx << endl;
+
+        // EV << NOW << "  Scheduled instance: AppId=" << appIds_[appIndex] << ", OffRsuId=" << rsuIds_[rsuOffIndex] 
+        //    << ", ProRsuId=" << rsuIds_[rsuProIndex] << ", RBs=" << resBlocks << ", CUs=" << cmpUnits << endl;
 
         // add the instance to the solution set
         solution.emplace_back(appIds_[appIndex], rsuIds_[rsuOffIndex], rsuIds_[rsuProIndex], resBlocks, cmpUnits);

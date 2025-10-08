@@ -37,7 +37,7 @@ void NetTopology::initialize(int stage)
 		// adjust the display positions of the gnbRouter
 		for (int i = 0; i < numGnb_; i++) {
 			auto *gnb = getModuleByPath(("gnb[" + std::to_string(i) + "]").c_str());
-			// auto *router = getModuleByPath((deviceName +"[" + std::to_string(i) + "]").c_str());
+			auto *router = getModuleByPath((deviceName +"[" + std::to_string(i) + "]").c_str());
 
 			// Get gnb position from its display string
 			cDisplayString& gnbDisp = gnb->getDisplayString();
@@ -46,9 +46,9 @@ void NetTopology::initialize(int stage)
 			double y = strtod(gnbDisp.getTagArg("p", 1), &end);
 
 			// Place the gnbRouter a fixed offset to the right (say +100 in x direction)
-			// cDisplayString& routerDisp = router->getDisplayString();
-			// routerDisp.setTagArg("p", 0, x + displayOffsetX);  // new x
-			// routerDisp.setTagArg("p", 1, y + displayOffsetY);  // new y
+			cDisplayString& routerDisp = router->getDisplayString();
+			routerDisp.setTagArg("p", 0, x + displayOffsetX);  // new x
+			routerDisp.setTagArg("p", 1, y + displayOffsetY);  // new y
 		}
 
 		if (enableInitDebug_)

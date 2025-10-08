@@ -13,6 +13,8 @@
 //
 
 #include "mecrt/common/NodeInfo.h"
+#include "mecrt/nic/mac/GnbMac.h"
+#include "mecrt/coreNetwork/NodePacketController.h"
 
 Define_Module(NodeInfo);
 
@@ -41,6 +43,9 @@ NodeInfo::NodeInfo()
     globalSchedulerAddr_ = inet::Ipv4Address::UNSPECIFIED_ADDRESS;
     scheduleInterval_ = 10.0; // default 10 seconds
     localSchedulerSocketId_ = -1;
+
+    gnbMac_ = nullptr;
+    npc_ = nullptr;
 }
 
 
@@ -80,4 +85,17 @@ void NodeInfo::initialize(int stage)
     }
 }
 
+
+void NodeInfo::recoverRsuStatus()
+{
+    if (gnbMac_ != nullptr)
+    {
+        gnbMac_->mecRecoverRsuStatus();
+    }
+}
+
+void NodeInfo::recoverServiceRequests()
+{
+
+}
 

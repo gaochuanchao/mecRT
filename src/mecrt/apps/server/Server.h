@@ -32,16 +32,17 @@
 #include "mecrt/packets/apps/VecPacket_m.h"
 #include "mecrt/common/NodeInfo.h"
 
+using namespace inet;
 
 struct Service
 {
     AppId appId;    // the application id
-    Ipv4Address ueAddr; // the IP address of the vehicle
+    inet::Ipv4Address ueAddr; // the IP address of the vehicle
     int resourceType;  // whether using GPU or CPU
     int service;        // the service name
     MacNodeId processGnbId;  // the id of processing gNB
     MacNodeId offloadGnbId;  // the id of offloading gNB
-    Ipv4Address offloadGnbAddr; // the IP address of offloading gNB
+    inet::Ipv4Address offloadGnbAddr; // the IP address of offloading gNB
     omnetpp::simtime_t exeTime;    // service execution time
     int cmpUnits;        // the allocated computing units for the service in RSU
     int bands;           // the allocated bands for the service in RSU
@@ -52,11 +53,11 @@ struct Service
     omnetpp::simtime_t maxOffloadTime;  // the maximum offloading time results in positive energy saving
 };
 
-class GnbMac;
+class NodeInfo;
 
 class Server : public omnetpp::cSimpleModule
 {
-    friend class GnbMac;
+    friend class NodeInfo;
 
   protected:
     bool enableInitDebug_ = false;
@@ -126,7 +127,7 @@ class Server : public omnetpp::cSimpleModule
 
     virtual void updateServiceStatus(omnetpp::cMessage *msg);
 
-    virtual void sendGrant2Vehicle(AppId appId, bool isStop);
+    virtual void sendGrant2OffloadingNic(AppId appId, bool isStop);
 
     virtual void initializeService(inet::Ptr<const Grant2Rsu> pkt);
 

@@ -64,6 +64,19 @@ struct RsuResource {
     omnetpp::simtime_t cmpUpdateTime;   // the time of updating
 };
 
+struct ServiceInstance {
+    AppId appId;
+    MacNodeId offloadGnbId; 
+    MacNodeId processGnbId;
+    int cmpUnits;      // allocated computing units of the service
+    int bands;         // allocated bands for accessing the service
+    omnetpp::simtime_t srvGrantTime;    // the time when the grant of the service is sended
+    double energySaved;
+    double exeTime; // the execution time of the service
+    double maxOffloadTime;  // the maximum offloading time results in positive energy saving
+};
+
+
 class SchemeBase;  // forward declaration
 
 class Scheduler : public omnetpp::cSimpleModule

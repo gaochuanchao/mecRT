@@ -475,7 +475,6 @@ void Scheduler::recordRsuStatus(cMessage *msg)
     simtime_t bandUpdateTime = rsuStat->getBandUpdateTime();
     simtime_t cmpUnitUpdateTime = rsuStat->getCmpUnitUpdateTime();
     MacNodeId gnbId = rsuStat->getGnbId();
-    MacNodeId vehId = rsuStat->getVehId();
 
     // get gnb module by gnbId
     cModule* gnbMod = binder_->getModuleByMacNodeId(gnbId);
@@ -540,6 +539,14 @@ void Scheduler::recordRsuStatus(cMessage *msg)
         {
             EV << NOW << " Scheduler::recordRsuStatus - RSU[" << gnbIndex << "] nodeId=" << gnbId << " cmpUnits information is outdated, ignore!" << endl;
         }
+    }
+
+    MacNodeId vehId = rsuStat->getVehId();
+    if (vehId == 0) // a status update after network topology change, no need to update the connection
+    {
+        EV << NOW << " Scheduler::recordRsuStatus - RSU[" << gnbIndex << "] nodeId=" << gnbId 
+            << " status update after network topology change, no need to update the connection!" << endl;
+        return;
     }
 
     // update the connection between vehicle and rsu
@@ -866,7 +873,7 @@ void Scheduler::sendGrantPacket(ServiceInstance& srv, bool isStart, bool isStop)
         send(pkt, "socketOut");
         return;
     }
-    socket_.sendTo(pkt, Ipv4Address(processGnbAddr), MEC_NPC_PORT);
+    socket_.sendTo(pkt, processGnbAddr, MEC_NPC_PORT);
 }
 
 void Scheduler::stopRunningService(AppId appId)

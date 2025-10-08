@@ -78,8 +78,8 @@ class UeApp : public omnetpp::cSimpleModule
 
     bool serviceGranted_;    // whether the service has been granted by the RSU server
 
-    // int schedulerPort_;
-    // inet::L3Address schedulerAddr_;
+    int processGnbPort_;
+    Ipv4Address processGnbAddr_;
 
     Binder *binder_;
     Database *db_;

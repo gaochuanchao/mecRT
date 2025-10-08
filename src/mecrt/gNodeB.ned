@@ -360,12 +360,6 @@ module gNodeB
         ipv6.transportIn <-- tn.out++ if hasIpv6;
         ipv6.transportOut --> tn.in++ if hasIpv6;
 
-        tn.out++ --> nl.in++;
-        tn.in++ <-- nl.out++;
-
-        at.out++ --> tn.in++;
-        at.in++ <-- tn.out++;
-
         cellularNic.upperLayerIn <-- nl.out++;
         cellularNic.upperLayerOut --> nl.in++;
 

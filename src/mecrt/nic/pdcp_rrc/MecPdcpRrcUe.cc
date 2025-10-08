@@ -44,53 +44,57 @@ void MecPdcpRrcUe::fromDataPort(cPacket *pktAux)
 
     // get destination info
     Ipv4Address destAddr = Ipv4Address(lteInfo->getDstAddr());
-    MacNodeId destId;
+    // MacNodeId destId;
+
+    lteInfo->setDirection(UL);
+    lteInfo->setD2dTxPeerId(0);
+    lteInfo->setD2dRxPeerId(0);
 
     // the direction of the incoming connection is a D2D_MULTI one if the application is of the same type,
     // else the direction will be selected according to the current status of the UE, i.e. D2D or UL
-    if (destAddr.isMulticast())
-    {
-        binder_->addD2DMulticastTransmitter(nodeId);
+    // if (destAddr.isMulticast())
+    // {
+    //     binder_->addD2DMulticastTransmitter(nodeId);
 
-        lteInfo->setDirection(D2D_MULTI);
+    //     lteInfo->setDirection(D2D_MULTI);
 
-        // assign a multicast group id
-        // multicast IP addresses are 224.0.0.0/4.
-        // We consider the host part of the IP address (the remaining 28 bits) as identifier of the group,
-        // so as it is univocally determined for the whole network
-        uint32_t address = Ipv4Address(lteInfo->getDstAddr()).getInt();
-        uint32_t mask = ~((uint32_t)255 << 28);      // 0000 1111 1111 1111
-        uint32_t groupId = address & mask;
-        lteInfo->setMulticastGroupId((int32_t)groupId);
-    }
-    else
-    {
-        destId = binder_->getMacNodeId(destAddr);
-        if (destId != 0)  // the destination is a UE within the LTE network
-        {
-            if (binder_->checkD2DCapability(nodeId, destId))
-            {
-                // this way, we record the ID of the endpoints even if the connection is currently in IM
-                // this is useful for mode switching
-                lteInfo->setD2dTxPeerId(nodeId);
-                lteInfo->setD2dRxPeerId(destId);
-            }
-            else
-            {
-                lteInfo->setD2dTxPeerId(0);
-                lteInfo->setD2dRxPeerId(0);
-            }
+    //     // assign a multicast group id
+    //     // multicast IP addresses are 224.0.0.0/4.
+    //     // We consider the host part of the IP address (the remaining 28 bits) as identifier of the group,
+    //     // so as it is univocally determined for the whole network
+    //     uint32_t address = Ipv4Address(lteInfo->getDstAddr()).getInt();
+    //     uint32_t mask = ~((uint32_t)255 << 28);      // 0000 1111 1111 1111
+    //     uint32_t groupId = address & mask;
+    //     lteInfo->setMulticastGroupId((int32_t)groupId);
+    // }
+    // else
+    // {
+    //     destId = binder_->getMacNodeId(destAddr);
+    //     if (destId != 0)  // the destination is a UE within the LTE network
+    //     {
+    //         if (binder_->checkD2DCapability(nodeId, destId))
+    //         {
+    //             // this way, we record the ID of the endpoints even if the connection is currently in IM
+    //             // this is useful for mode switching
+    //             lteInfo->setD2dTxPeerId(nodeId);
+    //             lteInfo->setD2dRxPeerId(destId);
+    //         }
+    //         else
+    //         {
+    //             lteInfo->setD2dTxPeerId(0);
+    //             lteInfo->setD2dRxPeerId(0);
+    //         }
 
-            // set actual flow direction based (D2D/UL) based on the current mode (DM/IM) of this peering
-            lteInfo->setDirection(getDirection(nodeId,destId));
-        }
-        else  // the destination is outside the LTE network
-        {
-            lteInfo->setDirection(UL);
-            lteInfo->setD2dTxPeerId(0);
-            lteInfo->setD2dRxPeerId(0);
-        }
-    }
+    //         // set actual flow direction based (D2D/UL) based on the current mode (DM/IM) of this peering
+    //         lteInfo->setDirection(getDirection(nodeId,destId));
+    //     }
+    //     else  // the destination is outside the LTE network
+    //     {
+    //         lteInfo->setDirection(UL);
+    //         lteInfo->setD2dTxPeerId(0);
+    //         lteInfo->setD2dRxPeerId(0);
+    //     }
+    // }
 
     // Cid Request
     EV << "MecPdcpRrcUe::fromDataPort - Received CID request for Traffic [ " << "Source: " << Ipv4Address(lteInfo->getSrcAddr())
@@ -174,7 +178,7 @@ void MecPdcpRrcUe::fromDataPort(cPacket *pktAux)
     // MacCid cid = idToMacCid(destId, mylcid);
 
     MacCid cid = idToMacCid(nodeId, mylcid);
-    EV << "MecPdcpRrcUe::fromDataPort - node ["<< nodeId<<"], destId [" << destId << "], lcid ["<< mylcid<<"], and cid ["<<cid<<"]"<< endl;
+    EV << "MecPdcpRrcUe::fromDataPort - node ["<< nodeId<<"], lcid ["<< mylcid<<"], and cid ["<<cid<<"]"<< endl;
 
     // get the PDCP entity for this CID and process the packet
     LteTxPdcpEntity* entity = getTxEntity(cid);

@@ -22,6 +22,8 @@
 #include "mecrt/packets/apps/RsuFeedback_m.h"
 #include "mecrt/packets/apps/Grant2Veh.h"
 #include "mecrt/packets/apps/ServiceStatus_m.h"
+#include "mecrt/nic/mac/scheduler/RbManagerUl.h"
+#include "mecrt/common/NodeInfo.h"
 
 #include <inet/networklayer/common/L3AddressResolver.h>
 
@@ -206,6 +208,7 @@ void GnbMac::initialize(int stage)
         try {
             nodeInfo_ = getModuleFromPar<NodeInfo>(par("nodeInfoModulePath"), this);
             nodeInfo_->setNodeId(nodeId_);
+            nodeInfo_->setGnbMac(this);
         } catch (cException &e) {
             throw cRuntimeError("GnbMac:initialize - cannot find nodeInfo module\n");
         }
@@ -327,7 +330,6 @@ void GnbMac::initialize(int stage)
         // std::cout << "server port: " << serverPort_ << endl;
         gnbAddress_ = nodeInfo_->getNodeAddr();
         EV << "GnbMac::initialize - gNB address " << gnbAddress_.toIpv4().str() << ", gNB MacNodeId " << nodeId_ << endl;
-        binder_->setMacNodeId(gnbAddress_.toIpv4(), nodeId_);
 
         // ========= LteMacEnb ===========
         /* Start TTI tick */
@@ -466,7 +468,7 @@ void GnbMac::handleMessage(cMessage* msg)
             while (!grantList_.empty())
             {
                 cPacket * grant = grantList_.back();
-                vecHandleGrantFromRsu(grant);
+                mecHandleGrantFromRsu(grant);
                 delete grant;
                 grant = nullptr;
                 grantList_.pop_back();
@@ -978,19 +980,19 @@ void GnbMac::macHandleFeedbackPkt(cPacket *pktAux)
 
     ueCarrierFreq_[id] = carrierFreq;
     double distance = phy_->getCoord().distance(lteInfo->getCoord());
-    vecUpdateRsuFeedback(carrierFreq, id, lteInfo->isBroadcast(), distance);
+    mecFeedbackRsuStatus(carrierFreq, id, lteInfo->isBroadcast(), distance);
 
     delete pkt;
 }
 
-void GnbMac::vecUpdateRsuFeedback(double carrierFreq, MacNodeId ueId, bool isBroadcast, double distance)
+void GnbMac::mecFeedbackRsuStatus(double carrierFreq, MacNodeId ueId, bool isBroadcast, double distance)
 {
-    EV << "GnbMac::vecUpdateRsuFeedback - update RSU status to Scheduler" << endl;
+    EV << "GnbMac::mecFeedbackRsuStatus - update RSU status to Scheduler" << endl;
 
     // std::set<Band>& availableBands = carriersStatus_->getCarrierStatus(carrierFreq).availBands;
     if (rbManagerUl_->getFrequency() != carrierFreq)
     {
-        EV << "GnbMac::vecUpdateRsuFeedback - multiple carriers are not supported yet" << endl;
+        EV << "GnbMac::mecFeedbackRsuStatus - multiple carriers are not supported yet" << endl;
         return;
     }
 
@@ -1006,7 +1008,7 @@ void GnbMac::vecUpdateRsuFeedback(double carrierFreq, MacNodeId ueId, bool isBro
     int oldBytePerBand = rbManagerUl_->getVehDataRate(ueId);
     if (srsDistanceCheck_ && distance > srsDistance_)
     {
-        EV << "GnbMac::vecUpdateRsuFeedback - distance " << distance << " is larger than SRS distance " << srsDistance_ 
+        EV << "GnbMac::mecFeedbackRsuStatus - distance " << distance << " is larger than SRS distance " << srsDistance_ 
             << ", set data rate to 0 for vehicle " << ueId << endl;
         rbManagerUl_->setVehDataRate(ueId, 0);
     }
@@ -1014,10 +1016,10 @@ void GnbMac::vecUpdateRsuFeedback(double carrierFreq, MacNodeId ueId, bool isBro
     {
         bytePerBand = amc_->computeBytesOnNRbs(ueId, Band(0), rbPerBand_, UL,carrierFreq);   // byte rate per TTI
         // int satisfiedBands = amc_->getTxParams(ueId, UL,carrierFreq).readBands().size();
-        // EV << "GnbMac::vecUpdateRsuFeedback - number of satisfied bands: " << satisfiedBands << endl;
+        // EV << "GnbMac::mecFeedbackRsuStatus - number of satisfied bands: " << satisfiedBands << endl;
         // bytePerBand = bytePerBand * satisfiedBands / resAllocatorUl_->getNumBands();
         rbManagerUl_->setVehDataRate(ueId, bytePerBand);
-        EV << "GnbMac::vecUpdateRsuFeedback - byte rate per each band per TTI: " << bytePerBand << endl;
+        EV << "GnbMac::mecFeedbackRsuStatus - byte rate per each band per TTI: " << bytePerBand << endl;
     }
 
     // ===== handle broadcast feedback =====
@@ -1027,7 +1029,7 @@ void GnbMac::vecUpdateRsuFeedback(double carrierFreq, MacNodeId ueId, bool isBro
          * in scheduleAll mode, all service are stopped before the broadcast feedback
          * in scheduleRemain mode, active apps are not stopped, all paused apps are terminated
          */
-        EV << "GnbMac::vecUpdateRsuFeedback - broadcast feedback from vehicle " << ueId << endl;
+        EV << "GnbMac::mecFeedbackRsuStatus - broadcast feedback from vehicle " << ueId << endl;
 
         // first check all active apps
         set<AppId> activeSrv = rbManagerUl_->getScheduledApp();
@@ -1040,17 +1042,17 @@ void GnbMac::vecUpdateRsuFeedback(double carrierFreq, MacNodeId ueId, bool isBro
                 bool result = rbManagerUl_->scheduleActiveApp(appId);
                 if (result)    // the granted bands are enough for the app
                 {
-                    vecServiceFeedback(appId, true);
+                    mecFeedbackServiceStatus(appId, true);
                     int newBands = rbManagerUl_->getAppAllocatedBands(appId);
                     // only update offload grant to rsu if the data rate or band allocation has changed
                     if ((bytePerBand != oldBytePerBand) || (oldBands != newBands))  
                     {
-                        vecSendGrantToVeh(appId, false, true, false, false);    // isNewGrant, isUpdate, isStop, isPause
+                        mecSendGrantToVeh(appId, false, true, false, false);    // isNewGrant, isUpdate, isStop, isPause
                     }
                 }
                 else
                 {
-                    EV << "GnbMac::vecUpdateRsuFeedback - broadcast feedback, active app " << appId 
+                    EV << "GnbMac::mecFeedbackRsuStatus - broadcast feedback, active app " << appId 
                         << " cannot be scheduled, terminate it." << endl;
                     terminateService(appId);
                 }
@@ -1061,7 +1063,7 @@ void GnbMac::vecUpdateRsuFeedback(double carrierFreq, MacNodeId ueId, bool isBro
         set<AppId> appToBeInitialized = rbManagerUl_->getAppToBeInitialized();
         for (AppId appId : appToBeInitialized)
         {
-            EV << "GnbMac::vecUpdateRsuFeedback - broadcast feedback, app " << appId 
+            EV << "GnbMac::mecFeedbackRsuStatus - broadcast feedback, app " << appId 
                 << " has not been initialized, terminate it." << endl;
             terminateService(appId);
         }
@@ -1070,7 +1072,7 @@ void GnbMac::vecUpdateRsuFeedback(double carrierFreq, MacNodeId ueId, bool isBro
         set<AppId> pausedApps = rbManagerUl_->getPausedApp();
         for (AppId appId : pausedApps)
         {
-            EV << "GnbMac::vecUpdateRsuFeedback - broadcast feedback, paused app " << appId 
+            EV << "GnbMac::mecFeedbackRsuStatus - broadcast feedback, paused app " << appId 
                 << " is terminated." << endl;
             terminateService(appId);
         }
@@ -1092,7 +1094,7 @@ void GnbMac::vecUpdateRsuFeedback(double carrierFreq, MacNodeId ueId, bool isBro
             rsuFd->addTag<CreationTimeTag>()->setCreationTime(simTime());
             packet->insertAtBack(rsuFd);
 
-            vecSendDataToServer(packet, ueId, serverPort_, gnbAddress_);
+            mecSendDataToServer(packet, serverPort_, gnbAddress_);
         }
 
         return;
@@ -1115,7 +1117,7 @@ void GnbMac::vecUpdateRsuFeedback(double carrierFreq, MacNodeId ueId, bool isBro
                 int newBands = rbManagerUl_->getAppAllocatedBands(appId);
                 if ((bytePerBand != oldBytePerBand) || (oldBands != newBands))
                 {
-                    vecSendGrantToVeh(appId, false, true, false, false);    // isNewGrant, isUpdate, isStop, isPause
+                    mecSendGrantToVeh(appId, false, true, false, false);    // isNewGrant, isUpdate, isStop, isPause
                 }
             }
             else
@@ -1137,7 +1139,7 @@ void GnbMac::vecUpdateRsuFeedback(double carrierFreq, MacNodeId ueId, bool isBro
             bool result = rbManagerUl_->scheduleGrantedApp(appId);
             if (result)    // the granted bands are enough for the app
             {
-                vecSendGrantToVeh(appId, false, true, false, false);    // isNewGrant, isUpdate, isStop, isPause
+                mecSendGrantToVeh(appId, false, true, false, false);    // isNewGrant, isUpdate, isStop, isPause
             }
         }
     }
@@ -1152,11 +1154,11 @@ void GnbMac::vecUpdateRsuFeedback(double carrierFreq, MacNodeId ueId, bool isBro
         bool result = rbManagerUl_->schedulePausedApp(appId);
         if (result)    // the granted bands are enough for the app
         {
-            vecSendGrantToVeh(appId, false, true, false, false);    // isNewGrant, isUpdate, isStop, isPause
+            mecSendGrantToVeh(appId, false, true, false, false);    // isNewGrant, isUpdate, isStop, isPause
         }
         else
         {
-            vecSendGrantToVeh(appId, false, false, false, true);    // isNewGrant, isUpdate, isStop, isPause
+            mecSendGrantToVeh(appId, false, false, false, true);    // isNewGrant, isUpdate, isStop, isPause
         }
     }
     // check other paused apps
@@ -1169,7 +1171,7 @@ void GnbMac::vecUpdateRsuFeedback(double carrierFreq, MacNodeId ueId, bool isBro
             bool result = rbManagerUl_->schedulePausedApp(appId);
             if (result) // the granted bands are enough for the app
             {
-                vecSendGrantToVeh(appId, false, true, false, false);    // isNewGrant, isUpdate, isStop, isPause
+                mecSendGrantToVeh(appId, false, true, false, false);    // isNewGrant, isUpdate, isStop, isPause
             }
         }
     }
@@ -1182,8 +1184,8 @@ void GnbMac::terminateService(AppId appId)
 
     // remove the app from the scheduler
     rbManagerUl_->terminateAppService(appId);
-    vecServiceFeedback(appId, false);
-    vecSendGrantToVeh(appId, false, false, true, false);    // isNewGrant, isUpdate, isStop, isPause
+    mecFeedbackServiceStatus(appId, false);
+    mecSendGrantToVeh(appId, false, false, true, false);    // isNewGrant, isUpdate, isStop, isPause
 
     rbManagerUl_->removeAppGrantInfo(appId);
     // appUdpHeader_.erase(appId);
@@ -1191,7 +1193,7 @@ void GnbMac::terminateService(AppId appId)
 }
 
 
-void GnbMac::vecServiceFeedback(AppId appId, bool isSuccess)
+void GnbMac::mecFeedbackServiceStatus(AppId appId, bool isSuccess)
 {
     // TODO: implement
     EV << "GnbMac::vecNotifyServiceStatus - service for app " << appId << " is " << (isSuccess? "alive" : "stopped") << ", notify scheduler" << endl;
@@ -1213,14 +1215,31 @@ void GnbMac::vecServiceFeedback(AppId appId, bool isSuccess)
     srvStatus->addTag<CreationTimeTag>()->setCreationTime(simTime());
     packet->insertAtFront(srvStatus);
 
-    MacNodeId ueId = MacCidToNodeId(appId);
-    vecSendDataToServer(packet, ueId, appGrantInfo.processGnbPort, appGrantInfo.processGnbAddr);
+    mecSendDataToServer(packet, appGrantInfo.processGnbPort, appGrantInfo.processGnbAddr);
 
     availableBands_ = rbManagerUl_->getAvailableBands();
 }
 
 
-void GnbMac::vecSendDataToServer(Packet* packet, MacNodeId ueId, int port, L3Address targetAddr)
+void GnbMac::mecRecoverRsuStatus()
+{
+    Packet* packet = new Packet("RsuFD");
+    auto rsuFd = makeShared<RsuFeedback>();
+    rsuFd->setVehId(0);
+    rsuFd->setGnbId(nodeId_);
+    rsuFd->setServerPort(serverPort_);
+    rsuFd->setAvailBands(rbManagerUl_->getAvailableBands());
+    rsuFd->setTotalBands(rbManagerUl_->getNumBands());
+    rsuFd->setRsuAddr(nodeInfo_->getNodeAddr().getInt());
+    rsuFd->setBandUpdateTime(simTime());
+    rsuFd->addTag<CreationTimeTag>()->setCreationTime(simTime());
+    packet->insertAtBack(rsuFd);
+
+    mecSendDataToServer(packet, serverPort_, gnbAddress_);
+}
+
+
+void GnbMac::mecSendDataToServer(Packet* packet, int port, L3Address targetAddr)
 {
     // manually create the udp header and ipv4 header in order
     // to transfer this packet to units outside the 5G core network
@@ -1234,7 +1253,8 @@ void GnbMac::vecSendDataToServer(Packet* packet, MacNodeId ueId, int port, L3Add
     const auto& ipv4Header = makeShared<Ipv4Header>();
     ipv4Header->setProtocolId(IP_PROT_UDP);
     ipv4Header->setDestAddress(targetAddr.toIpv4());   // gnb address
-    // ipv4Header->setSrcAddress(binder_->getIPv4Address(ueId));   // vehicle address
+    ipv4Header->setTimeToLive(32);
+    ipv4Header->setSrcAddress(nodeInfo_->getNodeAddr());   // current gnb address
     ipv4Header->addChunkLength(B(20));
     ipv4Header->setHeaderLength(B(20));
     ipv4Header->setTotalLengthField(ipv4Header->getChunkLength() + packet->getDataLength());
@@ -1249,7 +1269,7 @@ void GnbMac::handleUpperMessage(cPacket* pktAux)
 {
     EV << "GnbMac::handleUpperMessage - handle packet from rlc stack." << endl;
 
-    if (!strcmp(pktAux->getName(), "VehGrant"))
+    if (!strcmp(pktAux->getName(), "NicGrant"))
     {
         grantList_.push_back(pktAux);
 
@@ -1279,11 +1299,11 @@ void GnbMac::handleUpperMessage(cPacket* pktAux)
     }
 }
 
-void GnbMac::vecHandleGrantFromRsu(omnetpp::cPacket* pktAux)
+void GnbMac::mecHandleGrantFromRsu(omnetpp::cPacket* pktAux)
 {
     auto pkt = check_and_cast<Packet *>(pktAux);
-    // auto ipv4Header = pkt->removeAtFront<Ipv4Header>();
-    // auto udpHeader = pkt->removeAtFront<UdpHeader>();
+    pkt->removeAtFront<Ipv4Header>();
+    pkt->removeAtFront<UdpHeader>();
     auto grant = pkt->peekAtFront<Grant2Veh>();
     AppId appId = grant->getAppId();
     MacNodeId vehId = MacCidToNodeId(appId);
@@ -1301,8 +1321,8 @@ void GnbMac::vecHandleGrantFromRsu(omnetpp::cPacket* pktAux)
     {
         EV << "GnbMac::handleGrantFromRsu - received stop grant for app " << appId << endl;
         rbManagerUl_->terminateAppService(appId);
-        vecServiceFeedback(appId, false);
-        vecSendGrantToVeh(appId, false, false, true, false);    // isNewGrant, isUpdate, isStop, isPause
+        mecFeedbackServiceStatus(appId, false);
+        mecSendGrantToVeh(appId, false, false, true, false);    // isNewGrant, isUpdate, isStop, isPause
 
         rbManagerUl_->removeAppGrantInfo(appId);
         // appIpv4Header_.erase(appId);
@@ -1335,7 +1355,7 @@ void GnbMac::vecHandleGrantFromRsu(omnetpp::cPacket* pktAux)
     bool schedulable = rbManagerUl_->scheduleGrantedApp(appId);
     // appIpv4Header_[appId] = makeShared<Ipv4Header>(*ipv4Header);
     // appUdpHeader_[appId] = makeShared<UdpHeader>(*udpHeader);
-    vecServiceFeedback(appId, true);
+    mecFeedbackServiceStatus(appId, true);
 
     // ipv4Header = nullptr;
     // udpHeader = nullptr;
@@ -1344,19 +1364,19 @@ void GnbMac::vecHandleGrantFromRsu(omnetpp::cPacket* pktAux)
     {
         EV << "GnbMac::handleGrantFromRsu - grant for app " << appId 
             << " is not schedulable, added to the appToBeInitialized list." << endl;
-        vecSendGrantToVeh(appId, false, false, false, true);    // isNewGrant, isUpdate, isStop, isPause
+        mecSendGrantToVeh(appId, false, false, false, true);    // isNewGrant, isUpdate, isStop, isPause
         rbManagerUl_->addAppToBeInitialized(appId);     // add the app to the appToBeInitialized list
     }
     else    // send grant to veh if the grant can be satisfied
     {
         EV << "GnbMac::handleGrantFromRsu - grant for app " << appId << " is schedulable, notify Veh." << endl;
-        vecSendGrantToVeh(appId, true, false, false, false);    // isNewGrant, isUpdate, isStop, isPause
+        mecSendGrantToVeh(appId, true, false, false, false);    // isNewGrant, isUpdate, isStop, isPause
     }
 }
 
-void GnbMac::vecSendGrantToVeh(AppId appId, bool isNewGrant, bool isUpdate, bool isStop, bool isPause)
+void GnbMac::mecSendGrantToVeh(AppId appId, bool isNewGrant, bool isUpdate, bool isStop, bool isPause)
 {
-    EV << "GnbMac::vecSendGrantToVeh - send grant to vehicle, app " << appId << ", is new grant " << isNewGrant
+    EV << "GnbMac::mecSendGrantToVeh - send grant to vehicle, app " << appId << ", is new grant " << isNewGrant
         << ", is update " << isUpdate << ", is stop " << isStop << ", is pause " << isPause << endl;
     AppGrantInfo& srv = rbManagerUl_->getAppGrantInfo(appId);
     MacNodeId ueId = srv.ueId;
@@ -1409,6 +1429,8 @@ void GnbMac::vecSendGrantToVeh(AppId appId, bool isNewGrant, bool isUpdate, bool
     auto ipv4Header = makeShared<Ipv4Header>();
     ipv4Header->setProtocolId(IP_PROT_UDP);
     ipv4Header->setDestAddress(srv.ueAddr);
+    ipv4Header->setTimeToLive(32);
+    ipv4Header->setSrcAddress(nodeInfo_->getNodeAddr());   // current gnb address
     ipv4Header->addChunkLength(B(20));
     ipv4Header->setHeaderLength(B(20));
     ipv4Header->setTotalLengthField(ipv4Header->getChunkLength() + pkt->getDataLength());

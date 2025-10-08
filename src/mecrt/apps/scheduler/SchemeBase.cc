@@ -181,7 +181,7 @@ double SchemeBase::computeOffloadDelay(MacNodeId vehId, MacNodeId rsuId, int ban
     return numFrames * ttiPeriod_;
 }
 
-double SchemeBase::computeExeDelay(AppId appId, MacNodeId rsuId, int cmpUnits)
+double SchemeBase::computeExeDelay(AppId appId, MacNodeId rsuId, double cmpUnits)
 {
     /***
      * total computing cycle = T * C
@@ -196,7 +196,11 @@ double SchemeBase::computeExeDelay(AppId appId, MacNodeId rsuId, int cmpUnits)
     }
     // execution time for the full computing resource allocation
     double exeTime = db_->getRsuExeTime(appInfo_[appId].service, rsuStatus_[rsuId].deviceType);
-    return exeTime * rsuStatus_[rsuId].cmpCapacity / cmpUnits;  
+    if (rsuStatus_[rsuId].cmpCapacity <= 0) {
+        return INFINITY;
+    }
+
+    return exeTime * rsuStatus_[rsuId].cmpCapacity / cmpUnits;
 }
 
 

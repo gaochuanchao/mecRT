@@ -21,7 +21,7 @@ import mecRT.mecrt.NRUe;
 import mecRT.mecrt.apps.scheduler.SchedulerHost;
 import mecRT.mecrt.common.BandManager;
 import mecRT.mecrt.common.Database;
-import mecRT.mecrt.common.NetTopology;
+// import mecRT.mecrt.common.NetTopology;
 import mecRT.mecrt.coreNetwork.MecUpf;
 import mecRT.mecrt.gNodeB;
 import mecRT.mecrt.routing.MecRouter;
@@ -62,9 +62,9 @@ network DeMEC
         carrierAggregation: CarrierAggregation {
             @display("p=1214.004,426.36002;is=s");
         }
-        topologyGen: NetTopology {
-            @display("p=1214.004,742.76404;is=s");
-        }
+        // topologyGen: NetTopology {
+        //     @display("p=1214.004,742.76404;is=s");
+        // }
         database: Database {
             @display("p=1214.004,534.072;is=s");
         }

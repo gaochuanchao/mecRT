@@ -108,7 +108,7 @@ class SchemeBase
     /***
      * Compute execution delay for an application on a specific RSU
      */
-    virtual double computeExeDelay(AppId appId, MacNodeId rsuId, int cmpUnits);
+    virtual double computeExeDelay(AppId appId, MacNodeId rsuId, double cmpUnits);
 
     /***
      * Compute the utility for a service instance

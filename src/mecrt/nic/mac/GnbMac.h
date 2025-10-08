@@ -21,17 +21,18 @@
 #define _MECRT_GNB_MAC_H_
 
 #include "stack/mac/layer/NRMacGnb.h"
+#include "inet/networklayer/ipv4/Ipv4Header_m.h"
+#include "inet/transportlayer/udp/UdpHeader_m.h"
 
-#include "mecrt/apps/server/Server.h"
-#include "mecrt/nic/mac/scheduler/GnbSchedulerUl.h"
-#include "mecrt/nic/mac/scheduler/GnbSchedulerDl.h"
 #include "mecrt/nic/mac/amc/MecNRAmc.h"
-#include "mecrt/nic/mac/scheduler/RbManagerUl.h"
-#include "mecrt/common/NodeInfo.h"
+#include "mecrt/common/MecCommon.h"
+
+using namespace inet;
 
 class RbManagerUl;
 class GnbSchedulerUl;
 class GnbSchedulerDl;
+class NodeInfo;
 
 class GnbMac : public NRMacGnb
 {
@@ -42,6 +43,7 @@ class GnbMac : public NRMacGnb
     friend class GnbSchedulerUl;
     friend class GnbSchedulerDl;
     friend class RbManagerUl;
+    friend class NodeInfo;
 
   public:
 
@@ -79,7 +81,6 @@ class GnbMac : public NRMacGnb
     virtual unsigned int getRbPerBand() { return rbPerBand_;}
 
     virtual bool getResAllocationMode() { return resAllocateMode_;}
-
 
   protected:
 
@@ -136,28 +137,34 @@ class GnbMac : public NRMacGnb
      * send update packet to RSU server
      * the UE sends a feedback for each carrier
      */
-    virtual void vecUpdateRsuFeedback(double carrierFreq, MacNodeId ueId, bool isBroadcast, double distance);
+    virtual void mecFeedbackRsuStatus(double carrierFreq, MacNodeId ueId, bool isBroadcast, double distance);
+    /***
+     * update the status of RSU to the global scheduler after topology change
+     * invoked by the OSPF module
+     */
+    virtual void mecRecoverRsuStatus();
+
     virtual void terminateService(AppId appId);
 
     /***
      * handle the grant from RSU server to the vehicle
      */
-    virtual void vecHandleGrantFromRsu(omnetpp::cPacket* pkt);
+    virtual void mecHandleGrantFromRsu(omnetpp::cPacket* pkt);
     
-    virtual void vecSendGrantToVeh(AppId appId, bool isNewGrant, bool isUpdate, bool isStop, bool isPause);
+    virtual void mecSendGrantToVeh(AppId appId, bool isNewGrant, bool isUpdate, bool isStop, bool isPause);
 
     /**
      * TODO Notify the RSU and scheduler to stop the service if not enough bandwidth for app data offloading
      * status true means the service initialization is success, false means the service needs to be stopped
      */
-    virtual void vecServiceFeedback(AppId appId, bool isSuccess);
+    virtual void mecFeedbackServiceStatus(AppId appId, bool isSuccess);
 
     // virtual void vecNotifyServiceBandAdjust(AppId appId);
 
     /**
      * send data packet to RSU server
      */
-    virtual void vecSendDataToServer(Packet* packet, MacNodeId ueId, int port, L3Address gnbAddress);
+    virtual void mecSendDataToServer(Packet* packet, int port, L3Address gnbAddress);
 
     // send the received data to the upper layer
     virtual void flushAppPduList();

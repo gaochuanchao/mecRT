@@ -35,6 +35,9 @@ UeApp::UeApp()
     resourceType_ = GPU;
     localConsumedEnergy_ = 0;
 
+    processGnbAddr_ = inet::Ipv4Address::UNSPECIFIED_ADDRESS; // the address of the gNB processing the job
+    processGnbPort_ = -1; // the port of the gNB processing the job
+
     MAX_UDP_CHUNK = 65527;  // 65535 - 8
     MAX_IPv4_CHUNK = 1480;  // 1500 - 20
 
@@ -150,6 +153,8 @@ void UeApp::initialize(int stage)
         WATCH(period_);
         WATCH(offloadPower_);
         WATCH(serviceGranted_);
+        WATCH(processGnbAddr_);
+        WATCH(processGnbPort_);
 
         if (enableInitDebug_)
             std::cout << "UeApp::initialize - stage: INITSTAGE_LAST - ends" << std::endl;
@@ -196,6 +201,8 @@ void UeApp::handleMessage(cMessage *msg)
                     << grant->getProcessGnbId() << " is stopped!" <<endl;
                 
                 serviceGranted_ = false;
+                processGnbAddr_ = inet::Ipv4Address::UNSPECIFIED_ADDRESS; // reset the process gNB address
+                processGnbPort_ = -1; // reset the process gNB port
             }
             else if (grant->getPause())
             {
@@ -209,9 +216,12 @@ void UeApp::handleMessage(cMessage *msg)
             {
                 EV << "UeApp::handleMessage - new service grant for app " << grant->getAppId() << endl;
                 EV << "\t offloadGnbId: " << grant->getOffloadGnbId() << ", processGnbId: " << grant->getProcessGnbId() 
-                   << ", processGnbPort: " << grant->getProcessGnbPort() << ", inputSize: " << grant->getInputSize() << endl;
+                   << ", processGnbPort: " << grant->getProcessGnbPort() << ", processGnbAddr: " << inet::Ipv4Address(grant->getProcessGnbAddr())
+                   << ", inputSize: " << grant->getInputSize() << endl;
 
                 serviceGranted_ = true;
+                processGnbAddr_ = inet::Ipv4Address(grant->getProcessGnbAddr());
+                processGnbPort_ = grant->getProcessGnbPort();
             }
         }
 
@@ -265,7 +275,7 @@ void UeApp::sendJobPacket()
         {
             txBytes_ += inputSize_;
         }
-        socket.sendTo(packet, MEC_UE_OFFLOAD_ADDR, MEC_NPC_PORT);
+        socket.sendTo(packet, processGnbAddr_, processGnbPort_);
 
         emit(offloadSignal_, 1);
         emit(localProcessSignal_, 0);

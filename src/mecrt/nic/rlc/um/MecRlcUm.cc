@@ -125,7 +125,7 @@ void MecRlcUm::handleUpperMessage(cPacket *pktAux)
         return;
     }
 
-    if(!strcmp(pkt->getName(), "VehGrant"))
+    if(!strcmp(pkt->getName(), "NicGrant"))
     {
         EV << "MecRlcUm::handleUpperMessage - It is a grant packet form RSU server, no need buffering. Sending packet " 
                     << pkt->getName() << " to port UM_Sap_down$o\n";
