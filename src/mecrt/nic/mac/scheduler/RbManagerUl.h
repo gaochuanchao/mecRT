@@ -121,6 +121,9 @@ class RbManagerUl
     // terminate the service for the app
     virtual void terminateAppService(AppId appId);
 
+    // reset the resource allocation status
+    virtual void resetRbStatus();
+
 
     // ================================
     // setter and getter functions

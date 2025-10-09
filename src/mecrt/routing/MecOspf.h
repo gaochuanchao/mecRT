@@ -103,7 +103,8 @@ class MecOspf : public RoutingProtocolBase
     map<uint32_t, Neighbor> neighbors_; 
     // Link State Advertisement (LSA) database, store the lsa from all users, keyed by origin router ip
 	// each router maintains its own LSA in the db, with seqNum indicating if it is updated
-    map<uint32_t, map<uint32_t, double>> topology_;  // key = ipKey(originRouter)
+    map<uint32_t, map<uint32_t, double>> topology_;  // key = ipKey(originRouter), {rsuAddr: {neighborAddr: cost}}
+    map<uint32_t, MacNodeId> ipv4ToMacNodeId_; // mapping from ipv4 address to mac node id of the RSU, used for scheduler
     inet::Ptr<OspfLsa> selfLsa_;    // our own LSA packet, which will be maintained and updated by us
     map<uint32_t, inet::Ptr<OspfLsa>> lsaPacketCache_; // cache of recently received LSAs, keyed by origin router id
     // routes we installed (so we can remove them)
@@ -131,7 +132,7 @@ class MecOspf : public RoutingProtocolBase
     simtime_t largestLsaTime_ = 0; // track the largest LSA install time we have seen (to ensure LSA propagation is done before recomputing routes)
 
     // ======= Phrase 4: determine the scheduler node =======
-    Ipv4Address schedulerNode_ = Ipv4Address::UNSPECIFIED_ADDRESS;
+    Ipv4Address schedulerAddr_ = Ipv4Address::UNSPECIFIED_ADDRESS;
     bool globalSchedulerReady_ = false; // whether the global scheduler is ready (if not, no cannot start scheduling)
 
   protected:
@@ -167,11 +168,13 @@ class MecOspf : public RoutingProtocolBase
     virtual void dijkstra(uint32_t source, map<uint32_t, Node>& nodeInfos); // Dijkstra algorithm
     virtual void clearIndirectRoutes();          // remove routes we previously added
     virtual void clearNeighborRoutes();          // remove direct neighbor routes
+    virtual void updateAdjListToScheduler(); // inform the scheduler about our current adjacency list
 
     // helpers
     uint32_t ipKey(const Ipv4Address &a) const { return a.getInt(); }
     Ipv4Address getLocalAddressOnGate(cGate *gate);   // get local IP associated with a gate
     virtual void resetGlobalScheduler(); // reset the global scheduler info
+
 
   public:
     MecOspf();

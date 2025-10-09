@@ -42,7 +42,7 @@ simple MecOspf
 
         double helloInterval @unit(s) = default(5s);   // neighbor state detection interval
         double helloFeedbackDelay @unit(s) = default(0.003s); // delay waiting for hello feedback
-        double neighborTimeout @unit(s) = default(11s); // timeout for neighbor inactivity
+        double neighborTimeout @unit(s) = default(6s); // timeout for neighbor inactivity, no feedback for 2*helloInterval
 
         @display("i=block/network2");                  // icon for visualization    
     

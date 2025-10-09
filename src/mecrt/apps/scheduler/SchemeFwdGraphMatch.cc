@@ -122,7 +122,7 @@ void SchemeFwdGraphMatch::generateScheduleInstances()
                 }
 
                 // find the accessible RSU from the offload RSU
-                map<MacNodeId, int> accessibleProRsus = db_->getRsuReachableList(offRsuId);
+                map<MacNodeId, int> accessibleProRsus = reachableRsus_[offRsuId]; // {procRsuId: hopCount}
                 int maxRB = floor(rsuRBs_[offRsuIndex] * fairFactor_);  // maximum resource blocks for the offload RSU
                 for (int resBlocks = maxRB; resBlocks > 0; resBlocks -= rbStep_)   // enumerate the resource blocks, counting down
                 {
@@ -783,7 +783,9 @@ vector<srvInstance> SchemeFwdGraphMatch::fractionalLocalRatioMethod(TripartiteGr
         // compute the maximum offload delay
         AppId appId = appIds_[appIdx];
         double processDelay = computeExeDelay(appId, rsuIds_[proRsuIdx], cuDemand);
-        int hopCount = db_->getRsuHopCount(rsuIds_[offRsuIdx], rsuIds_[proRsuIdx]);
+        MacNodeId srcId = rsuIds_[offRsuIdx];
+        MacNodeId dstId = rsuIds_[proRsuIdx];
+        int hopCount = reachableRsus_[srcId][dstId];
         double fwdDelay = computeForwardingDelay(hopCount, appInfo_[appId].inputSize);
         double maxOffloadDelay = appInfo_[appId].period.dbl() - processDelay - fwdDelay - offloadOverhead_;
 

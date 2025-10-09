@@ -139,97 +139,143 @@ void Server::handleMessage(cMessage *msg)
     if (msg->isSelfMessage())
     {
         if(!strcmp(msg->getName(), "ServiceInitComplete")){
-            AppId appId = srvInInitVector_[0];
-            srvInInitVector_.erase(srvInInitVector_.begin());
-            srvInitCompleteTime_.erase(appId);
-
-            if (srvInInitVector_.size() > 0)
-                scheduleAt(srvInitCompleteTime_[srvInInitVector_[0]], srvInitComplete_);
-
-            if (appsWaitStop_.find(appId) != appsWaitStop_.end())   // a stop command received during initializing
-            {
-                grantedService_.erase(appId);
-                appsWaitStop_.erase(appId);
-            }
-            else
-            {
-                EV << "Server::handleMessage - service initialization complete for application " << appId << endl;
-                // send the grant message to the vehicle
-                grantedService_[appId].initComplete = true;
-                sendGrant2OffloadingNic(appId, false);
-                appsWaitMacInitFb_.insert(appId);
-            }
-        }
-    }
-    else if(!strcmp(msg->getName(), "RsuFD")){
-        if (!nodeInfo_->getGlobalSchedulerAddr().isUnspecified())
-        {
-            auto pkt = check_and_cast<Packet *>(msg);
-            updateRsuFeedback(pkt);
+            handleServiceInitComplete();
         }
 
-        delete msg;
-        msg = nullptr;
         return;
-    }
-    else if(!strcmp(msg->getName(), "SrvGrant")){
-        auto pkt = check_and_cast<Packet *>(msg);
-        auto pktGrant = pkt->popAtFront<Grant2Rsu>();
-        AppId appId = pktGrant->getAppId();
-
-        if (pktGrant->getStart() && (grantedService_.find(appId) == grantedService_.end()))
-            initializeService(pktGrant);
-        else if (pktGrant->getStop() && (grantedService_.find(appId) != grantedService_.end()))
-            stopService(appId);
-        
-        delete msg;
-        msg = nullptr;
-        return;
-    }
-    else if(!strcmp(msg->getName(), "SrvFD")){
-        updateServiceStatus(msg);
     }
     else
     {
-        auto pkt = check_and_cast<Packet *>(msg);
-        auto appPkt = pkt->peekAtFront<JobPacket>();
-
-        int frameId = appPkt->getIDframe();
-        simtime_t reqDeadline = appPkt->getAbsDeadline();
-        AppId appId = appPkt->getAppId();
-        
-        EV << "Server::handleMessage - received application packet " << pkt->getName() << endl;
-        EV << "Server::handleMessage - app " << appId << " frame " << frameId << " required deadline " << reqDeadline << endl;
-
-        // check if the app service is running on this RSU
-        if (grantedService_.find(appId) == grantedService_.end())
-        {
-            EV << "Server::handleMessage - service for app " << appId << " is not running on this RSU" << endl;
-            emit(failedSrvDownSignal_, 1);
-        }
-        else    // check if the deadline is met
-        {
-            if (simTime() + grantedService_[appId].exeTime > reqDeadline)  // the time when the job is processed is more than the deadline
+        if(!strcmp(msg->getName(), "RsuFD")){
+            if (!nodeInfo_->getGlobalSchedulerAddr().isUnspecified())
             {
-                EV << "Server::handleMessage - app " << appId << " frame " << frameId << " - app cannot be completed within its deadline, drop it" << endl;
-                emit(missDlPktSignal_, 1);
+                auto pkt = check_and_cast<Packet *>(msg);
+                handleRsuFeedback(pkt);
             }
-            else
-            {
-                EV << "Server::handleMessage - app " << appId << " frame " << frameId << " - application deadline is met" << endl;
-                emit(meetDlPktSignal_, 1);
-            }
-        }
 
-        delete msg;
-        msg = nullptr;
-        return;
+            delete msg;
+            msg = nullptr;
+            return;
+        }
+        else if(!strcmp(msg->getName(), "SrvGrant")){
+            auto pkt = check_and_cast<Packet *>(msg);
+            auto pktGrant = pkt->popAtFront<Grant2Rsu>();
+            AppId appId = pktGrant->getAppId();
+
+            if (pktGrant->getStart() && (grantedService_.find(appId) == grantedService_.end()))
+                initializeService(pktGrant);
+            else if (pktGrant->getStop() && (grantedService_.find(appId) != grantedService_.end()))
+                stopService(appId);
+            
+            delete msg;
+            msg = nullptr;
+            return;
+        }
+        else if(!strcmp(msg->getName(), "SrvFD")){
+            handleSeviceFeedback(msg);
+        }
+        else if (!strcmp(msg->getName(), "AppData"))
+        {
+            auto pkt = check_and_cast<Packet *>(msg);
+            handleAppData(pkt);
+
+            delete msg;
+            msg = nullptr;
+            return;
+        }
+        else
+        {
+            EV << "Server::handleMessage - unknown message: " << msg->getName() << endl;
+            delete msg;
+            msg = nullptr;
+            return;
+        }
     }
 }
 
-void Server::updateRsuFeedback(inet::Packet *pkt)
+
+void Server::handleAppData(inet::Packet *pkt)
 {
-    EV << "Server::updateRsuFeedback - update RSU status feedback and send it to the scheduler " << endl;
+    auto appPkt = pkt->peekAtFront<JobPacket>();
+
+    int frameId = appPkt->getIDframe();
+    simtime_t reqDeadline = appPkt->getAbsDeadline();
+    AppId appId = appPkt->getAppId();
+    
+    EV << "Server::handleMessage - received application packet " << pkt->getName() << endl;
+    EV << "Server::handleMessage - app " << appId << " frame " << frameId << " required deadline " << reqDeadline << endl;
+
+    // check if the app service is running on this RSU
+    if (grantedService_.find(appId) == grantedService_.end())
+    {
+        EV << "Server::handleMessage - service for app " << appId << " is not running on this RSU" << endl;
+        emit(failedSrvDownSignal_, 1);
+    }
+    else    // check if the deadline is met
+    {
+        if (simTime() + grantedService_[appId].exeTime > reqDeadline)  // the time when the job is processed is more than the deadline
+        {
+            EV << "Server::handleMessage - app " << appId << " frame " << frameId << " - app cannot be completed within its deadline, drop it" << endl;
+            emit(missDlPktSignal_, 1);
+        }
+        else
+        {
+            EV << "Server::handleMessage - app " << appId << " frame " << frameId << " - application deadline is met" << endl;
+            emit(meetDlPktSignal_, 1);
+        }
+    }
+}
+
+
+void Server::handleServiceInitComplete()
+{
+    AppId appId = srvInInitVector_[0];
+    srvInInitVector_.erase(srvInInitVector_.begin());
+    srvInitCompleteTime_.erase(appId);
+
+    if (srvInInitVector_.size() > 0)
+        scheduleAt(srvInitCompleteTime_[srvInInitVector_[0]], srvInitComplete_);
+
+    if (appsWaitStop_.find(appId) != appsWaitStop_.end())   // a stop command received during initializing
+    {
+        grantedService_.erase(appId);
+        appsWaitStop_.erase(appId);
+    }
+    else
+    {
+        EV << "Server::handleMessage - service initialization complete for application " << appId << endl;
+        // send the grant message to the vehicle
+        grantedService_[appId].initComplete = true;
+        sendGrant2OffloadingNic(appId, false);
+        appsWaitMacInitFb_.insert(appId);
+    }
+}
+
+
+void Server::releaseServerResources()
+{
+    // this function is called by other modules (the nodeInfo_), so we need to use
+    // Enter_Method or Enter_Method_Silent to tell the simulation kernel "switch context to this module"
+    Enter_Method("releaseServerResources");
+    
+    EV << "Server::releaseServerResources - releasing server resources\n";
+    if (srvInitComplete_->isScheduled())
+    {
+        cancelEvent(srvInitComplete_);
+    }
+
+    grantedService_.clear();
+    appsWaitMacInitFb_.clear();
+    appsWaitStop_.clear();
+    srvInInitVector_.clear();
+    srvInitCompleteTime_.clear();
+    cmpUnitFree_ = cmpUnitTotal_;
+}
+
+
+void Server::handleRsuFeedback(inet::Packet *pkt)
+{
+    EV << "Server::handleRsuFeedback - update RSU status feedback and send it to the scheduler " << endl;
     auto rsuFd = pkt->peekAtFront<RsuFeedback>();
 
     auto rsuFdCopy = makeShared<RsuFeedback>(*rsuFd);
@@ -243,19 +289,19 @@ void Server::updateRsuFeedback(inet::Packet *pkt)
     packet->insertAtFront(rsuFdCopy);
     if (nodeInfo_->getIsGlobalScheduler())
     {
-        EV << "Server::updateRsuFeedback - local scheduler is global scheduler, send feedback to local scheduler." << endl;
+        EV << "Server::handleRsuFeedback - local scheduler is global scheduler, send feedback to local scheduler." << endl;
         packet->addTagIfAbsent<SocketInd>()->setSocketId(nodeInfo_->getLocalSchedulerSocketId());
         send(packet, "socketOut");
     }
     else 
     {
-        EV << "Server::updateRsuFeedback - local scheduler is not global scheduler, send feedback to global scheduler " 
+        EV << "Server::handleRsuFeedback - local scheduler is not global scheduler, send feedback to global scheduler " 
         << nodeInfo_->getGlobalSchedulerAddr() << endl;
         socket.sendTo(packet, nodeInfo_->getGlobalSchedulerAddr(), MEC_NPC_PORT);
     }
 }
 
-void Server::updateServiceStatus(omnetpp::cMessage *msg)
+void Server::handleSeviceFeedback(omnetpp::cMessage *msg)
 {
     auto pkt = check_and_cast<Packet *>(msg);
     pkt->trim();
@@ -263,7 +309,7 @@ void Server::updateServiceStatus(omnetpp::cMessage *msg)
     auto srvStatus = pkt->removeAtFront<ServiceStatus>();
 
     AppId appId = srvStatus->getAppId();
-    EV << "Server::updateServiceStatus - service for app " << appId << " is " 
+    EV << "Server::handleSeviceFeedback - service for app " << appId << " is " 
         << (srvStatus->getSuccess()? "alive" : "stopped") << ", inform the scheduler." << endl;
     
     if (srvStatus->getSuccess())    // service initialization success
@@ -287,7 +333,7 @@ void Server::updateServiceStatus(omnetpp::cMessage *msg)
         grantedService_.erase(appId);
     }
 
-    EV << "Server::updateServiceStatus - processing RSU " << gnbId_ << " has " 
+    EV << "Server::handleSeviceFeedback - processing RSU " << gnbId_ << " has " 
        << cmpUnitFree_ << " free computing units, and offloading RSU " << srvStatus->getOffloadGnbId() << " has " 
        << srvStatus->getAvailBand() << " free bandwidth." << endl;
 

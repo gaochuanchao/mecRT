@@ -47,6 +47,8 @@ class SchemeBase
     int cuStep_ = 1;  // the step for computing units, default is 1
     int rbStep_ = 1;  // the step for resource blocks, default is 1
     double srvTimeScale_ = 1.0; // the scale for app execution time on servers with full resource, default is 1.0
+    int maxHops_ = 1; // the maximum number of hops for task forwarding in the backhaul network, default is 1
+    map<MacNodeId, map<MacNodeId, int>> reachableRsus_; // {srcRsu: {reachableRsu: hops}}, the reachable RSUs within maxHops_
 
     /***
      * Protected members for scheduling
@@ -127,6 +129,12 @@ class SchemeBase
      * Get the utility value for each selected application
      */
     virtual double getAppUtility(AppId appId);
+
+
+    /***
+     * Update reachable RSUs from each RSU based on the new backhaul network topology
+     */
+    virtual void updateReachableRsus(const map<MacNodeId, map<MacNodeId, double>>& topology);
 };
 
 #endif // _SCHEME_BASE_H_

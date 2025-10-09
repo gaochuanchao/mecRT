@@ -24,6 +24,7 @@ using namespace inet;
 
 class NodePacketController;
 class GnbMac;
+class Server;
 
 /**
  * @class NodeInfo
@@ -63,14 +64,21 @@ class NodeInfo : public omnetpp::cSimpleModule
         // =========== reference to other modules ===========
         GnbMac* gnbMac_ = nullptr;
         NodePacketController* npc_ = nullptr;
+        Server* server_ = nullptr;
+
+        // =========== timers and self-messages ===========
+        cMessage *rsuStatusTimer_ = nullptr;
+        double rsuStatusUpdateInterval_ = 0.05; // in seconds, update to scheduler 50ms before next scheduling starts
 
     protected:
         virtual void initialize(int stage) override;
         virtual int numInitStages() const override { return NUM_INIT_STAGES; }
 
+        virtual void handleMessage(omnetpp::cMessage *msg) override;
+
     public:
         NodeInfo();
-        virtual ~NodeInfo() {};
+        virtual ~NodeInfo();
         
         // methods to set/get basic node information
         void setNodeType(std::string nodeType) {nodeType_ = nodeType;}
@@ -110,7 +118,7 @@ class NodeInfo : public omnetpp::cSimpleModule
         // methods to set/get scheduler module related information
         void setIsGlobalScheduler(bool isGlobal) {isGlobalScheduler_ = isGlobal;}
         bool getIsGlobalScheduler() {return isGlobalScheduler_;}
-        void setGlobalSchedulerAddr(inet::Ipv4Address addr) {globalSchedulerAddr_ = addr;}
+        void setGlobalSchedulerAddr(inet::Ipv4Address addr);
         inet::Ipv4Address getGlobalSchedulerAddr() {return globalSchedulerAddr_;}
         void setLocalSchedulerPort(int port) {localSchedulerPort_ = port;}
         int getLocalSchedulerPort() {return localSchedulerPort_;}
@@ -123,8 +131,11 @@ class NodeInfo : public omnetpp::cSimpleModule
         // modules reference related methods
         void setGnbMac(GnbMac* mac) {gnbMac_ = mac;}
         virtual void recoverRsuStatus();
+        virtual void releaseNicResources();
         void setNpc(NodePacketController* npc) {npc_ = npc;}
         virtual void recoverServiceRequests();
+        void setServer(Server* server) {server_ = server;}
+        virtual void releaseServerResources();
 };
 
 #endif /* _MECRT_COMMON_NODEINFO_H_ */

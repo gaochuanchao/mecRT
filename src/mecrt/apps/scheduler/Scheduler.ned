@@ -27,6 +27,9 @@ simple Scheduler like IApp
         int rbStep = default(1);  // the step for resource blocks, default is 1
         double srvTimeScale = default(1.0); // the scale for app execution time on servers with full resource, default is 1.0
         bool enableBackhaul = default(false); // whether to enable the backhaul network, default is false
+        // the maximum number of hops for task forwarding in the backhaul network
+        // default is 1, which means the task can only be forwarded to neighboring RSUs after being offloaded
+        int maxHops = default(1);
         double virtualLinkRate = default(10000000); // the rate of the virtual link in the backhaul network, default is 10MBps
         double fairFactor = default(1.0); // the fairness factor for scheduling scheme with forwarding, default is 1.0
         string nodeInfoModulePath = default("^.nodeInfo"); // path to the NodeInfo module

@@ -55,9 +55,6 @@ void MecStationaryMobility::initialize(int stage)
         initializeOrientation();
         initializePosition();
 
-        unsigned short nodeId = getAncestorPar("macNodeId");
-        database_->setRsuNodeId2Index(nodeId, nodeVectorIdx_);
-
         if (enableInitDebug_)
             std::cout << "MecStationaryMobility::initialize - stage: INITSTAGE_SINGLE_MOBILITY - ends" << std::endl;
     }

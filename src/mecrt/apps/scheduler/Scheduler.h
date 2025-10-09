@@ -100,6 +100,7 @@ class Scheduler : public omnetpp::cSimpleModule
     bool enableBackhaul_ = false; // whether to enable the backhaul network, default is false
     double virtualLinkRate_; // the rate of the virtual link in the backhaul network
     double fairFactor_; // the fairness factor for scheduling scheme with forwarding, default is 1.0
+    int maxHops_ = 1; // the maximum number of hops for task forwarding in the backhaul network, default is 1
 
   protected:
     bool enableInitDebug_;
@@ -159,7 +160,10 @@ class Scheduler : public omnetpp::cSimpleModule
     virtual void globalSchedulerInit();
     // when the topology change and the global scheduler is changed, do the necessary finishing operation if 
     // this node is the previous global scheduler
-    virtual void globalSchedulerFinish();
+    virtual void globalSchedulerReset();
+
+    // reset the network topology information
+    virtual void resetNetTopology(const map<MacNodeId, map<MacNodeId, double>>& topology);
 
     // virtual string srvId2Str(VecServiceType service);
     // virtual string resId2Str(VecResourceType resource);

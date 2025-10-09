@@ -26,13 +26,13 @@
 
 #include "mecrt/nic/mac/amc/MecNRAmc.h"
 #include "mecrt/common/MecCommon.h"
+#include "mecrt/common/NodeInfo.h"
 
 using namespace inet;
 
 class RbManagerUl;
 class GnbSchedulerUl;
 class GnbSchedulerDl;
-class NodeInfo;
 
 class GnbMac : public NRMacGnb
 {
@@ -43,7 +43,6 @@ class GnbMac : public NRMacGnb
     friend class GnbSchedulerUl;
     friend class GnbSchedulerDl;
     friend class RbManagerUl;
-    friend class NodeInfo;
 
   public:
 
@@ -81,6 +80,13 @@ class GnbMac : public NRMacGnb
     virtual unsigned int getRbPerBand() { return rbPerBand_;}
 
     virtual bool getResAllocationMode() { return resAllocateMode_;}
+
+    /***
+     * update the status of RSU to the global scheduler after topology change
+     * invoked by the OSPF module
+     */
+    virtual void mecRecoverRsuStatus();
+    virtual void mecTerminateAllGrant();
 
   protected:
 
@@ -138,11 +144,7 @@ class GnbMac : public NRMacGnb
      * the UE sends a feedback for each carrier
      */
     virtual void mecFeedbackRsuStatus(double carrierFreq, MacNodeId ueId, bool isBroadcast, double distance);
-    /***
-     * update the status of RSU to the global scheduler after topology change
-     * invoked by the OSPF module
-     */
-    virtual void mecRecoverRsuStatus();
+
 
     virtual void terminateService(AppId appId);
 

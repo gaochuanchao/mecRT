@@ -34,7 +34,8 @@ SchemeBase::SchemeBase(Scheduler *scheduler)
       offloadOverhead_(scheduler->offloadOverhead_),
       cuStep_(scheduler->cuStep_),
       rbStep_(scheduler->rbStep_),
-      srvTimeScale_(scheduler->srvTimeScale_)
+      srvTimeScale_(scheduler->srvTimeScale_),
+      maxHops_(scheduler->maxHops_)
 {
     EV << NOW << " SchemeBase::SchemeBase - Initialized" << endl;
 }
@@ -292,5 +293,52 @@ vector<srvInstance> SchemeBase::scheduleRequests()
        << " instances from " << instAppIndex_.size() << " total instances" << endl;
     
     return solution;  // return the solution set
+}
+
+
+void SchemeBase::updateReachableRsus(const map<MacNodeId, map<MacNodeId, double>>& topology)
+{
+    /***
+     * store the RSU hop reachability, i.e., which RSUs can be reached from which RSU with maxHops_ hops
+     * {
+     *   {rsuId1, {rsuId2: hopCount, rsuId3: hopCount, ...}},
+     *   {rsuId4, {rsuId5: hopCount, rsuId6: hopCount, ...}},
+     *   ...
+     * }
+     * using BFS to find the reachable RSUs and their hop counts, store the result in reachableRsus_
+     */
+    EV << NOW << " SchemeBase::updateReachableRsus - update reachable RSUs with maxHops=" << maxHops_ << endl;
+
+    reachableRsus_.clear();
+    for (const auto& kv: topology)   // enumerate the topology
+    {
+        MacNodeId src = kv.first;
+        queue<MacNodeId> q;
+        map<MacNodeId, int> visited; // map to store the hop count for each RSU
+        q.push(src);
+        visited[src] = 0; // src is reachable from itself with 0 hops
+        while (!q.empty())
+        {
+            MacNodeId currentRsu = q.front();
+            q.pop();
+            int currentHopCount = visited[currentRsu];
+            // if the current hop count exceeds the maximum hops, stop the search
+            if (currentHopCount >= maxHops_)
+                continue;
+            // iterate through the neighbors of the current RSU
+            for (const auto& neighborKv : topology.at(currentRsu))
+            {
+                int neighbor = neighborKv.first;
+                // if the neighbor is not visited, add it to the queue and mark it as visited
+                if (visited.find(neighbor) == visited.end())
+                {
+                    visited[neighbor] = currentHopCount + 1; // increment the hop count
+                    q.push(neighbor);
+                }
+            }
+        }
+        // Store the hop reachability information for the current RSU
+        reachableRsus_[src] = visited;
+    }
 }
 

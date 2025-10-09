@@ -33,9 +33,6 @@ using namespace inet;
 
 class NodePacketController : public omnetpp::cSimpleModule
 {
-
-  friend class NodeInfo;
-
   protected:
     UdpSocket socket_;
     int socketId_;
@@ -63,11 +60,11 @@ class NodePacketController : public omnetpp::cSimpleModule
     virtual void handleOffloadingNicGrant(inet::Packet *packet);
     virtual void handleGlobalSchedulerTimer();
 
-    virtual void recoverServiceRequests();
-
   public:
     NodePacketController();
     virtual ~NodePacketController();
+
+    virtual void recoverServiceRequests();
 };
 
 

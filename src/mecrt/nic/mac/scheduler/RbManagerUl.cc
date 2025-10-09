@@ -220,6 +220,22 @@ void RbManagerUl::readAppRbOccupation(const AppId appId, std::map<Band, unsigned
 }
 
 
+void RbManagerUl::resetRbStatus()
+{
+    // reset the resource allocation status
+    scheduledApp_.clear();
+    pausedApp_.clear();
+    appToBeInitialized_.clear();
+    vehDataRate_.clear();
+    appGrantedRbMap_.clear();
+    appTempRbMap_.clear();
+    flexibleBands_.clear();
+    appGrantInfos_.clear();
+
+    initBandStatus(); // re-initialize the band status
+}
+
+
 void RbManagerUl::terminateAppService(AppId appId)
 {
     // terminate the service for the app

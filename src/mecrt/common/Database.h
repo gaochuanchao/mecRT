@@ -70,12 +70,6 @@ class Database : public omnetpp::cSimpleModule
     map<pair<int, int>, double> rsuExeTime_; // store the execution time of the application
     map<int, pair<double, double>> rsuPosData_; // store the RSU position data
 
-    // typedef unsigned short MacNodeId
-    map<MacNodeId, int> rsuNodeId2Index_; // map the RSU node id to the index in RSU list
-    map<int, MacNodeId> rsuIndex2NodeId_; // map the RSU index in RSU list to the node id
-    vector<map<int, int>> rsuHopReach_; // store the RSU hop reachability, i.e., which RSUs can be reached from which RSU
-    int maxHops_; // the maximum number of hops for task forwarding in the backhaul network
-
   public:
     // define a map for application deadline
     const map<int, double> appDeadline = {
@@ -124,9 +118,6 @@ class Database : public omnetpp::cSimpleModule
     // load RSU position data from the file
     virtual void loadRsuPosDataFromFile();
 
-    // load RSU graph data from the file
-    virtual void loadRsuGraphDataFromFile();
-
     // get the vehicle execution data
     virtual vector<double>& getVehExeData(int idx);
 
@@ -138,15 +129,6 @@ class Database : public omnetpp::cSimpleModule
 
     // get the RSU position data
     virtual pair<double, double> getRsuPosData(int rsuId);
-
-    // set the RSU node id to index mapping
-    virtual void setRsuNodeId2Index(MacNodeId nodeId, int index);
-
-    // get the map of reachable RSUs from a specific RSU
-    virtual map<MacNodeId, int> getRsuReachableList(MacNodeId rsuId);
-
-    // get the number of hops from a specific RSU to another RSU
-    virtual int getRsuHopCount(MacNodeId startRsu, MacNodeId endRsu);
 };
 
 #endif

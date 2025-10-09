@@ -40,9 +40,5 @@ simple Database
         // server execution scale, default 1.0
         double serverExeScale = default(1.0);
 
-        // the maximum number of hops for task forwarding in the backhaul network
-        // default is 1, which means the task can only be forwarded to neighboring RSUs after being offloaded
-        int maxHops = default(1);
-
         @display("i=block/cogwheel");
 }

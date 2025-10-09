@@ -195,9 +195,9 @@ void MecOspf::initialize(int stage)
     }
     else if (isInitializeStage(stage)) {
         if (enableInitDebug_)
-            cout << "MecOspf:initialize - initialize stage " << stage << "\n";
+            cout << "MecOspf:initialize - INITSTAGE_ROUTING_PROTOCOLS stage " << stage << "\n";
 
-        EV_INFO << "MecOspf:initialize - network-layer init at stage " << stage << "\n";
+        EV_INFO << "MecOspf:initialize - INITSTAGE_ROUTING_PROTOCOLS stage " << stage << "\n";
         // acquire required INET modules via parameters (StandardHost uses these params)
         try {
             ift_ = getModuleFromPar<IInterfaceTable>(par("interfaceTableModule"), this);
@@ -219,7 +219,7 @@ void MecOspf::initialize(int stage)
         // register protocol such that the IP layer can deliver packets to us
         registerProtocol(*MecProtocol::mecOspf, gate("ipOut"), gate("ipIn"));
 
-        EV_INFO << "MecOspf:initialize - network-layer init. Interfaces=" << (ift_ ? ift_->getNumInterfaces() : 0)
+        EV_INFO << "MecOspf:initialize - INITSTAGE_ROUTING_PROTOCOLS init. Interfaces=" << (ift_ ? ift_->getNumInterfaces() : 0)
                 << " RoutingTable=" << (rt_ ? "found" : "NOT_FOUND") << "\n";
 
         // initialize its Link State Advertisement (LSA) info
@@ -230,19 +230,20 @@ void MecOspf::initialize(int stage)
         selfLsa_->setInstallTime(simTime());
         selfLsa_->setNodeId(nodeInfo_ ? nodeInfo_->getNodeId() : -1);   // set nodeId if nodeInfo_ is available (gNB), otherwise -1
         lsaPacketCache_[routerIdKey_] = selfLsa_;
+        ipv4ToMacNodeId_[routerIdKey_] = selfLsa_->getNodeId();
 
         WATCH(routerId_);
         WATCH(routerIdKey_);
         WATCH(neighborChanged_);
         WATCH(seqNum_);
-        WATCH(schedulerNode_);
+        WATCH(schedulerAddr_);
         WATCH_VECTOR(newNeighbors_);
         WATCH_MAP(indirectRoutes_);
         WATCH_MAP(neighborRoutes_);
         WATCH_MAP(lsaPacketCache_);
 
         if (enableInitDebug_)
-            cout << "MecOspf:initialize - stage: INITSTAGE_NETWORK_LAYER - done\n";
+            cout << "MecOspf:initialize - stage: INITSTAGE_ROUTING_PROTOCOLS - done\n";
     }
 }
 
@@ -571,7 +572,7 @@ void MecOspf::updateLsaToNetwork()
     for (auto &kv : neighbors_)
     {
         Neighbor &n = kv.second;
-        if (!n.outInterface || !n.outInterface->isUp()) continue;
+        if (!n.outInterface || !n.outInterface->isUp() || n.outInterface->isWireless()) continue;
 
         EV_INFO << "MecOspf:sendLsaToNeighbor - sending LSA to neighbor " << n.destIp << "\n";
         sendLsa(selfLsa_, kv.first);
@@ -587,7 +588,7 @@ void MecOspf::updateLsaToNetwork()
 
             // make sure the neighbor interface is still up
             Neighbor &n = it->second;
-            if (!n.outInterface || !n.outInterface->isUp()) continue;
+            if (!n.outInterface || !n.outInterface->isUp() || n.outInterface->isWireless()) continue;
 
             EV_INFO << "MecOspf:sendLsaToNeighbor - new neighbor " << n.destIp << " discovered, sending all cached LSAs\n";
             // send all cached LSAs to this new neighbor, except our own (already sent above)
@@ -624,7 +625,10 @@ void MecOspf::handleReceivedLsa(Packet *packet)
     // if the origin router is not in cache, add it
     uint32_t originKey = lsa->getOrigin();
     if (lsaPacketCache_.find(originKey) == lsaPacketCache_.end())   // first time seeing this origin
+    {
         needUpdate = true;
+        ipv4ToMacNodeId_[originKey] = lsa->getNodeId();
+    }    
 
     int lsaSeqNum = lsa->getSeqNum();
     if (!needUpdate && (lsaSeqNum > lsaPacketCache_[originKey]->getSeqNum()))   // not first time but higher seqNum
@@ -900,21 +904,21 @@ void MecOspf::recomputeIndirectRouting()
         size_t nbrCount = topology_[nodeKey].size();
         if (nbrCount > maxNeighbors) {
             maxNeighbors = nbrCount;
-            schedulerNode_ = Ipv4Address(nodeKey);
+            schedulerAddr_ = Ipv4Address(nodeKey);
         } else if (nbrCount == maxNeighbors) {
             // If tie, select the one with the lowest IP address
             Ipv4Address candidate = Ipv4Address(nodeKey);
-            if (candidate < schedulerNode_) {
-                schedulerNode_ = candidate;
+            if (candidate < schedulerAddr_) {
+                schedulerAddr_ = candidate;
             }
         }
     }
 
     globalSchedulerReady_ = true;
     if (nodeInfo_)
-        nodeInfo_->setGlobalSchedulerAddr(schedulerNode_);
+        nodeInfo_->setGlobalSchedulerAddr(schedulerAddr_);
 
-    if (schedulerNode_ == routerId_)
+    if (schedulerAddr_ == routerId_)
     {
         EV_INFO << "MecOspf:recomputeIndirectRouting - this node is selected as the scheduler node (neighbors=" << maxNeighbors << ")\n";
         if (nodeInfo_) 
@@ -925,9 +929,9 @@ void MecOspf::recomputeIndirectRouting()
     }
     else
     {
-        int globalSchedulerNodeId = lsaPacketCache_[schedulerNode_.getInt()]->getNodeId();
+        int globalSchedulerNodeId = lsaPacketCache_[schedulerAddr_.getInt()]->getNodeId();
         EV_INFO << "MecOspf:recomputeIndirectRouting - selected gNB node " << globalSchedulerNodeId
-        << " (IP address: " << schedulerNode_ << ", neighbors=" << maxNeighbors << ") as the global scheduler.\n";
+        << " (IP address: " << schedulerAddr_ << ", neighbors=" << maxNeighbors << ") as the global scheduler.\n";
     }
 }
 
@@ -963,6 +967,27 @@ void MecOspf::dijkstra(uint32_t source, std::map<uint32_t, Node>& nodeInfos)
 }
 
 
+void MecOspf::updateAdjListToScheduler()
+{
+    if (globalSchedulerReady_ && nodeInfo_ && nodeInfo_->getIsGlobalScheduler() && scheduler_)
+    {
+        EV << "MecOspf:updateAdjListToScheduler - updating adjacency list (network topology) to scheduler\n";
+        map<MacNodeId, map<MacNodeId, double>> adjList;
+        for (const auto& kv : topology_)    // map<uint32_t, map<uint32_t, double>> topology_
+        {
+            MacNodeId src = ipv4ToMacNodeId_[kv.first];
+            for (const auto& nbr : kv.second)
+            {
+                MacNodeId dst = ipv4ToMacNodeId_[nbr.first];
+                double cost = nbr.second;
+                adjList[src][dst] = cost;
+            }
+        }
+        scheduler_->resetNetTopology(adjList);
+    }
+}
+
+
 void MecOspf::resetGlobalScheduler()
 {
     if (globalSchedulerReady_)
@@ -971,11 +996,17 @@ void MecOspf::resetGlobalScheduler()
 
         if (nodeInfo_)
         {
+            if (nodeInfo_->getIsGlobalScheduler())
+            {
+                EV_INFO << "MecOspf:resetGlobalScheduler - this node was the global scheduler, resetting it\n";
+                if (scheduler_)
+                    scheduler_->globalSchedulerReset();
+            }
             nodeInfo_->setIsGlobalScheduler(false);
             nodeInfo_->setGlobalSchedulerAddr(Ipv4Address::UNSPECIFIED_ADDRESS);
         }
         globalSchedulerReady_ = false;
-        schedulerNode_ = Ipv4Address::UNSPECIFIED_ADDRESS;
+        schedulerAddr_ = Ipv4Address::UNSPECIFIED_ADDRESS;
     }
 }
 

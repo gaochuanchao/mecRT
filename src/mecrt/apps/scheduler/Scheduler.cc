@@ -99,6 +99,7 @@ void Scheduler::initialize(int stage)
         srvTimeScale_ = par("srvTimeScale");
         countExeTime_ = par("countExeTime");
         enableBackhaul_ = par("enableBackhaul");
+        maxHops_ = par("maxHops");
         virtualLinkRate_ = par("virtualLinkRate");
         fairFactor_ = par("fairFactor");
 
@@ -367,24 +368,31 @@ void Scheduler::handleMessage(cMessage *msg)
 
 void Scheduler::globalSchedulerInit()
 {
+    // this function is called by other modules (the nodeInfo_), so we need to use
+    // Enter_Method or Enter_Method_Silent to tell the simulation kernel "switch context to this module"
+    Enter_Method("globalSchedulerInit");
     EV << "Scheduler::globalSchedulerInit - do the necessary initialization for global scheduler" << std::endl;
+
+    globalSchedulerReset();
 
     if (periodicScheduling_)
     {
         // get the time in milliseconds
-        int timeNow = int(simTime().dbl() * 1000) + 1;
-        NEXT_SCHEDULING_TIME = appStopInterval_.dbl() + timeNow / 1000.0;
+        double timeNow = int(simTime().dbl() * 1000) / 1000.0;
+        NEXT_SCHEDULING_TIME = appStopInterval_.dbl() + timeNow;
         scheduleAt(NEXT_SCHEDULING_TIME, schedStarter_);
-        scheduleAt(simTime(), preSchedCheck_);
 
         EV << "Scheduler::globalSchedulerInit - next scheduling time: " << NEXT_SCHEDULING_TIME << std::endl;
     }
 }
 
 
-void Scheduler::globalSchedulerFinish()
+void Scheduler::globalSchedulerReset()
 {
-    EV << "Scheduler::globalSchedulerFinish - do the necessary finishing operation for previous global scheduler" << std::endl;
+    // this function is called by other modules (the nodeInfo_), so we need to use
+    // Enter_Method or Enter_Method_Silent to tell the simulation kernel "switch context to this module"
+    Enter_Method("globalSchedulerReset");
+    EV << "Scheduler::globalSchedulerReset - do the necessary finishing operation for previous global scheduler" << std::endl;
 
     // cancel the scheduled self message
     if (schedStarter_->isScheduled())
@@ -420,6 +428,14 @@ void Scheduler::globalSchedulerFinish()
 }
 
 
+void Scheduler::resetNetTopology(const map<MacNodeId, map<MacNodeId, double>>& topology)
+{
+    Enter_Method("resetNetTopology");
+    EV << NOW << " Scheduler::resetNetTopology - reset the backhaul network topology" << endl;
+    scheme_->updateReachableRsus(topology);
+}
+
+
 void Scheduler::recordVehRequest(cMessage *msg)
 {
     Packet* pkt = check_and_cast<Packet*>(msg);
@@ -431,6 +447,11 @@ void Scheduler::recordVehRequest(cMessage *msg)
      * here srcId ~ nodeId, localPort_ ~ lcid
      */
     AppId appId = vecReq->getAppId();
+    if (appInfo_.find(appId) != appInfo_.end())
+    {
+        EV << NOW << " Scheduler::recordVehRequest - request from appId: " << appId << " is already buffered, ignore it!" << endl;
+        return;
+    }
     MacNodeId vehId = MacCidToNodeId(appId);
 
     RequestMeta reqMeta;

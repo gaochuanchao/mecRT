@@ -15,6 +15,7 @@
 #include "mecrt/common/NodeInfo.h"
 #include "mecrt/nic/mac/GnbMac.h"
 #include "mecrt/coreNetwork/NodePacketController.h"
+#include "mecrt/apps/server/Server.h"
 
 Define_Module(NodeInfo);
 
@@ -46,6 +47,26 @@ NodeInfo::NodeInfo()
 
     gnbMac_ = nullptr;
     npc_ = nullptr;
+    server_ = nullptr;
+
+    rsuStatusTimer_ = nullptr;
+    rsuStatusUpdateInterval_ = 0.05; // in seconds, update to scheduler 50ms before next scheduling starts
+}
+
+
+NodeInfo::~NodeInfo()
+{
+    if (enableInitDebug_)
+        std::cout << "NodeInfo::~NodeInfo - destroying NodeInfo module\n";
+
+    if (rsuStatusTimer_)
+    {
+        cancelAndDelete(rsuStatusTimer_);
+        rsuStatusTimer_ = nullptr;
+    }
+
+    if (enableInitDebug_)
+        std::cout << "NodeInfo::~NodeInfo - destroying NodeInfo module done!\n";
 }
 
 
@@ -62,6 +83,8 @@ void NodeInfo::initialize(int stage)
         EV_INFO << "NodeInfo:initialize - stage: INITSTAGE_LOCAL\n";        
         // initialize default values
         nodeType_ = par("nodeType").stdstringValue();
+
+        rsuStatusTimer_ = new cMessage("rsuStatusTimer");
 
         WATCH(nodeType_);
         WATCH(nodeState_);
@@ -86,6 +109,93 @@ void NodeInfo::initialize(int stage)
 }
 
 
+void NodeInfo::handleMessage(omnetpp::cMessage *msg)
+{
+    if (msg->isSelfMessage())
+    {
+        if (msg == rsuStatusTimer_)
+        {
+            EV << "NodeInfo:handleMessage - rsuStatusTimer is triggered, update RSU status to the global scheduler\n";
+            // send RSU status to the global scheduler
+            if (!globalSchedulerAddr_.isUnspecified())
+            {
+                recoverRsuStatus();
+                scheduleAt(simTime() + scheduleInterval_, rsuStatusTimer_);
+            }
+        }
+        return;
+    }
+    else
+    {
+        EV << "NodeInfo:handleMessage - received an unexpected message: " << msg->getName() << "\n";
+        delete msg;
+        msg = nullptr;
+        return;
+    }
+}
+
+
+void NodeInfo::setGlobalSchedulerAddr(inet::Ipv4Address addr)
+{
+    // this function is called by other modules (the nodeInfo_), so we need to use
+    // Enter_Method or Enter_Method_Silent to tell the simulation kernel "switch context to this module"
+    Enter_Method_Silent("setGlobalSchedulerAddr");
+
+    // if the addr is unspecified address, it means that the network topology has changed and
+    // the rsuStatusTimer_ should be cancelled.
+    if (addr.isUnspecified())
+    {
+        if (rsuStatusTimer_->isScheduled())
+        {
+            cancelEvent(rsuStatusTimer_);
+            EV_INFO << "NodeInfo: setGlobalSchedulerAddr - cancelled the rsuStatusTimer due to network topology change\n";
+        }
+        globalSchedulerAddr_ = addr;
+        EV_INFO << "NodeInfo: setGlobalSchedulerAddr - the network topology has changed, terminate all services and release resources\n";
+        releaseNicResources();
+        releaseServerResources();
+        return;
+    }
+
+    // otherwise, the new global scheduler is just been determined
+    // then update rsu status and buffered service request in this node to the new global scheduler immediately
+    // then start the rsuStatusTimer_ to periodically update the new global scheduler
+    globalSchedulerAddr_ = addr;
+    EV_INFO << "NodeInfo: setGlobalSchedulerAddr - the new global scheduler address is " << globalSchedulerAddr_ << "\n";
+    recoverRsuStatus();
+    recoverServiceRequests();
+
+    if (rsuStatusTimer_->isScheduled())
+    {
+        cancelEvent(rsuStatusTimer_);
+        EV_INFO << "NodeInfo: setGlobalSchedulerAddr - cancelled the rsuStatusTimer to reset the timer\n";
+    }
+    double timeNow = int(simTime().dbl() * 1000) / 1000.0;
+    double nextUpdateTime = timeNow + scheduleInterval_ - rsuStatusUpdateInterval_;
+    scheduleAt(nextUpdateTime, rsuStatusTimer_);
+    EV_INFO << "NodeInfo: setGlobalSchedulerAddr - scheduled the rsuStatusTimer at " 
+        << nextUpdateTime << "\n";
+}
+
+
+void NodeInfo::releaseNicResources()
+{
+    if (gnbMac_ != nullptr)
+    {
+        gnbMac_->mecTerminateAllGrant();
+    }
+}
+
+
+void NodeInfo::releaseServerResources()
+{
+    if (server_ != nullptr)
+    {
+        server_->releaseServerResources();
+    }
+}
+
+
 void NodeInfo::recoverRsuStatus()
 {
     if (gnbMac_ != nullptr)
@@ -94,8 +204,12 @@ void NodeInfo::recoverRsuStatus()
     }
 }
 
+
 void NodeInfo::recoverServiceRequests()
 {
-
+    if (npc_ != nullptr)
+    {
+        npc_->recoverServiceRequests();
+    }
 }
 

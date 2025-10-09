@@ -88,7 +88,7 @@ void SchemeFwdBase::generateScheduleInstances()
                 }
 
                 // find the accessible RSU from the offload RSU
-                map<MacNodeId, int> accessibleProRsus = db_->getRsuReachableList(offRsuId);
+                map<MacNodeId, int> accessibleProRsus = reachableRsus_[offRsuId]; // {procRsuId: hopCount}, the accessible processing RSUs from the offload RSU
                 int maxRB = floor(rsuRBs_[offRsuIndex] * fairFactor_);  // maximum resource blocks for the offload RSU
                 for (int resBlocks = maxRB; resBlocks > 0; resBlocks -= rbStep_)   // enumerate the resource blocks, counting down
                 {

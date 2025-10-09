@@ -23,10 +23,8 @@
 #include "mecrt/packets/apps/Grant2Veh.h"
 #include "mecrt/packets/apps/ServiceStatus_m.h"
 #include "mecrt/nic/mac/scheduler/RbManagerUl.h"
-#include "mecrt/common/NodeInfo.h"
 
 #include <inet/networklayer/common/L3AddressResolver.h>
-
 #include "stack/rlc/packet/LteRlcDataPdu.h"
 #include "stack/rlc/um/LteRlcUm.h"
 
@@ -1188,8 +1186,6 @@ void GnbMac::terminateService(AppId appId)
     mecSendGrantToVeh(appId, false, false, true, false);    // isNewGrant, isUpdate, isStop, isPause
 
     rbManagerUl_->removeAppGrantInfo(appId);
-    // appUdpHeader_.erase(appId);
-    // appIpv4Header_.erase(appId);
 }
 
 
@@ -1221,8 +1217,36 @@ void GnbMac::mecFeedbackServiceStatus(AppId appId, bool isSuccess)
 }
 
 
+void GnbMac::mecTerminateAllGrant()
+{
+    // this function is called by other modules (the nodeInfo_), so we need to use
+    // Enter_Method or Enter_Method_Silent to tell the simulation kernel "switch context to this module"
+    Enter_Method("mecTerminateAllGrant");
+
+    EV << "GnbMac::mecTerminateAllGrant - terminate all app services." << endl;
+    
+    set<AppId> allApps;
+    set<AppId> activeSrv = rbManagerUl_->getScheduledApp();
+    allApps.insert(activeSrv.begin(), activeSrv.end());
+    set<AppId> appToBeInitialized = rbManagerUl_->getAppToBeInitialized();
+    allApps.insert(appToBeInitialized.begin(), appToBeInitialized.end());
+    set<AppId> pausedApps = rbManagerUl_->getPausedApp();
+    allApps.insert(pausedApps.begin(), pausedApps.end());
+
+    for (AppId appId : allApps)
+    {
+        mecSendGrantToVeh(appId, false, false, true, false);    // isNewGrant, isUpdate, isStop, isPause
+    }
+    rbManagerUl_->resetRbStatus();
+}
+
+
 void GnbMac::mecRecoverRsuStatus()
 {
+    // this function is called by other modules (the nodeInfo_), so we need to use
+    // Enter_Method or Enter_Method_Silent to tell the simulation kernel "switch context to this module"
+    Enter_Method("mecRecoverRsuStatus");
+
     Packet* packet = new Packet("RsuFD");
     auto rsuFd = makeShared<RsuFeedback>();
     rsuFd->setVehId(0);
@@ -1320,13 +1344,7 @@ void GnbMac::mecHandleGrantFromRsu(omnetpp::cPacket* pktAux)
     if(grant->getGrantStop())
     {
         EV << "GnbMac::handleGrantFromRsu - received stop grant for app " << appId << endl;
-        rbManagerUl_->terminateAppService(appId);
-        mecFeedbackServiceStatus(appId, false);
-        mecSendGrantToVeh(appId, false, false, true, false);    // isNewGrant, isUpdate, isStop, isPause
-
-        rbManagerUl_->removeAppGrantInfo(appId);
-        // appIpv4Header_.erase(appId);
-        // appUdpHeader_.erase(appId);
+        terminateService(appId);
         return;
     }
 

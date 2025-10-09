@@ -329,7 +329,7 @@ void NodePacketController::handleGlobalSchedulerTimer()
     // check if the global scheduler is ready and we are the global scheduler
     if (nodeInfo_->getIsGlobalScheduler())
     {
-        EV << NOW << "NodePacketController::handleGlobalSchedulerTimer - we are the global scheduler, delete all pending service requests." << endl;
+        EV << NOW << " NodePacketController::handleGlobalSchedulerTimer - we are the global scheduler, delete all pending service requests." << endl;
         pendingSrvReqs_.clear();
         return;
     }
@@ -337,7 +337,7 @@ void NodePacketController::handleGlobalSchedulerTimer()
     // if we are not the global scheduler, check if the global scheduler is ready
     if (!nodeInfo_->getGlobalSchedulerAddr().isUnspecified())   // global scheduler is ready
     {
-        EV << NOW << "NodePacketController::handleGlobalSchedulerTimer - global scheduler is ready, send buffered service request packets to it." << endl;
+        EV << NOW << " NodePacketController::handleGlobalSchedulerTimer - global scheduler is ready, send buffered service request packets to it." << endl;
         // send all buffered service request packets to the global scheduler
         for (auto appId : pendingSrvReqs_)
         {
@@ -363,6 +363,10 @@ void NodePacketController::handleGlobalSchedulerTimer()
 
 void NodePacketController::recoverServiceRequests()
 {
+    // this function is called by other modules (the nodeInfo_), so we need to use
+    // Enter_Method or Enter_Method_Silent to tell the simulation kernel "switch context to this module"
+    Enter_Method("recoverServiceRequests");
+
     // resend all buffered service request packets to the global scheduler
     if (nodeInfo_->getIsGlobalScheduler())
         return;
@@ -370,7 +374,7 @@ void NodePacketController::recoverServiceRequests()
     if (nodeInfo_->getGlobalSchedulerAddr().isUnspecified())
         return;
 
-    EV << NOW << "NodePacketController::recoverServiceRequests - resend all buffered service request packets to the global scheduler." << endl;
+    EV << NOW << " NodePacketController::recoverServiceRequests - resend all buffered service request packets to the global scheduler." << endl;
     vector<AppId> toRemove;
     for (auto it = srvReqsBuffer_.begin(); it != srvReqsBuffer_.end(); ++it)
     {

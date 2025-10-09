@@ -110,6 +110,8 @@ class Server : public omnetpp::cSimpleModule
 
     virtual int getSocketId() { return socket.getSocketId(); }
 
+    virtual void releaseServerResources();
+
 
   protected:
 
@@ -121,11 +123,15 @@ class Server : public omnetpp::cSimpleModule
 
     virtual void handleMessage(omnetpp::cMessage *msg) override;
 
+    virtual void handleServiceInitComplete();
+
+    virtual void handleAppData(inet::Packet *pkt);
+
     virtual void finish() override;
 
-    virtual void updateRsuFeedback(inet::Packet *pkt);
+    virtual void handleRsuFeedback(inet::Packet *pkt);
 
-    virtual void updateServiceStatus(omnetpp::cMessage *msg);
+    virtual void handleSeviceFeedback(omnetpp::cMessage *msg);
 
     virtual void sendGrant2OffloadingNic(AppId appId, bool isStop);
 
