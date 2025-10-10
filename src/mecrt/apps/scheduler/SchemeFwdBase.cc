@@ -48,47 +48,28 @@ void SchemeFwdBase::generateScheduleInstances()
 
     initializeData();  // transform the scheduling data
 
-    // int indexDebug = 11977;
     for (int appIndex = 0; appIndex < appIds_.size(); appIndex++)    // enumerate the unscheduled apps
     {
         AppId appId = appIds_[appIndex];  // get the application ID
         
         double period = appInfo_[appId].period.dbl();
-        EV << NOW << " SchemeFwdBase::generateScheduleInstances - AppId=" << appId << ", Period=" << period << endl;
         if (period <= 0)
         {
-            EV << NOW << " SchemeFwdBase::generateScheduleInstances - invalid period for application " << appId << ", skip" << endl;
+            EV << "\t invalid period for application " << appId << ", skip" << endl;
             continue;
         }
 
         MacNodeId vehId = appInfo_[appId].vehId;
-        set<MacNodeId> outdatedLink = set<MacNodeId>(); // store the set of rsus that are outdated for this vehicle
-
         if (vehAccessRsu_.find(vehId) != vehAccessRsu_.end())     // if there exists RSU in access
-        {
+        {   
             for(MacNodeId offRsuId : vehAccessRsu_[vehId])   // enumerate the RSUs in access
             {
-                int offRsuIndex = rsuId2Index_[offRsuId];  // get the index of the RSU in the rsuIds vector
-
-                // check if the link between the veh and rsu is too old
-                if (simTime() - veh2RsuTime_[make_tuple(vehId, offRsuId)] > scheduler_->connOutdateInterval_)
-                {
-                    EV << NOW << " SchemeFwdBase::generateScheduleInstances - connection between Veh[nodeId=" << vehId << "] and RSU[nodeId=" 
-                        << offRsuId << "] is too old, remove the connection" << endl;
-                    outdatedLink.insert(offRsuId);
-                    continue;
-                }
-
-                if (veh2RsuRate_[make_tuple(vehId, offRsuId)] == 0)   // if the rate is 0, skip
-                {
-                    EV << NOW << " SchemeFwdBase::generateScheduleInstances - rate between Veh[nodeId=" << vehId << "] and RSU[nodeId=" 
-                        << offRsuId << "] is 0, remove the connection" << endl;
-                    outdatedLink.insert(offRsuId);
-                    continue;
-                }
+                if (rsuStatus_.find(offRsuId) == rsuStatus_.end())
+                    continue;  // if not found, skip
 
                 // find the accessible RSU from the offload RSU
                 map<MacNodeId, int> accessibleProRsus = reachableRsus_[offRsuId]; // {procRsuId: hopCount}, the accessible processing RSUs from the offload RSU
+                int offRsuIndex = rsuId2Index_[offRsuId];  // get the index of the RSU in the rsuIds vector
                 int maxRB = floor(rsuRBs_[offRsuIndex] * fairFactor_);  // maximum resource blocks for the offload RSU
                 for (int resBlocks = maxRB; resBlocks > 0; resBlocks -= rbStep_)   // enumerate the resource blocks, counting down
                 {
@@ -146,14 +127,6 @@ void SchemeFwdBase::generateScheduleInstances()
                     }
                 }
             }
-        }
-
-        // remove the outdated RSU from the access list
-        for (MacNodeId rsuId : outdatedLink)
-        {
-            vehAccessRsu_[vehId].erase(rsuId);
-            veh2RsuRate_.erase(make_tuple(vehId, rsuId));
-            veh2RsuTime_.erase(make_tuple(vehId, rsuId));
         }
     }
 }
@@ -251,6 +224,8 @@ double SchemeFwdBase::computeForwardingDelay(int hopCount, int dataSize)
      *      3. The switching delay at each RSU within the path, about 1 microsecond, too small, omit it
      *      4. (optional, not used here) The queuing delay at each RSU within the path
      */
-    
+    if (hopCount == 0)
+        return 0;
+
     return (dataSize / virtualLinkRate_) * hopCount;
 }

@@ -85,31 +85,14 @@ void SchemeSARound::generateScheduleInstances()
         }
 
         MacNodeId vehId = appInfo_[appId].vehId;
-        set<MacNodeId> outdatedLink = set<MacNodeId>(); // store the set of rsus that are outdated for this vehicle
-
         if (vehAccessRsu_.find(vehId) != vehAccessRsu_.end())     // if there exists RSU in access
         {
             for(MacNodeId rsuId : vehAccessRsu_[vehId])   // enumerate the RSUs in access
             {
-                int rsuIndex = rsuId2Index_[rsuId];  // get the index of the RSU in the rsuIds vector
+                if (rsuStatus_.find(rsuId) == rsuStatus_.end())
+                    continue;  // if not found, skip
                 
-                // check if the link between the veh and rsu is too old
-                if (simTime() - veh2RsuTime_[make_tuple(vehId, rsuId)] > scheduler_->connOutdateInterval_)
-                {
-                    EV << NOW << " SchemeSARound::generateScheduleInstances - connection between Veh[nodeId=" << vehId << "] and RSU[nodeId=" 
-                        << rsuId << "] is too old, remove the connection" << endl;
-                    outdatedLink.insert(rsuId);
-                    continue;
-                }
-
-                if (veh2RsuRate_[make_tuple(vehId, rsuId)] == 0)   // if the rate is 0, skip
-                {
-                    EV << NOW << " SchemeSARound::generateScheduleInstances - rate between Veh[nodeId=" << vehId << "] and RSU[nodeId=" 
-                        << rsuId << "] is 0, remove the connection" << endl;
-                    outdatedLink.insert(rsuId);
-                    continue;
-                }
-
+                int rsuIndex = rsuId2Index_[rsuId];  // get the index of the RSU in the rsuIds vector
                 for (int cmpUnits = rsuCUs_[rsuIndex]; cmpUnits > 0; cmpUnits -= cuStep_)   // enumerate the computation units, counting down
                 {
                     double exeDelay = computeExeDelay(appId, rsuId, cmpUnits);
@@ -141,14 +124,6 @@ void SchemeSARound::generateScheduleInstances()
                     }
                 }
             }
-        }
-
-        // remove the outdated RSU from the access list
-        for (MacNodeId rsuId : outdatedLink)
-        {
-            vehAccessRsu_[vehId].erase(rsuId);
-            veh2RsuRate_.erase(make_tuple(vehId, rsuId));
-            veh2RsuTime_.erase(make_tuple(vehId, rsuId));
         }
     }    
 }

@@ -27,7 +27,6 @@ SchemeBase::SchemeBase(Scheduler *scheduler)
       rsuStatus_(scheduler->rsuStatus_),
       vehAccessRsu_(scheduler->vehAccessRsu_),
       veh2RsuRate_(scheduler->veh2RsuRate_),
-      veh2RsuTime_(scheduler->veh2RsuTime_),
       rsuOnholdRbs_(scheduler->rsuOnholdRbs_),
       rsuOnholdCus_(scheduler->rsuOnholdCus_),
       ttiPeriod_(scheduler->ttiPeriod_),
@@ -99,35 +98,18 @@ void SchemeBase::generateScheduleInstances()
         }
 
         MacNodeId vehId = appInfo_[appId].vehId;
-        set<MacNodeId> outdatedLink = set<MacNodeId>(); // store the set of rsus that are outdated for this vehicle
-
         if (vehAccessRsu_.find(vehId) != vehAccessRsu_.end())     // if there exists RSU in access
         {
             for(MacNodeId rsuId : vehAccessRsu_[vehId])   // enumerate the RSUs in access
             {
+                // check if the RSU still exists
+                if (rsuStatus_.find(rsuId) == rsuStatus_.end())
+                    continue;  // if not found, skip
+
                 int rsuIndex = rsuId2Index_[rsuId];  // get the index of the RSU in the rsuIds vector
-                
-                // check if the link between the veh and rsu is too old
-                if (simTime() - veh2RsuTime_[make_tuple(vehId, rsuId)] > scheduler_->connOutdateInterval_)
-                {
-                    EV << NOW << " SchemeBase::generateScheduleInstances - connection between Veh[nodeId=" << vehId << "] and RSU[nodeId=" 
-                        << rsuId << "] is too old, remove the connection" << endl;
-                    outdatedLink.insert(rsuId);
-                    continue;
-                }
-
-                if (veh2RsuRate_[make_tuple(vehId, rsuId)] == 0)   // if the rate is 0, skip
-                {
-                    EV << NOW << " SchemeBase::generateScheduleInstances - rate between Veh[nodeId=" << vehId << "] and RSU[nodeId=" 
-                        << rsuId << "] is 0, remove the connection" << endl;
-                    outdatedLink.insert(rsuId);
-                    continue;
-                }
-
                 for (int cmpUnits = rsuCUs_[rsuIndex]; cmpUnits > 0; cmpUnits -= cuStep_)   // enumerate the computation units, counting down
                 {
                     double exeDelay = computeExeDelay(appId, rsuId, cmpUnits);
-
                     if (exeDelay + offloadOverhead_ >= period)   // if the execution delay is larger than the period, skip
                         break;
 
@@ -152,14 +134,6 @@ void SchemeBase::generateScheduleInstances()
                     }
                 }
             }
-        }
-
-        // remove the outdated RSU from the access list
-        for (MacNodeId rsuId : outdatedLink)
-        {
-            vehAccessRsu_[vehId].erase(rsuId);
-            veh2RsuRate_.erase(make_tuple(vehId, rsuId));
-            veh2RsuTime_.erase(make_tuple(vehId, rsuId));
         }
     }
 }
@@ -340,5 +314,18 @@ void SchemeBase::updateReachableRsus(const map<MacNodeId, map<MacNodeId, double>
         // Store the hop reachability information for the current RSU
         reachableRsus_[src] = visited;
     }
-}
 
+    // print the reachable RSUs for each RSU
+    for (const auto& kv : reachableRsus_)
+    {
+        MacNodeId rsuId = kv.first;
+        EV << "\tRSU[nodeId=" << rsuId << "] can reach:";
+        for (const auto& neighborKv : kv.second)
+        {
+            MacNodeId neighborId = neighborKv.first;
+            int hopCount = neighborKv.second;
+            EV << " nodeId=" << neighborId << " (hop=" << hopCount << "),";
+        }
+        EV << endl;
+    }
+}

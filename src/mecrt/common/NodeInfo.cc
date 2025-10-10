@@ -50,7 +50,6 @@ NodeInfo::NodeInfo()
     server_ = nullptr;
 
     rsuStatusTimer_ = nullptr;
-    rsuStatusUpdateInterval_ = 0.05; // in seconds, update to scheduler 50ms before next scheduling starts
 }
 
 
@@ -171,7 +170,7 @@ void NodeInfo::setGlobalSchedulerAddr(inet::Ipv4Address addr)
         EV_INFO << "NodeInfo: setGlobalSchedulerAddr - cancelled the rsuStatusTimer to reset the timer\n";
     }
     double timeNow = int(simTime().dbl() * 1000) / 1000.0;
-    double nextUpdateTime = timeNow + scheduleInterval_ - rsuStatusUpdateInterval_;
+    double nextUpdateTime = timeNow + scheduleInterval_;    // an offset of appStopInterval_ is already maintained in Scheduler
     scheduleAt(nextUpdateTime, rsuStatusTimer_);
     EV_INFO << "NodeInfo: setGlobalSchedulerAddr - scheduled the rsuStatusTimer at " 
         << nextUpdateTime << "\n";

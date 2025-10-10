@@ -914,24 +914,31 @@ void MecOspf::recomputeIndirectRouting()
         }
     }
 
-    globalSchedulerReady_ = true;
-    if (nodeInfo_)
-        nodeInfo_->setGlobalSchedulerAddr(schedulerAddr_);
-
     if (schedulerAddr_ == routerId_)
     {
         EV_INFO << "MecOspf:recomputeIndirectRouting - this node is selected as the scheduler node (neighbors=" << maxNeighbors << ")\n";
-        if (nodeInfo_) 
-            nodeInfo_->setIsGlobalScheduler(true);
-
-        if (scheduler_)
-            scheduler_->globalSchedulerInit();
     }
     else
     {
         int globalSchedulerNodeId = lsaPacketCache_[schedulerAddr_.getInt()]->getNodeId();
         EV_INFO << "MecOspf:recomputeIndirectRouting - selected gNB node " << globalSchedulerNodeId
         << " (IP address: " << schedulerAddr_ << ", neighbors=" << maxNeighbors << ") as the global scheduler.\n";
+    }
+
+    globalSchedulerReady_ = true;
+    if (nodeInfo_)
+        nodeInfo_->setGlobalSchedulerAddr(schedulerAddr_);
+
+    if (schedulerAddr_ == routerId_)
+    {
+        if (nodeInfo_) 
+            nodeInfo_->setIsGlobalScheduler(true);
+
+        if (scheduler_)
+        {   
+            scheduler_->globalSchedulerInit();
+            updateAdjListToScheduler();
+        }
     }
 }
 

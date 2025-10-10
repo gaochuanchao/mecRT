@@ -200,6 +200,10 @@ class Scheduler : public omnetpp::cSimpleModule
      */
     virtual void scheduleRequest();
 
+    /**
+     * Remove the outdated vehicle-RSU connection, RSU status, and vehicle requests
+     */
+    virtual void removeOutdatedInfo();
 
     /***
      * Send the grant to the vehicle

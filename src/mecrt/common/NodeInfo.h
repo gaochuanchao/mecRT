@@ -68,7 +68,6 @@ class NodeInfo : public omnetpp::cSimpleModule
 
         // =========== timers and self-messages ===========
         cMessage *rsuStatusTimer_ = nullptr;
-        double rsuStatusUpdateInterval_ = 0.05; // in seconds, update to scheduler 50ms before next scheduling starts
 
     protected:
         virtual void initialize(int stage) override;

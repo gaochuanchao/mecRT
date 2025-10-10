@@ -110,6 +110,19 @@ void Scheduler::initialize(int stage)
         vecPendingAppCountSignal_ = registerSignal("pendingAppCount");
         vecGrantedAppCountSignal_ = registerSignal("grantedAppCount");
 
+        
+        WATCH(cuStep_);
+        WATCH(rbStep_);
+        WATCH(fairFactor_);
+        WATCH(schedulingInterval_);
+        WATCH(periodicScheduling_);
+        WATCH(appStopInterval_);
+        WATCH(rescheduleAll_);
+        WATCH(countExeTime_);
+        WATCH(enableBackhaul_);
+        WATCH(maxHops_);
+        WATCH(virtualLinkRate_);
+
         if (enableInitDebug_)
             std::cout << "Scheduler::initialize - stage: INITSTAGE_LOCAL - ends" << std::endl;
     }
@@ -196,23 +209,13 @@ void Scheduler::initialize(int stage)
         preSchedCheck_->setSchedulingPriority(1);        // after other messages
 
         newAppPending_ = false;
-
-        // if (periodicScheduling_)
-        // {
-        //     scheduleAt(simTime() + schedulingInterval_, schedStarter_);
-        //     scheduleAt(simTime() + schedulingInterval_ - appStopInterval_, preSchedCheck_);
-        // }
             
         WATCH_SET(allocatedApps_);
         WATCH_SET(unscheduledApps_);
         WATCH_SET(appsWaitInitFb_);
         WATCH(schemeName_);
-        WATCH(cuStep_);
-        WATCH(rbStep_);
-        WATCH(fairFactor_);
         WATCH(localPort_);
         WATCH(socketId_);
-        WATCH(schedulingInterval_);
 
         if (enableInitDebug_)
             std::cout << "Scheduler::initialize - stage: INITSTAGE_LAST - ends" << std::endl;
@@ -252,6 +255,7 @@ void Scheduler::handleMessage(cMessage *msg)
                 schemeExecTime_ = SimTime(0, SIMTIME_US);
                 schedulingTime_ = SimTime(0, SIMTIME_US);
                 
+                removeOutdatedInfo();
                 // record the real execution time of the scheduling scheme
                 auto start = chrono::steady_clock::now();
                 scheduleRequest();
@@ -392,7 +396,7 @@ void Scheduler::globalSchedulerReset()
     // this function is called by other modules (the nodeInfo_), so we need to use
     // Enter_Method or Enter_Method_Silent to tell the simulation kernel "switch context to this module"
     Enter_Method("globalSchedulerReset");
-    EV << "Scheduler::globalSchedulerReset - do the necessary finishing operation for previous global scheduler" << std::endl;
+    EV << "Scheduler::globalSchedulerReset - reset the scheduler status" << std::endl;
 
     // cancel the scheduled self message
     if (schedStarter_->isScheduled())
@@ -716,32 +720,6 @@ void Scheduler::scheduleRequest()
         return;
     }
 
-    // ======== remove the expired request ============
-    // check the unscheduled request, if the vehicle left the simulation or the stop time is reached, remove the request
-    set<AppId> toRemove = set<AppId>();
-    for (AppId appId : unscheduledApps_)
-    {
-        MacNodeId vehId = appInfo_[appId].vehId;
-        if (binder_->getOmnetId(vehId) == 0)    // check if the vehicle left the simulation or not
-        {
-            EV << NOW << " Scheduler::scheduleRequest - vehicle[nodeId=" << vehId << "] left the simulation, remove the request" << endl;
-            toRemove.insert(appId);
-        }
-        simtime_t stopTime = appInfo_[appId].stopTime;
-        simtime_t period = appInfo_[appId].period;
-        simtime_t gap = max(period, schedulingInterval_);
-        if (simTime() >= (stopTime - gap))  // if the stop time is reached
-        {
-            EV << NOW << " Scheduler::scheduleRequest - application " << appId << " stop time reached, remove the request" << endl;
-            toRemove.insert(appId);
-        }
-    }
-    for (AppId appId : toRemove)
-    {
-        unscheduledApps_.erase(appId);
-        appInfo_.erase(appId);
-    }
-
     emit(vecPendingAppCountSignal_, int(unscheduledApps_.size()));
 
     vecSchedule_.clear();
@@ -803,6 +781,84 @@ void Scheduler::scheduleRequest()
     
     emit(vecGrantedAppCountSignal_, grantedAppCount);
     emit(vecSavedEnergySignal_, totalEnergy);
+}
+
+
+void Scheduler::removeOutdatedInfo()
+{
+    // ======== remove the expired request ============
+    // check the unscheduled request, if the vehicle left the simulation or the stop time is reached, remove the request
+    set<AppId> toRemove = set<AppId>();
+    for (AppId appId : unscheduledApps_)
+    {
+        MacNodeId vehId = appInfo_[appId].vehId;
+        if (binder_->getOmnetId(vehId) == 0)    // check if the vehicle left the simulation or not
+        {
+            EV << NOW << " Scheduler::scheduleRequest - vehicle[nodeId=" << vehId << "] left the simulation, remove the request" << endl;
+            toRemove.insert(appId);
+        }
+        simtime_t stopTime = appInfo_[appId].stopTime;
+        simtime_t period = appInfo_[appId].period;
+        simtime_t gap = max(period, schedulingInterval_);
+        if (simTime() >= (stopTime - gap))  // if the stop time is reached
+        {
+            EV << NOW << " Scheduler::scheduleRequest - application " << appId << " stop time reached, remove the request" << endl;
+            toRemove.insert(appId);
+        }
+    }
+    for (AppId appId : toRemove)
+    {
+        unscheduledApps_.erase(appId);
+        appInfo_.erase(appId);
+    }
+
+    // ======== remove the outdated UE-RSU connection ============
+    map<MacNodeId, set<MacNodeId>> vehAccessRsuCopy = vehAccessRsu_;
+    for (auto const&vr : vehAccessRsuCopy)
+    {
+        MacNodeId vehId = vr.first;
+        for (MacNodeId rsuId : vr.second)
+        {
+            auto link = make_tuple(vehId, rsuId);
+            if ((simTime() - veh2RsuTime_[link] > connOutdateInterval_) || (veh2RsuRate_[link] <= 0))
+            {
+                EV << NOW << " Scheduler::removeOutdatedInfo - connection between vehicle[nodeId=" << vehId 
+                    << "] and RSU[nodeId=" << rsuId << "] expired, remove the connection info" << endl;
+                veh2RsuRate_.erase(link);
+                veh2RsuTime_.erase(link);
+                vehAccessRsu_[vehId].erase(rsuId);
+            }
+        }
+
+        if (vehAccessRsu_[vehId].empty())
+            vehAccessRsu_.erase(vehId);
+    }
+
+    // ======== remove the RSU that is outdated ============
+    set<MacNodeId> rsuToRemove = set<MacNodeId>();
+    for (auto &res : rsuStatus_)
+    {        
+        MacNodeId rsuId = res.first;
+        simtime_t lastBandUpdateTime = res.second.bandUpdateTime;
+        simtime_t lastCmpUpdateTime = res.second.cmpUpdateTime;
+
+        if (simTime() - lastBandUpdateTime > 2 * appStopInterval_)
+            res.second.bands = 0;  // the NIC may be turned off, so set the bands to 0
+
+        if (simTime() - lastCmpUpdateTime > 2 * appStopInterval_)
+            res.second.cmpUnits = 0;  // the computing unit may be turned off, so set the cmpUnits to 0
+
+        if ((simTime() - lastBandUpdateTime > 2 * appStopInterval_) && (simTime() - lastCmpUpdateTime > 2 * appStopInterval_))
+        {
+            EV << NOW << " Scheduler::removeOutdatedInfo - RSU[nodeId=" << rsuId << "] status expired, remove the RSU info" << endl;
+            rsuToRemove.insert(rsuId);
+        }
+    }
+
+    for (MacNodeId rsuId : rsuToRemove)
+    {
+        rsuStatus_.erase(rsuId);
+    }
 }
 
 

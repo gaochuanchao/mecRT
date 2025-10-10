@@ -39,7 +39,6 @@ class SchemeBase
     map<MacNodeId, RsuResource> & rsuStatus_;  // reference to the RSU resource status
     map<MacNodeId, set<MacNodeId>> & vehAccessRsu_;  // reference to the vehicle access RSU mapping
     map<tuple<MacNodeId, MacNodeId>, int> & veh2RsuRate_;  // reference to the vehicle to RSU rate mapping
-    map<tuple<MacNodeId, MacNodeId>, omnetpp::simtime_t> & veh2RsuTime_;  // reference to the vehicle to RSU time mapping
     map<MacNodeId, int> & rsuOnholdRbs_;    // reference to the RSU onhold resource blocks
     map<MacNodeId, int> & rsuOnholdCus_;    // reference to the RSU onhold computing units
     double ttiPeriod_ = 0.001; // duration for each TTI
