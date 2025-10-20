@@ -20,4 +20,6 @@ simple NodeInfo
         @display("i=block/control");
 
         string nodeType; // GNODEB, UE
+        double ifFailureProb = 0.0; // probability of interface failure per second
+        double nodeFailureProb = 0.0; // probability of node failure per second
 }

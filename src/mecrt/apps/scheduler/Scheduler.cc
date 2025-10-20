@@ -145,6 +145,7 @@ void Scheduler::initialize(int stage)
             nodeInfo_ = check_and_cast<NodeInfo*>(getModuleByPath(par("nodeInfoModulePath").stringValue()));
             nodeInfo_->setLocalSchedulerPort(localPort_);
             nodeInfo_->setScheduleInterval(schedulingInterval_.dbl());
+            nodeInfo_->setAppStopInterval(appStopInterval_.dbl());
             nodeInfo_->setLocalSchedulerSocketId(socketId_);
         }
         catch (std::exception &e)
@@ -567,10 +568,10 @@ void Scheduler::recordRsuStatus(cMessage *msg)
     }
 
     MacNodeId vehId = rsuStat->getVehId();
-    if (vehId == 0) // a status update after network topology change, no need to update the connection
+    if (vehId == 0) // a status update from node only, no need to update the connection
     {
         EV << NOW << " Scheduler::recordRsuStatus - RSU[" << gnbIndex << "] nodeId=" << gnbId 
-            << " status update after network topology change, no need to update the connection!" << endl;
+            << " status update from node only, no need to update the connection!" << endl;
         return;
     }
 

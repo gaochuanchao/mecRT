@@ -60,6 +60,7 @@ class NodeInfo : public omnetpp::cSimpleModule
         int localSchedulerPort_; // [Scheduler] the port number used by the local scheduler module
         int localSchedulerSocketId_; // [Scheduler] the socket id used by the local scheduler module
         double scheduleInterval_; // in seconds
+        double appStopInterval_; // in seconds
 
         // =========== reference to other modules ===========
         GnbMac* gnbMac_ = nullptr;
@@ -68,6 +69,8 @@ class NodeInfo : public omnetpp::cSimpleModule
 
         // =========== timers and self-messages ===========
         cMessage *rsuStatusTimer_ = nullptr;
+        cMessage *nodeDownTimer_ = nullptr;
+        cMessage *ifDownTimer_ = nullptr;
 
     protected:
         virtual void initialize(int stage) override;
@@ -125,7 +128,8 @@ class NodeInfo : public omnetpp::cSimpleModule
         double getScheduleInterval() {return scheduleInterval_;}
         void setLocalSchedulerSocketId(int id) {localSchedulerSocketId_ = id;}
         int getLocalSchedulerSocketId() {return localSchedulerSocketId_;}
-
+        void setAppStopInterval(double interval) {appStopInterval_ = interval;}
+        double getAppStopInterval() {return appStopInterval_;}
 
         // modules reference related methods
         void setGnbMac(GnbMac* mac) {gnbMac_ = mac;}

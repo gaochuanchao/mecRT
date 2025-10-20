@@ -261,6 +261,16 @@ void MecOspf::handleMessageWhenUp(cMessage *msg)
         Packet *packet = check_and_cast<Packet *>(msg);
         const char *pname = packet->getName();
 
+        // check arrival interface
+        NetworkInterface *arrivalIf = ift_->getInterfaceById(packet->findTag<InterfaceInd>()->getInterfaceId());
+        if (arrivalIf->getState() != NetworkInterface::UP) {
+            std::cerr << NOW << " MecOspf:processHello - received packet on down interface " << arrivalIf->getInterfaceName() << ", delete it!\n";
+            delete packet;
+            packet = nullptr;
+            return;
+        }
+
+        // process based on packet type
         if (pname && strcmp(pname, "OspfHello") == 0) {
             EV_INFO << "MecOspf:handleMessageWhenUp - OspfHello received\n";
             processHello(packet);
@@ -320,7 +330,8 @@ void MecOspf::handleSelfTimer(cMessage *msg)
 
             // update our own LSA packet cache
             selfLsa_->setSeqNum(seqNum_);
-            selfLsa_->setInstallTime(simTime());
+            simtime_t installTime = simTime();
+            selfLsa_->setInstallTime(installTime);
             // reset and add neighbor list to LSA chunk
             int neighborCount = neighbors_.size();
             selfLsa_->setNeighborArraySize(neighborCount);
@@ -341,14 +352,18 @@ void MecOspf::handleSelfTimer(cMessage *msg)
 
             if (!routeComputationTimer_->isScheduled())
             {
-                scheduleAt(simTime() + routeComputationDelay_, routeComputationTimer_);
-                largestLsaTime_ = simTime();
+                scheduleAt(installTime + routeComputationDelay_, routeComputationTimer_);
+                largestLsaTime_ = installTime;
+
+                EV << "MecOspf:handleSelfTimer - scheduled route recomputation at " << (installTime + routeComputationDelay_) << "\n";
             }
-            else if (routeComputationTimer_->isScheduled() && largestLsaTime_ < simTime())
+            else if (routeComputationTimer_->isScheduled() && largestLsaTime_ < installTime)
             {
-                largestLsaTime_ = simTime();
+                largestLsaTime_ = installTime;
                 cancelEvent(routeComputationTimer_);
-                scheduleAfter(routeComputationDelay_, routeComputationTimer_);
+                scheduleAt(installTime + routeComputationDelay_, routeComputationTimer_);
+
+                EV << "MecOspf:handleSelfTimer - rescheduled route recomputation at " << (installTime + routeComputationDelay_) << "\n";
             }
         }
     }
@@ -491,11 +506,6 @@ void MecOspf::processHello(Packet *packet)
     }
     
     NetworkInterface *arrivalIf = ift_->getInterfaceById(packet->findTag<InterfaceInd>()->getInterfaceId());
-    if (!arrivalIf) {
-        std::cerr << NOW << " MecOspf:processHello - received packet on unknown interface\n";
-        return; 
-    }
-
     EV_INFO << "MecOspf:processHello - received Hello feedback from " << neighborIp << " (" << ospfHelloChunk->getSenderIp() << ")"
             << " via interface " << arrivalIf->getInterfaceName() << "\n";
 
@@ -655,18 +665,23 @@ void MecOspf::handleReceivedLsa(Packet *packet)
         }
 
         // schedule route recomputation after a short delay to ensure the propagation is complete
+        simtime_t lsaInstallTime = lsa->getInstallTime();
         if (!routeComputationTimer_->isScheduled())
         {
-            scheduleAfter(routeComputationDelay_, routeComputationTimer_);
-            largestLsaTime_ = simTime();
+            scheduleAt(lsaInstallTime + routeComputationDelay_, routeComputationTimer_);
+            largestLsaTime_ = lsaInstallTime;
+
+            EV << "MecOspf:handleReceivedLsa - scheduled route recomputation at " << (lsaInstallTime + routeComputationDelay_) << "\n";
         }
-        else if (routeComputationTimer_->isScheduled() && largestLsaTime_ < lsa->getInstallTime())
+        else if (routeComputationTimer_->isScheduled() && largestLsaTime_ < lsaInstallTime)
         {
             // if some LSA is generated at a later time, we can cancel and reschedule
             // the routeComputationTimer_ to a later time to avoid multiple recomputations
-            largestLsaTime_ = lsa->getInstallTime();
+            largestLsaTime_ = lsaInstallTime;
             cancelEvent(routeComputationTimer_);
             scheduleAt(largestLsaTime_ + routeComputationDelay_, routeComputationTimer_);
+
+            EV << "MecOspf:handleReceivedLsa - rescheduled route recomputation at " << (largestLsaTime_ + routeComputationDelay_) << "\n";
         }
     } else {
         EV_INFO << "MecOspf:handleReceivedLsa - received old LSA from " << Ipv4Address(originKey) << ", ignore it!\n";

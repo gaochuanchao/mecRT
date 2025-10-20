@@ -43,6 +43,7 @@ NodeInfo::NodeInfo()
     localSchedulerPort_ = -1;
     globalSchedulerAddr_ = inet::Ipv4Address::UNSPECIFIED_ADDRESS;
     scheduleInterval_ = 10.0; // default 10 seconds
+    appStopInterval_ = 0.05; // default 0.05 seconds
     localSchedulerSocketId_ = -1;
 
     gnbMac_ = nullptr;
@@ -50,6 +51,8 @@ NodeInfo::NodeInfo()
     server_ = nullptr;
 
     rsuStatusTimer_ = nullptr;
+    nodeDownTimer_ = nullptr;
+    ifDownTimer_ = nullptr;
 }
 
 
@@ -100,6 +103,7 @@ void NodeInfo::initialize(int stage)
         WATCH(globalSchedulerAddr_);
         WATCH(localSchedulerPort_);
         WATCH(scheduleInterval_);
+        WATCH(appStopInterval_);
         WATCH(localSchedulerSocketId_);
 
         if (enableInitDebug_)
@@ -118,8 +122,18 @@ void NodeInfo::handleMessage(omnetpp::cMessage *msg)
             // send RSU status to the global scheduler
             if (!globalSchedulerAddr_.isUnspecified())
             {
+                // check if the time is too early (the NEXT_SCHEDULING_TIME might be updated by other global scheduler)
+                double nextUpdateTime = NEXT_SCHEDULING_TIME - appStopInterval_;
+                if (simTime() < nextUpdateTime)
+                {
+                    EV << "NodeInfo:handleMessage - the time is too early to send RSU status update, reschedule rsuStatusTimer at "
+                        << nextUpdateTime << "\n";
+                    scheduleAt(nextUpdateTime, rsuStatusTimer_);
+                    return;
+                }
+
                 recoverRsuStatus();
-                scheduleAt(simTime() + scheduleInterval_, rsuStatusTimer_);
+                scheduleAt(nextUpdateTime + scheduleInterval_, rsuStatusTimer_);
             }
         }
         return;
