@@ -27,9 +27,9 @@ class OspfHello;
  * class OspfHello extends inet::FieldsChunk
  * {
  *     uint32 senderIp;
- *     uint32 neighborIp;
+ *     bool isFeedback;
  * 
- *     chunkLength = inet::B(8);
+ *     chunkLength = inet::B(5);
  * }
  * </pre>
  */
@@ -37,7 +37,7 @@ class OspfHello : public ::inet::FieldsChunk
 {
   protected:
     uint32_t senderIp = 0;
-    uint32_t neighborIp = 0;
+    bool isFeedback_ = false;
 
   private:
     void copy(const OspfHello& other);
@@ -57,8 +57,8 @@ class OspfHello : public ::inet::FieldsChunk
     virtual uint32_t getSenderIp() const;
     virtual void setSenderIp(uint32_t senderIp);
 
-    virtual uint32_t getNeighborIp() const;
-    virtual void setNeighborIp(uint32_t neighborIp);
+    virtual bool isFeedback() const;
+    virtual void setIsFeedback(bool isFeedback);
 };
 
 inline void doParsimPacking(omnetpp::cCommBuffer *b, const OspfHello& obj) {obj.parsimPack(b);}

@@ -147,6 +147,8 @@ void Scheduler::initialize(int stage)
             nodeInfo_->setScheduleInterval(schedulingInterval_.dbl());
             nodeInfo_->setAppStopInterval(appStopInterval_.dbl());
             nodeInfo_->setLocalSchedulerSocketId(socketId_);
+
+            nodeInfo_->setScheduler(this);
         }
         catch (std::exception &e)
         {

@@ -25,6 +25,7 @@ using namespace inet;
 class NodePacketController;
 class GnbMac;
 class Server;
+class Scheduler;
 
 /**
  * @class NodeInfo
@@ -41,16 +42,16 @@ class NodeInfo : public omnetpp::cSimpleModule
 
         // =========== Routing related ===========
         inet::Ipv4Address nodeAddr_; // [MecOspf, UeMac] IPv4 address of the ipv4 module in this node
-        bool rtState_; // [MecOspf] whether the routing table has been set up by the routing protocol (e.g., OSPF)
+        // bool rtState_; // [MecOspf] whether the routing table has been set up by the routing protocol (e.g., OSPF)
         int npcSocketId_; // [NodePacketController] the socket id used by the NodePacketController module
 
         // =========== Wireless NIC module related ===========
         MacNodeId nodeId_;    // [GnbMac, UeMac] macNodeId of the wireless NIC
         int nicInterfaceId_;  // [MecIP2Nic] the interface id of the NIC module
-        bool nicState_; // whether the NIC is active (true) or inactive (false), used for fault simulation
+        // bool nicState_; // whether the NIC is active (true) or inactive (false), used for fault simulation
 
         // =========== Server module related ===========
-        bool serverState_; // whether the server is active (true) or inactive (false), used for fault simulation
+        // bool serverState_; // whether the server is active (true) or inactive (false), used for fault simulation
         int serverPort_; // [Server] the port number used by the server module
         int serverSocketId_; // [Server] the socket id used by the server module
 
@@ -66,17 +67,30 @@ class NodeInfo : public omnetpp::cSimpleModule
         GnbMac* gnbMac_ = nullptr;
         NodePacketController* npc_ = nullptr;
         Server* server_ = nullptr;
+        IInterfaceTable *ift_ = nullptr;    // added by the OSPF module to manage interfaces UP/DOWN
+        Scheduler* scheduler_ = nullptr; // reference to the scheduler module
 
         // =========== timers and self-messages ===========
         cMessage *rsuStatusTimer_ = nullptr;
+
+        // =========== link and node failure related ===========
         cMessage *nodeDownTimer_ = nullptr;
         cMessage *ifDownTimer_ = nullptr;
+        // double ifFailProb_; // probability of interface failure
+        // double nodeFailProb_; // probability of node failure
+        double ifFailTime_; // time when the interface is down
+        double nodeFailTime_; // time when the node is down
+        int failedIfId_; // the interface id that is down, -1 means no interface is down
 
     protected:
         virtual void initialize(int stage) override;
         virtual int numInitStages() const override { return NUM_INIT_STAGES; }
 
         virtual void handleMessage(omnetpp::cMessage *msg) override;
+
+        virtual void handleNodeStatusTimer();
+        virtual void handleIfDownTimer();
+        virtual void handleNodeDownTimer();
 
     public:
         NodeInfo();
@@ -92,9 +106,9 @@ class NodeInfo : public omnetpp::cSimpleModule
         // methods to set/get routing related information
         void setNodeAddr(inet::Ipv4Address addr) {nodeAddr_ = addr;}
         inet::Ipv4Address getNodeAddr() {return nodeAddr_;}
-        void setRtState(bool state) {rtState_ = state;}
-        bool getRtState() {return rtState_;}
-        bool isRtReady() {return rtState_;}
+        // void setRtState(bool state) {rtState_ = state;}
+        // bool getRtState() {return rtState_;}
+        // bool isRtReady() {return rtState_;}
 
         void setNpcSocketId(int id) {npcSocketId_ = id;}
         int getNpcSocketId() {return npcSocketId_;}
@@ -104,18 +118,20 @@ class NodeInfo : public omnetpp::cSimpleModule
         MacNodeId getNodeId() {return nodeId_;}
         void setNicInterfaceId(int id) {nicInterfaceId_ = id;}
         int getNicInterfaceId() {return nicInterfaceId_;}
-        void setNicState(bool state) {nicState_ = state;}
-        bool getNicState() {return nicState_;}
-        bool isNicActive() {return nicState_;}
+        // void setNicState(bool state) {nicState_ = state;}
+        // bool getNicState() {return nicState_;}
+        // bool isNicActive() {return nicState_;}
 
         // methods to set/get server module related information
-        void setServerState(bool state) {serverState_ = state;}
-        bool getServerState() {return serverState_;}
-        bool isServerActive() {return serverState_;}
+        // void setServerState(bool state) {serverState_ = state;}
+        // bool getServerState() {return serverState_;}
+        // bool isServerActive() {return serverState_;}
         void setServerPort(int port) {serverPort_ = port;}
         int getServerPort() {return serverPort_;}
         void setServerSocketId(int id) {serverSocketId_ = id;}
         int getServerSocketId() {return serverSocketId_;}
+        void setScheduler(Scheduler* scheduler) {scheduler_ = scheduler;}
+        Scheduler* getScheduler() {return scheduler_;}
 
         // methods to set/get scheduler module related information
         void setIsGlobalScheduler(bool isGlobal) {isGlobalScheduler_ = isGlobal;}
@@ -139,6 +155,7 @@ class NodeInfo : public omnetpp::cSimpleModule
         virtual void recoverServiceRequests();
         void setServer(Server* server) {server_ = server;}
         virtual void releaseServerResources();
+        void setIft(IInterfaceTable* ift) {ift_ = ift;}
 };
 
 #endif /* _MECRT_COMMON_NODEINFO_H_ */

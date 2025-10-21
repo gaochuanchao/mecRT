@@ -18,7 +18,7 @@ import inet.common.packet.chunk.Chunk;
 class OspfHello extends inet::FieldsChunk
 {
     uint32 senderIp;
-    uint32 neighborIp;
+    bool isFeedback;
 
-    chunkLength = inet::B(8);
+    chunkLength = inet::B(5);
 }

@@ -113,11 +113,8 @@ class MecOspf : public RoutingProtocolBase
 
     // ======= Phrase 1: Neighbor Discovery =======
     cMessage *helloTimer_ = nullptr;
-	cMessage *helloFeedbackTimer_ = nullptr; // not used now
-
-	simtime_t helloFeedbackDelay_ = 0.003; // seconds, delay to send Hello in response to received Hello (not used now)
-    simtime_t helloInterval_ = 5;       // seconds
-    simtime_t neighborTimeout_ = 15;    // seconds (dead interval)
+    simtime_t helloInterval_;       // seconds
+    simtime_t neighborTimeout_;    // seconds (dead interval)
 
     bool neighborChanged_ = false; // flag to indicate neighbor change happened (if yes, need to send LSA)
     vector<uint32_t> newNeighbors_; // count of newly discovered neighbors
@@ -155,6 +152,7 @@ class MecOspf : public RoutingProtocolBase
     virtual void processHello(Packet *packet); // handle incoming Hello
 
 	// ====== LSA protocol (not used now) ======
+    virtual void handleLsaTimer();                                 // handle LSA timer firing
 	virtual void updateLsaToNetwork();                             // update our own LSA to the whole network
 	virtual void handleReceivedLsa(Packet *packet);                        // handle incoming LSA packets
     virtual void sendLsa(inet::Ptr<const OspfLsa> lsa, uint32_t neighborKey); // send LSA to a specific neighbor
@@ -174,7 +172,6 @@ class MecOspf : public RoutingProtocolBase
     uint32_t ipKey(const Ipv4Address &a) const { return a.getInt(); }
     Ipv4Address getLocalAddressOnGate(cGate *gate);   // get local IP associated with a gate
     virtual void resetGlobalScheduler(); // reset the global scheduler info
-
 
   public:
     MecOspf();

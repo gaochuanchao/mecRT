@@ -20,6 +20,8 @@ simple NodeInfo
         @display("i=block/control");
 
         string nodeType; // GNODEB, UE
-        double ifFailureProb = 0.0; // probability of interface failure per second
-        double nodeFailureProb = 0.0; // probability of node failure per second
+        // double ifFailProb = default(0.0); // probability of interface failure per second
+        // double nodeFailProb = default(0.0); // probability of node failure per second
+        double ifFailTime = default(0.0); // time when the interface is down
+        double nodeFailTime = default(0.0); // time when the node is down
 }

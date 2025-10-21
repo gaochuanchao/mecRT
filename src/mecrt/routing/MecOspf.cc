@@ -51,7 +51,6 @@ Define_Module(MecOspf);
 MecOspf::MecOspf()
 {
     helloTimer_ = nullptr;
-    helloFeedbackTimer_ = nullptr;
     lsaTimer_ = nullptr;
     routeComputationTimer_ = nullptr;
 
@@ -74,11 +73,6 @@ MecOspf::~MecOspf()
     if (helloTimer_) {
         cancelAndDelete(helloTimer_);
         helloTimer_ = nullptr;
-    }
-
-    if (helloFeedbackTimer_) {
-        cancelAndDelete(helloFeedbackTimer_);
-        helloFeedbackTimer_ = nullptr;
     }
 
     if (lsaTimer_) {
@@ -134,13 +128,11 @@ void MecOspf::initialize(int stage)
         routeComputationTimer_ = new cMessage("routeComputationTimer");
 
         lsaWaitInterval_ = par("lsaWaitInterval").doubleValue();
-        helloFeedbackDelay_ = par("helloFeedbackDelay").doubleValue();
         helloInterval_ = par("helloInterval").doubleValue();
-        neighborTimeout_ = par("neighborTimeout").doubleValue();
+        neighborTimeout_ = 2 * helloInterval_; // set dead interval as 2*helloInterval
         routeComputationDelay_ = par("routeComputationDelay").doubleValue();
 
         WATCH(lsaWaitInterval_);
-        WATCH(helloFeedbackDelay_);
         WATCH(helloInterval_);
         WATCH(neighborTimeout_);
         WATCH(routeComputationDelay_);
@@ -211,6 +203,9 @@ void MecOspf::initialize(int stage)
                 ie->joinMulticastGroup(Ipv4Address::ALL_OSPF_DESIGNATED_ROUTERS_MCAST);
             }
 
+            if (nodeInfo_)
+                nodeInfo_->setIft(ift_);
+
             EV_INFO << "MecOspf:initialize - interfaceTableModule found\n";
         } catch (cException &e) {
             throw cRuntimeError("MecOspf:initialize - cannot find interfaceTableModule param\n");
@@ -264,7 +259,7 @@ void MecOspf::handleMessageWhenUp(cMessage *msg)
         // check arrival interface
         NetworkInterface *arrivalIf = ift_->getInterfaceById(packet->findTag<InterfaceInd>()->getInterfaceId());
         if (arrivalIf->getState() != NetworkInterface::UP) {
-            std::cerr << NOW << " MecOspf:processHello - received packet on down interface " << arrivalIf->getInterfaceName() << ", delete it!\n";
+            EV_WARN << NOW << " MecOspf:processHello - received packet on down interface " << arrivalIf->getInterfaceName() << ", delete it!\n";
             delete packet;
             packet = nullptr;
             return;
@@ -311,61 +306,24 @@ void MecOspf::handleSelfTimer(cMessage *msg)
         newNeighbors_.clear();
         // send Hellos
         sendInitialHello();
-        // detect neighbor timeouts (link failure)
-        checkNeighborTimeouts();
         // reschedule next Hello, continuous monitor neighbor accessibility
         scheduleAt(simTime() + helloInterval_, helloTimer_);
 
         // also schedule LSA synchronization timer
-        if (!lsaTimer_->isScheduled())
-            scheduleAt(simTime() + lsaWaitInterval_, lsaTimer_);
+        if (lsaTimer_->isScheduled())
+            cancelEvent(lsaTimer_);
+
+        scheduleAt(simTime() + lsaWaitInterval_, lsaTimer_);
     }
     else if (msg == lsaTimer_)
     {
         EV_INFO << "MecOspf::handleSelfTimer - LSA timer fired at " << simTime() << "\n";
 
-        // if neighbor change happened, send LSA to neighbors
-        if (neighborChanged_) {
-            seqNum_++;
+        // detect neighbor timeouts (link failure)
+        checkNeighborTimeouts();
 
-            // update our own LSA packet cache
-            selfLsa_->setSeqNum(seqNum_);
-            simtime_t installTime = simTime();
-            selfLsa_->setInstallTime(installTime);
-            // reset and add neighbor list to LSA chunk
-            int neighborCount = neighbors_.size();
-            selfLsa_->setNeighborArraySize(neighborCount);
-            selfLsa_->setCostArraySize(neighborCount);
-            int idx = 0;
-            for (const auto& n : neighbors_) {
-                selfLsa_->setNeighbor(idx, n.second.destIp.getInt());
-                selfLsa_->setCost(idx, n.second.cost);
-                idx++;
-            }
-
-            // send LSA to neighbors
-            updateLsaToNetwork();
-
-            // reset neighbor change flag and clear new neighbor list
-            neighborChanged_ = false;
-            newNeighbors_.clear();
-
-            if (!routeComputationTimer_->isScheduled())
-            {
-                scheduleAt(installTime + routeComputationDelay_, routeComputationTimer_);
-                largestLsaTime_ = installTime;
-
-                EV << "MecOspf:handleSelfTimer - scheduled route recomputation at " << (installTime + routeComputationDelay_) << "\n";
-            }
-            else if (routeComputationTimer_->isScheduled() && largestLsaTime_ < installTime)
-            {
-                largestLsaTime_ = installTime;
-                cancelEvent(routeComputationTimer_);
-                scheduleAt(installTime + routeComputationDelay_, routeComputationTimer_);
-
-                EV << "MecOspf:handleSelfTimer - rescheduled route recomputation at " << (installTime + routeComputationDelay_) << "\n";
-            }
-        }
+        // update LSA if needed
+        handleLsaTimer();
     }
     else if (msg == routeComputationTimer_)
     {
@@ -378,6 +336,58 @@ void MecOspf::handleSelfTimer(cMessage *msg)
     {
         EV_WARN << "MecOspf::handleSelfTimer - unknown self-message: " << msg->getName() << ", delete\n";
         delete msg;
+    }
+}
+
+
+void MecOspf::handleLsaTimer()
+{
+    // if neighbor change happened, send LSA to neighbors
+    if (!neighborChanged_) {
+        EV << "MecOspf:handleSelfTimer - no neighbor change detected, skip LSA update\n";
+        return;
+    }
+
+    EV << "MecOspf:handleSelfTimer - neighbor change detected, updating LSA and sending to network\n";
+
+    seqNum_++;
+
+    // update our own LSA packet cache
+    selfLsa_->setSeqNum(seqNum_);
+    simtime_t installTime = simTime();
+    selfLsa_->setInstallTime(installTime);
+    // reset and add neighbor list to LSA chunk
+    int neighborCount = neighbors_.size();
+    selfLsa_->setNeighborArraySize(neighborCount);
+    selfLsa_->setCostArraySize(neighborCount);
+    int idx = 0;
+    for (const auto& n : neighbors_) {
+        selfLsa_->setNeighbor(idx, n.second.destIp.getInt());
+        selfLsa_->setCost(idx, n.second.cost);
+        idx++;
+    }
+
+    // send LSA to neighbors
+    updateLsaToNetwork();
+
+    // reset neighbor change flag and clear new neighbor list
+    neighborChanged_ = false;
+    newNeighbors_.clear();
+
+    if (!routeComputationTimer_->isScheduled())
+    {
+        scheduleAt(installTime + routeComputationDelay_, routeComputationTimer_);
+        largestLsaTime_ = installTime;
+
+        EV << "MecOspf:handleSelfTimer - scheduled route recomputation at " << (installTime + routeComputationDelay_) << "\n";
+    }
+    else if (routeComputationTimer_->isScheduled() && largestLsaTime_ < installTime)
+    {
+        largestLsaTime_ = installTime;
+        cancelEvent(routeComputationTimer_);
+        scheduleAt(installTime + routeComputationDelay_, routeComputationTimer_);
+
+        EV << "MecOspf:handleSelfTimer - rescheduled route recomputation at " << (installTime + routeComputationDelay_) << "\n";
     }
 }
 
@@ -453,7 +463,7 @@ void MecOspf::sendHelloFeedback(Packet *pkt)
     // Add a payload marker so it isn't empty (optional)
     auto ospfHelloFeedback = makeShared<OspfHello>();
     ospfHelloFeedback->setSenderIp(routerIdKey_);
-    ospfHelloFeedback->setNeighborIp(neighborIpInt);
+    ospfHelloFeedback->setIsFeedback(true);
     hello->insertAtBack(ospfHelloFeedback);
 
     // add dispatch tags
@@ -487,7 +497,7 @@ void MecOspf::processHello(Packet *packet)
 {
     // extract router ID from Hello chunk
     auto ospfHelloChunk = packet->peekAtFront<OspfHello>();
-    if (ospfHelloChunk->getNeighborIp() != routerIdKey_) {
+    if (!ospfHelloChunk->isFeedback()) {
         // this is the initial Hello from neighbor, send feedback Hello back
         EV_INFO << "MecOspf:processHello - received initial Hello from " << Ipv4Address(ospfHelloChunk->getSenderIp()) << ", sending feedback\n";
         sendHelloFeedback(packet);
@@ -650,8 +660,8 @@ void MecOspf::handleReceivedLsa(Packet *packet)
         EV_INFO << "MecOspf:handleReceivedLsa - received updated LSA from " << Ipv4Address(originKey) << "\n";
 
         resetGlobalScheduler(); // reset global scheduler info
-        // Update topology graph
-        updateTopologyFromLsa(lsa);
+        updateTopologyFromLsa(lsa); // Update topology graph
+        clearIndirectRoutes(); // clear cached indirect routes
 
         // get the arrival interface (to avoid sending back)
         auto ifaceInd = packet->findTag<InterfaceInd>();
@@ -749,10 +759,12 @@ void MecOspf::sendLsa(inet::Ptr<const OspfLsa> lsa, uint32_t neighborKey)
  */
 void MecOspf::checkNeighborTimeouts()
 {
+    EV << "MecOspf:checkNeighborTimeouts - checking neighbor timeouts\n";
+
     vector<uint32_t> toRemove;
     for (auto &kv : neighbors_) {
         const Neighbor &n = kv.second;
-        if (simTime() - n.lastSeen > neighborTimeout_) {
+        if (simTime() - n.lastSeen >= neighborTimeout_) {
             toRemove.push_back(kv.first);
         }
     }
@@ -762,8 +774,10 @@ void MecOspf::checkNeighborTimeouts()
         Ipv4Address neighborIp = neighbors_[key].destIp;
         EV_WARN << "MecOspf:checkNeighborTimeouts - neighbor " << neighborIp << " timed out -> remove\n";
         neighbors_.erase(key);
-        rt_->removeRoute(neighborRoutes_[key]);
-        delete neighborRoutes_[key];
+        Ipv4Route *route = rt_->removeRoute(neighborRoutes_[key]);
+        if (route != nullptr)
+            delete route;
+        
         neighborRoutes_.erase(key);
     }
 
@@ -775,10 +789,6 @@ void MecOspf::checkNeighborTimeouts()
     for (auto key : toRemove) {
         topology_[routerIdKey_].erase(key);
     }
-
-    // TODO: start propagating link-state updates to other neighbors to build new topology
-    // send LSA to neighbors
-    updateLsaToNetwork();
 }
 
 /* === clearInstalledRoutes ===
@@ -786,15 +796,13 @@ void MecOspf::checkNeighborTimeouts()
  */
 void MecOspf::clearIndirectRoutes()
 {
-    if (!rt_) return;
-    if (indirectRoutes_.empty()) {
-        EV_INFO << "MecOspf::clearIndirectRoutes - none installed\n";
-        return;
-    }
+    if (!rt_ || indirectRoutes_.empty()) return;
+
     EV_INFO << "MecOspf::clearIndirectRoutes - removing " << indirectRoutes_.size() << " routes\n";
     for (auto r : indirectRoutes_) {
-        rt_->removeRoute(r.second);
-        delete r.second;
+        Ipv4Route *route = rt_->removeRoute(r.second);
+        if (route != nullptr)
+            delete route;
     }
 
     indirectRoutes_.clear();
@@ -802,11 +810,8 @@ void MecOspf::clearIndirectRoutes()
 
 void MecOspf::clearNeighborRoutes()
 {
-    if (!rt_) return;
-    if (neighborRoutes_.empty()) {
-        EV_INFO << "MecOspf::clearNeighborRoutes - none installed\n";
-        return;
-    }
+    if (!rt_ || neighborRoutes_.empty()) return;
+ 
     EV_INFO << "MecOspf::clearNeighborRoutes - removing " << neighborRoutes_.size() << " routes\n";
     for (auto r : neighborRoutes_) {
         Ipv4Route *route = rt_->removeRoute(r.second);
@@ -903,9 +908,9 @@ void MecOspf::recomputeIndirectRouting()
             }
         }
     }
-    if (nodeInfo_) {
-        nodeInfo_->setRtState(true); // mark routing table is ready
-    }
+    // if (nodeInfo_) {
+    //     nodeInfo_->setRtState(true); // mark routing table is ready
+    // }
 
     // ======= Step 4: determine the scheduler node ========
     // select the reachable node with maximum number of neighbors as the scheduler
@@ -1058,10 +1063,7 @@ void MecOspf::handleCrashOperation(LifecycleOperation *operation)
         cancelAndDelete(helloTimer_);
         helloTimer_ = nullptr;
     }
-    if (helloFeedbackTimer_) {
-        cancelAndDelete(helloFeedbackTimer_);
-        helloFeedbackTimer_ = nullptr;
-    }
+
     if (lsaTimer_) {
         cancelAndDelete(lsaTimer_);
         lsaTimer_ = nullptr;
