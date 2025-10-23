@@ -432,16 +432,6 @@ void MecOspf::sendInitialHello()
         // Tag outgoing interface id (so ipOut knows which interface)
         hello->addTagIfAbsent<InterfaceReq>()->setInterfaceId(ie->getInterfaceId());
 
-        // add dispatch tags and protocols
-        // hello->addTagIfAbsent<DispatchProtocolReq>()->setProtocol(&Protocol::ipv4);
-        // hello->addTagIfAbsent<PacketProtocolTag>()->setProtocol(MecProtocol::mecOspf);
-        // Tag destination address (multicast all-hosts)
-        // auto addrReq = hello->addTagIfAbsent<L3AddressReq>();
-        // addrReq->setDestAddress(Ipv4Address::ALL_OSPF_ROUTERS_MCAST);
-        // addrReq->setSrcAddress(local);  // used as gateway for neighbor to reach us
-        // Hop limit (Hello should not be forwarded across multiple hops)
-        // hello->addTagIfAbsent<HopLimitReq>()->setHopLimit(1);
-
         // optionally add a small custom tag or param to mark as Hello
         // (we already used packet name "HELLO", which we check when receiving)
         EV_INFO << "MecOspf:sendInitialHello - sending OspfHello from " << routerId_ << " (" << routerIdKey_ << ")"
@@ -473,18 +463,6 @@ void MecOspf::sendHelloFeedback(Packet *pkt)
 
     // Tag outgoing interface id (so ipOut knows which interface)
     hello->addTagIfAbsent<InterfaceReq>()->setInterfaceId(arrivalIf->getInterfaceId());
-
-    // add dispatch tags
-    // hello->addTagIfAbsent<DispatchProtocolReq>()->setProtocol(&Protocol::ipv4);
-    // add the packet protocol tag as OSPF (we'll use IPv4 as the carrier)
-    // hello->addTagIfAbsent<PacketProtocolTag>()->setProtocol(MecProtocol::mecOspf);
-    // Tag destination address (multicast all-hosts)
-    // auto addrReq = hello->addTagIfAbsent<L3AddressReq>();
-    // addrReq->setDestAddress(Ipv4Address::ALL_OSPF_ROUTERS_MCAST);
-    // addrReq->setSrcAddress(arrivalIf->getIpv4Address());    // used as gateway for neighbor to reach us    
-    
-    // Hop limit (Hello should not be forwarded across multiple hops)
-    // hello->addTagIfAbsent<HopLimitReq>()->setHopLimit(1);
 
     // optionally add a small custom tag or param to mark as Hello
     // (we already used packet name "HELLO", which we check when receiving)
@@ -745,17 +723,7 @@ void MecOspf::sendLsa(inet::Ptr<const OspfLsa> lsa, uint32_t neighborKey)
     // Add a payload marker so it isn't empty (optional)
     auto lsaChunk = makeShared<OspfLsa>(*lsa);
     lsaPkt->insertAtBack(lsaChunk);
-    lsaPkt->addTagIfAbsent<InterfaceReq>()->setInterfaceId(n.outInterface->getInterfaceId());
-
-    // add dispatch tags and protocols
-    // lsaPkt->addTagIfAbsent<DispatchProtocolReq>()->setProtocol(&Protocol::ipv4);
-    // lsaPkt->addTagIfAbsent<PacketProtocolTag>()->setProtocol(MecProtocol::mecOspf);
-    // Tag destination address (multicast all-routers)
-    // auto addrReq = lsaPkt->addTagIfAbsent<L3AddressReq>();
-    // addrReq->setDestAddress(Ipv4Address::ALL_OSPF_ROUTERS_MCAST);
-    // addrReq->setSrcAddress(n.outInterface->getIpv4Address());
-    // Tag outgoing interface id (so ipOut knows which interface)
-    
+    lsaPkt->addTagIfAbsent<InterfaceReq>()->setInterfaceId(n.outInterface->getInterfaceId());    
 
     EV_INFO << "MecOspf:sendLsa - sending LSA (origin=" << lsa->getOrigin() << ", seqNum=" << lsa->getSeqNum()
             << ") to neighbor " << n.destIp << " via interface " << n.outInterface->getInterfaceName() << "\n";

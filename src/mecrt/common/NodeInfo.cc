@@ -256,7 +256,11 @@ void NodeInfo::handleMessage(omnetpp::cMessage *msg)
 
 void NodeInfo::handleNodeUpTimer()
 {
-    EV << "NodeInfo:handleNodeUpTimer - nodeUpTimer is triggered, set node state to active\n";
+    EV << "NodeInfo:handleNodeUpTimer - nodeUpTimer is triggered!\n";
+
+    // =========== handle self ==============
+    EV << "NodeInfo:handleNodeUpTimer - set node state to active\n";
+    nodeState_ = true; // set the node state to active
 
     // =========== handle scheduler/NIC/server/npc ===========
     // nothing special for scheduler/npc/server upon node recovery
@@ -283,10 +287,6 @@ void NodeInfo::handleNodeUpTimer()
             }
         }
     }
-
-    // =========== handle self ==============
-    EV << "NodeInfo:handleNodeUpTimer - set node state to active\n";
-    nodeState_ = true; // set the node state to active
 }
 
 
