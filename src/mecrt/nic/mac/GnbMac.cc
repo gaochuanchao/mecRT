@@ -107,6 +107,9 @@ void GnbMac::initialize(int stage)
         if (enableInitDebug_)
             std::cout << "GnbMac::initialize - stage: INITSTAGE_LOCAL - begins" << std::endl;
 
+        disableNic_ = false; // whether to disable the NIC module, used for fault simulation
+        WATCH(disableNic_);
+
         /* Gates initialization */
         up_[IN_GATE] = gate("RLC_to_MAC");
         up_[OUT_GATE] = gate("MAC_to_RLC");
@@ -475,6 +478,13 @@ void GnbMac::handleMessage(cMessage* msg)
     }
     else
     {
+        if (disableNic_)
+        {
+            EV << "GnbMac::handleMessage - NIC is disabled, dropping message " << msg->getName() << endl;
+            delete msg;
+            return;
+        }
+        
         cPacket* pkt = check_and_cast<cPacket *>(msg);
         EV << "GnbMac::handleMessage - Received packet " << pkt->getName() <<
         " from port " << pkt->getArrivalGate()->getName() << endl;
@@ -1224,6 +1234,22 @@ void GnbMac::mecTerminateAllGrant()
     Enter_Method("mecTerminateAllGrant");
 
     EV << "GnbMac::mecTerminateAllGrant - terminate all app services." << endl;
+
+    // clean grantList_
+    for (auto pkt : grantList_)
+    {
+        delete pkt;
+    }
+    grantList_.clear();
+
+    // clean appPduList_
+    for (auto& it : appPduList_)
+    {
+        Packet* pdu = it.second;
+        delete pdu;
+        pdu = nullptr;
+    }
+    appPduList_.clear();
     
     set<AppId> allApps;
     set<AppId> activeSrv = rbManagerUl_->getScheduledApp();
@@ -1238,6 +1264,8 @@ void GnbMac::mecTerminateAllGrant()
         mecSendGrantToVeh(appId, false, false, true, false);    // isNewGrant, isUpdate, isStop, isPause
     }
     rbManagerUl_->resetRbStatus();
+
+    availableBands_ = rbManagerUl_->getNumBands();
 }
 
 

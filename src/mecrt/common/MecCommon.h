@@ -32,6 +32,9 @@ static const inet::Ipv4Address MEC_UE_OFFLOAD_ADDR("192.168.0.0"); // the IPv4 a
 static const int MEC_NPC_PORT = 37; // the port number used by Node Packet Controller (NPC) module
 static const int MEC_OSPF_PORT = 38; // the port number used by MecOspf module
 
+double NEXT_SCHEDULING_TIME = 1000000;  // definition, use a large value initially
+
+
 /***
  * the next time when the scheduler should run
  * updated by the MecOspf module when a new global scheduler is elected

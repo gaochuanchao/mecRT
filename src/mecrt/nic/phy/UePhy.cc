@@ -10,6 +10,7 @@
 #include "stack/phy/packet/LteFeedbackPkt.h"
 #include "mecrt/packets/nic/VecDataInfo_m.h"
 #include "mecrt/mobility/MecMobility.h"
+#include "mecrt/nic/mac/GnbMac.h"
 
 Define_Module(UePhy);
 
@@ -418,6 +419,56 @@ void UePhy::handleMessage(cMessage* msg)
         delete msg;
     }
 }
+
+
+void UePhy::updateMasterNode()
+{
+    // check whether the current master node is still active
+    NodeInfo* nodeInfo = check_and_cast_nullable<NodeInfo*>(binder_->getModuleByMacNodeId(masterId_)->getSubmodule("nodeInfo"));
+    if (!nodeInfo)  
+        return;
+    else if (nodeInfo->isNodeActive())  // if the master node is active, do nothing
+        return;
+
+    EV << "UePhy::updateMasterNode - master node " << masterId_ << " is down, need to update master node" << endl;
+    // select the closest node as the new master node
+    MacNodeId candidateNode = 0;
+    double minDist = 1.0e+10;
+    // get the list of all eNodeBs in the network
+    std::vector<EnbInfo *>* gnbList = binder_->getEnbList();
+    for (auto it = gnbList->begin(); it != gnbList->end(); ++it)
+    {
+        // the NR phy layer only checks signal from gNBs
+        if (isNr_ && (*it)->nodeType != GNODEB)
+            continue;
+
+        // the LTE phy layer only checks signal from eNBs
+        if (!isNr_ && (*it)->nodeType != ENODEB)
+            continue;
+
+        GnbMac* nodeMac = check_and_cast_nullable<GnbMac*>((*it)->mac);
+        if (nodeMac && !nodeMac->isNicDisabled())
+        {
+            LtePhyBase* nodePhy = (*it)->phy;
+            double dist = nodePhy->getCoord().distance(getCoord());
+            if (dist < minDist)
+            {
+                minDist = dist;
+                candidateNode = (*it)->id;
+            }
+        }
+    }
+
+    if (candidateNode != 0)
+    {
+        EV << "UePhy::updateMasterNode - new master node selected: " << candidateNode << endl;
+        // update masterId_
+        masterId_ = candidateNode;
+        binder_->registerNextHop(masterId_, nodeId_);
+        das_->setMasterRuSet(masterId_);
+    }
+}
+
 
 void UePhy::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVector fbUl, FeedbackRequest req)
 {
@@ -910,6 +961,12 @@ void UePhy::handleUpperMessage(cMessage* msg)
 
     if (lteInfo->getFrameType() == HARQPKT || lteInfo->getFrameType() == GRANTPKT || lteInfo->getFrameType() == RACPKT)
     {
+        if (lteInfo->getFrameType() == RACPKT)
+        {
+            updateMasterNode();
+            lteInfo->setDestId(masterId_);
+        }
+        
         frame = new LteAirFrame("harqFeedback-grant");
         // set transmission duration according to the numerology
         NumerologyIndex numerologyIndex = binder_->getNumerologyIndexFromCarrierFreq(lteInfo->getCarrierFrequency());

@@ -21,11 +21,13 @@
 #include "mecrt/common/MecCommon.h"
 
 using namespace inet;
+using namespace std;
 
 class NodePacketController;
 class GnbMac;
 class Server;
 class Scheduler;
+class MecOspf;
 
 /**
  * @class NodeInfo
@@ -69,6 +71,7 @@ class NodeInfo : public omnetpp::cSimpleModule
         Server* server_ = nullptr;
         IInterfaceTable *ift_ = nullptr;    // added by the OSPF module to manage interfaces UP/DOWN
         Scheduler* scheduler_ = nullptr; // reference to the scheduler module
+        MecOspf* ospf_ = nullptr; // reference to the OSPF module
 
         // =========== timers and self-messages ===========
         cMessage *rsuStatusTimer_ = nullptr;
@@ -76,10 +79,14 @@ class NodeInfo : public omnetpp::cSimpleModule
         // =========== link and node failure related ===========
         cMessage *nodeDownTimer_ = nullptr;
         cMessage *ifDownTimer_ = nullptr;
+        cMessage *nodeUpTimer_ = nullptr;
+        cMessage *ifUpTimer_ = nullptr;
         // double ifFailProb_; // probability of interface failure
         // double nodeFailProb_; // probability of node failure
         double ifFailTime_; // time when the interface is down
+        double ifRecoverTime_; // time when the interface is up
         double nodeFailTime_; // time when the node is down
+        double nodeRecoverTime_; // time when the node is up
         int failedIfId_; // the interface id that is down, -1 means no interface is down
 
     protected:
@@ -91,6 +98,8 @@ class NodeInfo : public omnetpp::cSimpleModule
         virtual void handleNodeStatusTimer();
         virtual void handleIfDownTimer();
         virtual void handleNodeDownTimer();
+        virtual void handleIfUpTimer();
+        virtual void handleNodeUpTimer();
 
     public:
         NodeInfo();
@@ -130,8 +139,6 @@ class NodeInfo : public omnetpp::cSimpleModule
         int getServerPort() {return serverPort_;}
         void setServerSocketId(int id) {serverSocketId_ = id;}
         int getServerSocketId() {return serverSocketId_;}
-        void setScheduler(Scheduler* scheduler) {scheduler_ = scheduler;}
-        Scheduler* getScheduler() {return scheduler_;}
 
         // methods to set/get scheduler module related information
         void setIsGlobalScheduler(bool isGlobal) {isGlobalScheduler_ = isGlobal;}
@@ -149,13 +156,12 @@ class NodeInfo : public omnetpp::cSimpleModule
 
         // modules reference related methods
         void setGnbMac(GnbMac* mac) {gnbMac_ = mac;}
-        virtual void recoverRsuStatus();
-        virtual void releaseNicResources();
         void setNpc(NodePacketController* npc) {npc_ = npc;}
-        virtual void recoverServiceRequests();
         void setServer(Server* server) {server_ = server;}
-        virtual void releaseServerResources();
         void setIft(IInterfaceTable* ift) {ift_ = ift;}
+        void setOspf(MecOspf* ospf) {ospf_ = ospf;}
+        void setScheduler(Scheduler* scheduler) {scheduler_ = scheduler;}
+        virtual void updateAdjListToScheduler(map<MacNodeId, map<MacNodeId, double>>& adjList);
 };
 
 #endif /* _MECRT_COMMON_NODEINFO_H_ */

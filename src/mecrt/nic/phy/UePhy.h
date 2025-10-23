@@ -110,6 +110,10 @@ class UePhy : public NRPhyUe
     virtual void sendUnicast(LteAirFrame *airFrame) override;
 
 
+    // update master node incase of the master node fails
+    virtual void updateMasterNode();
+
+
     // ================================
     // ========= LtePhyUeD2D ==========
     // ================================

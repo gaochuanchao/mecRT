@@ -59,8 +59,6 @@ MecOspf::MecOspf()
     selfLsa_ = nullptr;
     nodeInfo_ = nullptr;
 
-    scheduler_ = nullptr;
-
     indirectRoutes_ = map<uint32_t, Ipv4Route *>();
     neighborRoutes_ = map<uint32_t, Ipv4Route *>();
 }
@@ -124,8 +122,11 @@ void MecOspf::initialize(int stage)
 
         // create timers
         helloTimer_ = new cMessage("helloTimer");
+        helloTimer_->setSchedulingPriority(1); // after other messages
         lsaTimer_ = new cMessage("lsaTimer");
+        lsaTimer_->setSchedulingPriority(1); // after other messages
         routeComputationTimer_ = new cMessage("routeComputationTimer");
+        routeComputationTimer_->setSchedulingPriority(1); // after other messages
 
         lsaWaitInterval_ = par("lsaWaitInterval").doubleValue();
         helloInterval_ = par("helloInterval").doubleValue();
@@ -147,16 +148,6 @@ void MecOspf::initialize(int stage)
         } catch (cException &e) {
             cerr << "MecOspf:initialize - cannot find nodeInfo module\n";
             nodeInfo_ = nullptr;
-        }
-
-        try
-        {
-            scheduler_ = check_and_cast<Scheduler*>(getParentModule()->getSubmodule("scheduler"));
-        }
-        catch(cException &e)
-        {
-            cerr << "MecOspf:initialize - cannot find scheduler module\n";
-            scheduler_ = nullptr;
         }
 
         if (enableInitDebug_)
@@ -185,7 +176,7 @@ void MecOspf::initialize(int stage)
         if (enableInitDebug_)
             cout << "MecOspf:initialize - stage: INITSTAGE_NETWORK_LAYER - routerId=" << routerId_ << "\n";
     }
-    else if (isInitializeStage(stage)) {
+    else if (stage == INITSTAGE_ROUTING_PROTOCOLS) {
         if (enableInitDebug_)
             cout << "MecOspf:initialize - INITSTAGE_ROUTING_PROTOCOLS stage " << stage << "\n";
 
@@ -204,8 +195,11 @@ void MecOspf::initialize(int stage)
             }
 
             if (nodeInfo_)
+            {
                 nodeInfo_->setIft(ift_);
-
+                nodeInfo_->setOspf(this);
+            }
+                
             EV_INFO << "MecOspf:initialize - interfaceTableModule found\n";
         } catch (cException &e) {
             throw cRuntimeError("MecOspf:initialize - cannot find interfaceTableModule param\n");
@@ -303,12 +297,16 @@ void MecOspf::handleSelfTimer(cMessage *msg)
     {
         EV_INFO << "MecOspf::handleSelfTimer - Hello timer fired at " << simTime() << "\n";
 
-        newNeighbors_.clear();
-        // send Hellos
-        sendInitialHello();
         // reschedule next Hello, continuous monitor neighbor accessibility
         scheduleAt(simTime() + helloInterval_, helloTimer_);
 
+        if (nodeInfo_ && !nodeInfo_->isNodeActive())    // node has become inactive, skip sending Hello
+            return;
+
+        newNeighbors_.clear();
+        // send Hellos
+        sendInitialHello();
+        
         // also schedule LSA synchronization timer
         if (lsaTimer_->isScheduled())
             cancelEvent(lsaTimer_);
@@ -334,8 +332,7 @@ void MecOspf::handleSelfTimer(cMessage *msg)
     }
     else
     {
-        EV_WARN << "MecOspf::handleSelfTimer - unknown self-message: " << msg->getName() << ", delete\n";
-        delete msg;
+        EV_WARN << "MecOspf::handleSelfTimer - unknown self-message: " << msg->getName() << "\n";
     }
 }
 
@@ -561,6 +558,7 @@ void MecOspf::processHello(Packet *packet)
         neighborChanged_ = true; // mark neighbor change happened
         newNeighbors_.push_back(key);
         resetGlobalScheduler(); // reset global scheduler info
+        clearIndirectRoutes(); // clear cached indirect routes
 
         // Update adjacency map (bidirectional link with cost n.cost)
         topology_[routerIdKey_][key] = n.cost;
@@ -947,18 +945,9 @@ void MecOspf::recomputeIndirectRouting()
 
     globalSchedulerReady_ = true;
     if (nodeInfo_)
-        nodeInfo_->setGlobalSchedulerAddr(schedulerAddr_);
-
-    if (schedulerAddr_ == routerId_)
     {
-        if (nodeInfo_) 
-            nodeInfo_->setIsGlobalScheduler(true);
-
-        if (scheduler_)
-        {   
-            scheduler_->globalSchedulerInit();
-            updateAdjListToScheduler();
-        }
+        nodeInfo_->setGlobalSchedulerAddr(schedulerAddr_);
+        updateAdjListToScheduler();
     }
 }
 
@@ -996,7 +985,7 @@ void MecOspf::dijkstra(uint32_t source, std::map<uint32_t, Node>& nodeInfos)
 
 void MecOspf::updateAdjListToScheduler()
 {
-    if (globalSchedulerReady_ && nodeInfo_ && nodeInfo_->getIsGlobalScheduler() && scheduler_)
+    if (globalSchedulerReady_ && nodeInfo_ && nodeInfo_->getIsGlobalScheduler())
     {
         EV << "MecOspf:updateAdjListToScheduler - updating adjacency list (network topology) to scheduler\n";
         map<MacNodeId, map<MacNodeId, double>> adjList;
@@ -1010,7 +999,7 @@ void MecOspf::updateAdjListToScheduler()
                 adjList[src][dst] = cost;
             }
         }
-        scheduler_->resetNetTopology(adjList);
+        nodeInfo_->updateAdjListToScheduler(adjList);
     }
 }
 
@@ -1022,19 +1011,36 @@ void MecOspf::resetGlobalScheduler()
         EV_INFO << "MecOspf:resetGlobalScheduler - resetting global scheduler\n";
 
         if (nodeInfo_)
-        {
-            if (nodeInfo_->getIsGlobalScheduler())
-            {
-                EV_INFO << "MecOspf:resetGlobalScheduler - this node was the global scheduler, resetting it\n";
-                if (scheduler_)
-                    scheduler_->globalSchedulerReset();
-            }
-            nodeInfo_->setIsGlobalScheduler(false);
             nodeInfo_->setGlobalSchedulerAddr(Ipv4Address::UNSPECIFIED_ADDRESS);
-        }
+        
         globalSchedulerReady_ = false;
         schedulerAddr_ = Ipv4Address::UNSPECIFIED_ADDRESS;
     }
+}
+
+
+void MecOspf::handleNodeFailure()
+{
+    Enter_Method("handleNodeFailure");
+
+    EV_INFO << "MecOspf:handleNodeFailure - handling node failure, cleaning up state\n";
+    // cancel timers
+    if (lsaTimer_->isScheduled())
+        cancelEvent(lsaTimer_);
+    if (routeComputationTimer_->isScheduled())
+        cancelEvent(routeComputationTimer_);
+    
+    // clear all routes
+    clearIndirectRoutes();
+    clearNeighborRoutes();
+
+    // clear neighbor information
+    neighbors_.clear();
+    neighborChanged_ = true;
+    topology_[routerIdKey_].clear();
+
+    globalSchedulerReady_ = false;
+    schedulerAddr_ = Ipv4Address::UNSPECIFIED_ADDRESS;
 }
 
 

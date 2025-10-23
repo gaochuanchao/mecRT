@@ -34,9 +34,7 @@ NodePacketController::NodePacketController()
     localPort_ = -1;
     nodeInfo_ = nullptr;
     enableInitDebug_ = false;
-    checkGlobalSchedulerTimer_ = nullptr;
 
-    pendingSrvReqs_.clear();
     srvReqsBuffer_.clear();
 }
 
@@ -45,11 +43,6 @@ NodePacketController::~NodePacketController()
     if (enableInitDebug_)
         std::cout << "NodePacketController::~NodePacketController - destroying NodePacketController module\n";
 
-    if (checkGlobalSchedulerTimer_)
-    {
-        cancelAndDelete(checkGlobalSchedulerTimer_);
-        checkGlobalSchedulerTimer_ = nullptr;
-    }
 
     if (enableInitDebug_)
         std::cout << "NodePacketController::~NodePacketController - destroying NodePacketController module done!\n";
@@ -70,9 +63,6 @@ void NodePacketController::initialize(int stage)
             std::cout << "NodePacketController::initialize - INITSTAGE_LOCAL begin" << endl;
 
         localPort_ = MEC_NPC_PORT; // default(37);
-        checkGlobalSchedulerInterval_ = par("checkGlobalSchedulerInterval").doubleValue();
-
-        checkGlobalSchedulerTimer_ = new cMessage("checkGlobalSchedulerTimer");
 
         if (enableInitDebug_)
             std::cout << "NodePacketController::initialize - INITSTAGE_LOCAL end" << endl;
@@ -110,10 +100,8 @@ void NodePacketController::handleMessage(cMessage *msg)
     // self message
     if (msg->isSelfMessage())
     {
-        if (msg == checkGlobalSchedulerTimer_)
-        {
-            handleGlobalSchedulerTimer();
-        }
+        // do nothing for now
+        EV << "NodePacketController::handleMessage - received self-message: " << msg->getName() << endl;
     }
     else
     {
@@ -241,13 +229,6 @@ void NodePacketController::handleServiceRequest(Packet *pkt)
         packetToGlobal->insertAtBack(srvReqsBuffer_[appId]);
         socket_.sendTo(packetToGlobal, nodeInfo_->getGlobalSchedulerAddr(), MEC_NPC_PORT);
     }
-    else if (nodeInfo_->getGlobalSchedulerAddr().isUnspecified())
-    {
-        EV << NOW << " NodePacketController::handleServiceRequest - global scheduler is not ready, buffer the service request packet." << endl;
-        pendingSrvReqs_.push_back(appId);
-        if (!checkGlobalSchedulerTimer_->isScheduled())
-            scheduleAt(simTime() + checkGlobalSchedulerInterval_, checkGlobalSchedulerTimer_);
-    }
 }
 
 
@@ -324,43 +305,6 @@ void NodePacketController::handleOffloadingNicGrant(Packet *pkt)
 }
 
 
-void NodePacketController::handleGlobalSchedulerTimer()
-{
-    // check if the global scheduler is ready and we are the global scheduler
-    if (nodeInfo_->getIsGlobalScheduler())
-    {
-        EV << NOW << " NodePacketController::handleGlobalSchedulerTimer - we are the global scheduler, delete all pending service requests." << endl;
-        pendingSrvReqs_.clear();
-        return;
-    }
-
-    // if we are not the global scheduler, check if the global scheduler is ready
-    if (!nodeInfo_->getGlobalSchedulerAddr().isUnspecified())   // global scheduler is ready
-    {
-        EV << NOW << " NodePacketController::handleGlobalSchedulerTimer - global scheduler is ready, send buffered service request packets to it." << endl;
-        // send all buffered service request packets to the global scheduler
-        for (auto appId : pendingSrvReqs_)
-        {
-            if (srvReqsBuffer_.find(appId) != srvReqsBuffer_.end())
-            {
-                Packet* packetToGlobal = new Packet("SrvReq");
-                packetToGlobal->insertAtBack(srvReqsBuffer_[appId]);
-                socket_.sendTo(packetToGlobal, nodeInfo_->getGlobalSchedulerAddr(), MEC_NPC_PORT);
-            }
-        }
-        pendingSrvReqs_.clear();
-        return;
-    }
-
-    // if there are still pending requests, reschedule the timer
-    if (!pendingSrvReqs_.empty())
-    {
-        if (!checkGlobalSchedulerTimer_->isScheduled())
-            scheduleAt(simTime() + checkGlobalSchedulerInterval_, checkGlobalSchedulerTimer_);
-    }
-}
-
-
 void NodePacketController::recoverServiceRequests()
 {
     // this function is called by other modules (the nodeInfo_), so we need to use
@@ -374,8 +318,14 @@ void NodePacketController::recoverServiceRequests()
     if (nodeInfo_->getGlobalSchedulerAddr().isUnspecified())
         return;
 
+    if (srvReqsBuffer_.empty())
+    {
+        EV << NOW << " NodePacketController::recoverServiceRequests - no buffered service request packets to resend." << endl;
+        return;
+    }
+
     EV << NOW << " NodePacketController::recoverServiceRequests - resend all buffered service request packets to the global scheduler." << endl;
-    vector<AppId> toRemove;
+    vector<AppId> toRemove; // remove terminated requests
     for (auto it = srvReqsBuffer_.begin(); it != srvReqsBuffer_.end(); ++it)
     {
         AppId appId = it->first;
@@ -394,6 +344,5 @@ void NodePacketController::recoverServiceRequests()
     {
         srvReqsBuffer_.erase(appId);
     }
-    pendingSrvReqs_.clear();
 }
 

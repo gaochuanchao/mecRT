@@ -31,6 +31,8 @@ package mecRT.mecrt.routing;
 simple MecOspf
 {
     parameters:
+        int localPort = default(38);    // FIXED. UDP port for OSPF messages
+
         volatile double startupTime @unit(s) = default(0.001s); // delay before starting OSPF
         
         string interfaceTableModule = default("^.interfaceTable"); // path to the interface table

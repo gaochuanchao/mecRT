@@ -32,8 +32,6 @@ void registerMecOspfProtocol() {
     }
 }
 
-double NEXT_SCHEDULING_TIME = 1000000;  // definition, use a large value initially
-
 // const inet::Protocol MecProtocol::mecOspf("mecOspf", "MEC OSPF");
 // Register_Protocol_Dissector(&MecProtocol::mecOspf, Ipv4ProtocolDissector);
 

@@ -101,6 +101,7 @@ void Server::initialize(int stage)
             nodeInfo_ = getModuleFromPar<NodeInfo>(par("nodeInfoModulePath"), this);
             nodeInfo_->setServerPort(localPort_);
             nodeInfo_->setServerSocketId(socketId_);
+            nodeInfo_->setServer(this);
         }
         catch(cRuntimeError& e){
             throw cRuntimeError(this, "Server::initialize - cannot find nodeInfo module, please check the parameter setting");

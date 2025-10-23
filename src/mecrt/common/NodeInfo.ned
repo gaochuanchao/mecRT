@@ -23,5 +23,7 @@ simple NodeInfo
         // double ifFailProb = default(0.0); // probability of interface failure per second
         // double nodeFailProb = default(0.0); // probability of node failure per second
         double ifFailTime = default(0.0); // time when the interface is down
+        double ifRecoverTime = default(0.0); // time when the interface is up
         double nodeFailTime = default(0.0); // time when the node is down
+        double nodeRecoverTime = default(0.0); // time when the node is up
 }

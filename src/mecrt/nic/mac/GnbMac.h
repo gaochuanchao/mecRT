@@ -56,6 +56,10 @@ class GnbMac : public NRMacGnb
      */
     virtual ~GnbMac();
 
+    virtual void disableNic() { disableNic_ = true; }
+    virtual void enableNic() { disableNic_ = false; }
+    virtual bool isNicDisabled() { return disableNic_; }
+
     /***
      * get the allowed bands for each UE, used for resource allocation algorithms
      *
@@ -94,6 +98,8 @@ class GnbMac : public NRMacGnb
     // ========= Newly Added ==========
     // ================================
     bool enableInitDebug_; // whether to enable debug info during initialization
+
+    bool disableNic_ = false; // whether to disable the NIC module, used for fault simulation
 
     NodeInfo* nodeInfo_ = nullptr; // pointer to the NodeInfo instance of this node
 

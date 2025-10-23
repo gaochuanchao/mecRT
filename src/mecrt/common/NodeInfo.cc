@@ -18,6 +18,7 @@
 #include "mecrt/apps/server/Server.h"
 #include "inet/networklayer/contract/IInterfaceTable.h"
 #include "mecrt/apps/scheduler/Scheduler.h"
+#include "mecrt/routing/MecOspf.h"
 
 Define_Module(NodeInfo);
 
@@ -52,15 +53,21 @@ NodeInfo::NodeInfo()
     npc_ = nullptr;
     server_ = nullptr;
     ift_ = nullptr;
+    scheduler_ = nullptr;
+    ospf_ = nullptr;
 
     rsuStatusTimer_ = nullptr;
     nodeDownTimer_ = nullptr;
+    nodeUpTimer_ = nullptr;
     ifDownTimer_ = nullptr;
+    ifUpTimer_ = nullptr;
 
     // ifFailProb_ = 0.0; // default 0.0, no interface failure
     // nodeFailProb_ = 0.0; // default 0.0, no node failure
     ifFailTime_ = 0; // default 0 seconds, the interface will be down for 0 seconds
+    ifRecoverTime_ = 0; // default 0 seconds, the interface will be up for 0 seconds
     nodeFailTime_ = 0; // default 0 seconds, the node will be down for 0 seconds
+    nodeRecoverTime_ = 0; // default 0 seconds, the node will be up for 0 seconds
     failedIfId_ = -1; // no interface is down by default
 }
 
@@ -88,6 +95,18 @@ NodeInfo::~NodeInfo()
         ifDownTimer_ = nullptr;
     }
 
+    if (ifUpTimer_)
+    {
+        cancelAndDelete(ifUpTimer_);
+        ifUpTimer_ = nullptr;
+    }
+
+    if (nodeUpTimer_)
+    {
+        cancelAndDelete(nodeUpTimer_);
+        nodeUpTimer_ = nullptr;
+    }
+
     if (enableInitDebug_)
         std::cout << "NodeInfo::~NodeInfo - destroying NodeInfo module done!\n";
 }
@@ -108,22 +127,38 @@ void NodeInfo::initialize(int stage)
         nodeType_ = par("nodeType").stdstringValue();
         ifFailTime_ = par("ifFailTime").doubleValue();
         nodeFailTime_ = par("nodeFailTime").doubleValue();
+        ifRecoverTime_ = par("ifRecoverTime").doubleValue();
+        nodeRecoverTime_ = par("nodeRecoverTime").doubleValue();
 
         rsuStatusTimer_ = new cMessage("rsuStatusTimer");
-        nodeDownTimer_ = new cMessage("nodeDownTimer");
-        ifDownTimer_ = new cMessage("ifDownTimer");
 
         // initialize the timers for iterface and node failure
         if (ifFailTime_ > 0)
         {
+            ifDownTimer_ = new cMessage("ifDownTimer");
             scheduleAt(ifFailTime_, ifDownTimer_);
             EV_INFO << "NodeInfo:initialize - scheduled ifDownTimer at " << simTime() + ifFailTime_ << "\n";
         }
 
+        if (ifRecoverTime_ > ifFailTime_)
+        {
+            ifUpTimer_ = new cMessage("ifUpTimer");
+            scheduleAt(ifRecoverTime_, ifUpTimer_);
+            EV_INFO << "NodeInfo:initialize - scheduled ifUpTimer at " << simTime() + ifRecoverTime_ << "\n";
+        }
+
         if (nodeFailTime_ > 0)
         {
+            nodeDownTimer_ = new cMessage("nodeDownTimer");
             scheduleAt(nodeFailTime_, nodeDownTimer_);
             EV_INFO << "NodeInfo:initialize - scheduled nodeDownTimer at " << simTime() + nodeFailTime_ << "\n";
+        }
+
+        if (nodeRecoverTime_ > nodeFailTime_)
+        {
+            nodeUpTimer_ = new cMessage("nodeUpTimer");
+            scheduleAt(nodeRecoverTime_, nodeUpTimer_);
+            EV_INFO << "NodeInfo:initialize - scheduled nodeUpTimer at " << simTime() + nodeRecoverTime_ << "\n";
         }
 
         WATCH(nodeType_);
@@ -145,7 +180,9 @@ void NodeInfo::initialize(int stage)
         WATCH(localSchedulerSocketId_);
 
         WATCH(ifFailTime_);
+        WATCH(ifRecoverTime_);
         WATCH(nodeFailTime_);
+        WATCH(nodeRecoverTime_);
         WATCH(failedIfId_);
 
         if (enableInitDebug_)
@@ -165,10 +202,44 @@ void NodeInfo::handleMessage(omnetpp::cMessage *msg)
         else if (msg == ifDownTimer_)
         {
             handleIfDownTimer();
+
+            if (ifRecoverTime_ > ifFailTime_)
+            {
+                // schedule the ifUpTimer_
+                if (!ifUpTimer_)
+                    ifUpTimer_ = new cMessage("ifUpTimer");
+                
+                if (!ifUpTimer_->isScheduled())
+                    scheduleAt(ifRecoverTime_, ifUpTimer_);
+                EV << "NodeInfo:handleMessage - schedule interface recovery at " << ifRecoverTime_ << "\n";
+            }
         }
         else if (msg == nodeDownTimer_)
         {
             handleNodeDownTimer();
+
+            if (nodeRecoverTime_ > nodeFailTime_)
+            {
+                // schedule the nodeUpTimer_
+                if (!nodeUpTimer_)
+                    nodeUpTimer_ = new cMessage("nodeUpTimer");
+                
+                if (!nodeUpTimer_->isScheduled())
+                    scheduleAt(nodeRecoverTime_, nodeUpTimer_);
+                EV << "NodeInfo:handleMessage - schedule node recovery at " << nodeRecoverTime_ << "\n";
+            }
+        }
+        else if (msg == ifUpTimer_)
+        {
+            handleIfUpTimer();
+        }
+        else if (msg == nodeUpTimer_)
+        {
+            handleNodeUpTimer();
+        }
+        else
+        {
+            EV << "NodeInfo:handleMessage - received an unknown self-message: " << msg->getName() << "\n";
         }
         
         return;
@@ -183,21 +254,87 @@ void NodeInfo::handleMessage(omnetpp::cMessage *msg)
 }
 
 
+void NodeInfo::handleNodeUpTimer()
+{
+    EV << "NodeInfo:handleNodeUpTimer - nodeUpTimer is triggered, set node state to active\n";
+
+    // =========== handle scheduler/NIC/server/npc ===========
+    // nothing special for scheduler/npc/server upon node recovery
+    EV << "NodeInfo:handleNodeUpTimer - enable NIC module\n";    
+    if (gnbMac_)
+        gnbMac_->enableNic();
+
+    // =========== handle links connecting other nodes ==============
+    EV << "NodeInfo:handleNodeUpTimer - enable links connecting to this node\n";
+    if (ift_)
+    {
+        int numIfaces = ift_->getNumInterfaces();
+        for (int i = 0; i < numIfaces; i++)
+        {
+            NetworkInterface *ie = ift_->getInterface(i);
+            if (!ie || ie->isLoopback() || ie->isWireless()) // skip loopback/wireless interfaces
+                continue;
+
+            cDatarateChannel *dataChannel = check_and_cast_nullable<cDatarateChannel*>(ie->getRxTransmissionChannel());
+            if (dataChannel)
+            {
+                dataChannel->setDisabled(false); // enable the channel to simulate interface recovery
+                EV << "NodeInfo:handleNodeUpTimer - recover link connected to interface " << i << "\n";
+            }
+        }
+    }
+
+    // =========== handle self ==============
+    EV << "NodeInfo:handleNodeUpTimer - set node state to active\n";
+    nodeState_ = true; // set the node state to active
+}
+
+
+void NodeInfo::handleIfUpTimer()
+{
+    EV << "NodeInfo:handleIfUpTimer - ifUpTimer is triggered, recover the failed interface\n";
+
+    if (failedIfId_ >= 0 && ift_)
+    {
+        NetworkInterface *ie = ift_->getInterface(failedIfId_);
+        if (ie)
+        {
+            cDatarateChannel *dataChannel = check_and_cast_nullable<cDatarateChannel*>(ie->getRxTransmissionChannel());
+            if (dataChannel)
+            {
+                dataChannel->setDisabled(false); // enable the channel to simulate interface recovery
+                EV << "NodeInfo:handleIfUpTimer - recover link connected to interface " << failedIfId_ << "\n";
+            }
+        }
+
+        failedIfId_ = -1; // reset failedIfId_
+    }
+}
+
+
 void NodeInfo::handleNodeDownTimer()
 {
-    EV << "NodeInfo:handleNodeDownTimer - nodeDownTimer is triggered, set node state to inactive\n";
-    nodeState_ = false; // set the node state to inactive
+    EV << "NodeInfo:handleNodeDownTimer - nodeDownTimer is triggered\n";
 
-    if (ifDownTimer_->isScheduled())
+    // =========== handle self ==============
+    EV << "NodeInfo:handleNodeDownTimer - set node state to inactive\n";
+    nodeState_ = false; // set the node state to inactive
+    if (ifDownTimer_ && ifDownTimer_->isScheduled() && ifFailTime_ <= nodeRecoverTime_)
         cancelEvent(ifDownTimer_);
 
-    // release all resources held by the NIC and server modules
-    setGlobalSchedulerAddr(inet::Ipv4Address::UNSPECIFIED_ADDRESS);
-    // reset scheduler is needed
-    if (isGlobalScheduler_ && scheduler_)
-        scheduler_->globalSchedulerReset();
+    if (ifUpTimer_ && ifUpTimer_->isScheduled() && ifRecoverTime_ <= nodeRecoverTime_)
+        cancelEvent(ifUpTimer_);
 
-    // disable all interfaces
+    // =========== handle scheduler/NIC/server/OSPF ===========
+    EV << "NodeInfo:handleNodeDownTimer - reset local scheduler/NIC/server/OSPF status\n";
+    setGlobalSchedulerAddr(inet::Ipv4Address::UNSPECIFIED_ADDRESS);     // this will also reset NIC and server resources
+    if (gnbMac_)
+        gnbMac_->disableNic();
+    if (ospf_)
+        ospf_->handleNodeFailure();
+
+    // =========== handle links connecting other nodes ==============
+    EV << "NodeInfo:handleNodeDownTimer - disable all links connected to this node\n";
     if (ift_)
     {
         int numIfaces = ift_->getNumInterfaces();
@@ -215,11 +352,7 @@ void NodeInfo::handleNodeDownTimer()
             }
         }
     }
-
-    // disable gnbMac on data receiving
-
 }
-
 
 
 void NodeInfo::handleIfDownTimer()
@@ -250,8 +383,6 @@ void NodeInfo::handleIfDownTimer()
         NetworkInterface *ie = ift_->getInterface(failedIfId_);
         if (ie)
         {
-            // ie->setState(NetworkInterface::DOWN);
-            // ie->setCarrier(false);
             cDatarateChannel *dataChannel = check_and_cast_nullable<cDatarateChannel*>(ie->getRxTransmissionChannel());
             if (dataChannel)
             {
@@ -283,7 +414,9 @@ void NodeInfo::handleNodeStatusTimer()
             return;
         }
 
-        recoverRsuStatus();
+        if (gnbMac_)
+            gnbMac_->mecRecoverRsuStatus();
+
         scheduleAt(nextUpdateTime + scheduleInterval_, rsuStatusTimer_);
     }
 }
@@ -304,10 +437,23 @@ void NodeInfo::setGlobalSchedulerAddr(inet::Ipv4Address addr)
             cancelEvent(rsuStatusTimer_);
             EV_INFO << "NodeInfo: setGlobalSchedulerAddr - cancelled the rsuStatusTimer due to network topology change\n";
         }
+
+        if (isGlobalScheduler_)
+        {
+            EV_INFO << "NodeInfo: setGlobalSchedulerAddr - this node was the global scheduler, resetting it\n";
+            isGlobalScheduler_ = false;
+            if (scheduler_)
+                scheduler_->globalSchedulerReset();
+        }
+
         globalSchedulerAddr_ = addr;
         EV_INFO << "NodeInfo: setGlobalSchedulerAddr - the network topology has changed, terminate all services and release resources\n";
-        releaseNicResources();
-        releaseServerResources();
+        if (gnbMac_)
+            gnbMac_->mecTerminateAllGrant();
+        
+        if (server_)
+            server_->releaseServerResources();
+        
         return;
     }
 
@@ -316,8 +462,19 @@ void NodeInfo::setGlobalSchedulerAddr(inet::Ipv4Address addr)
     // then start the rsuStatusTimer_ to periodically update the new global scheduler
     globalSchedulerAddr_ = addr;
     EV_INFO << "NodeInfo: setGlobalSchedulerAddr - the new global scheduler address is " << globalSchedulerAddr_ << "\n";
-    recoverRsuStatus();
-    recoverServiceRequests();
+
+    if (globalSchedulerAddr_ == nodeAddr_)
+    {
+        isGlobalScheduler_ = true;
+        if (scheduler_)
+            scheduler_->globalSchedulerInit();
+    }
+
+    if (gnbMac_)
+        gnbMac_->mecRecoverRsuStatus();
+
+    if (npc_)
+        npc_->recoverServiceRequests();
 
     if (rsuStatusTimer_->isScheduled())
     {
@@ -332,41 +489,12 @@ void NodeInfo::setGlobalSchedulerAddr(inet::Ipv4Address addr)
 }
 
 
-
-
-
-void NodeInfo::releaseNicResources()
+void NodeInfo::updateAdjListToScheduler(map<MacNodeId, map<MacNodeId, double>>& adjList)
 {
-    if (gnbMac_ != nullptr)
+    if (scheduler_ && isGlobalScheduler_)
     {
-        gnbMac_->mecTerminateAllGrant();
+        scheduler_->resetNetTopology(adjList);
     }
 }
 
-
-void NodeInfo::releaseServerResources()
-{
-    if (server_ != nullptr)
-    {
-        server_->releaseServerResources();
-    }
-}
-
-
-void NodeInfo::recoverRsuStatus()
-{
-    if (gnbMac_ != nullptr)
-    {
-        gnbMac_->mecRecoverRsuStatus();
-    }
-}
-
-
-void NodeInfo::recoverServiceRequests()
-{
-    if (npc_ != nullptr)
-    {
-        npc_->recoverServiceRequests();
-    }
-}
 
