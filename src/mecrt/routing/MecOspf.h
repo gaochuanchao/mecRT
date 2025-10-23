@@ -53,7 +53,7 @@
 using namespace inet;
 using namespace std;
 
-class MecOspf : public RoutingProtocolBase
+class MecOspf : public omnetpp::cSimpleModule
 {
   protected:
     // neighbor entry discovered via Hello
@@ -87,6 +87,9 @@ class MecOspf : public RoutingProtocolBase
 
 	bool enableInitDebug_ = false;
 
+    int localPort_;
+    inet::UdpSocket socket_;
+    int socketId_ = -1;
     NodeInfo *nodeInfo_ = nullptr; // info about this node
     // router id
     Ipv4Address routerId_;
@@ -134,11 +137,11 @@ class MecOspf : public RoutingProtocolBase
   protected:
     virtual int numInitStages() const override { return NUM_INIT_STAGES; }
     virtual void initialize(int stage) override;
-    virtual void handleMessageWhenUp(cMessage *msg) override;
+    virtual void handleMessage(cMessage *msg) override;
     // lifecycle
-    virtual void handleStartOperation(LifecycleOperation *operation) override;
-    virtual void handleStopOperation(LifecycleOperation *operation) override;
-    virtual void handleCrashOperation(LifecycleOperation *operation) override;
+    // virtual void handleStartOperation(LifecycleOperation *operation) override;
+    // virtual void handleStopOperation(LifecycleOperation *operation) override;
+    // virtual void handleCrashOperation(LifecycleOperation *operation) override;
 
     virtual void finish() override;
 

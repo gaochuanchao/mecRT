@@ -212,7 +212,7 @@ module gNodeB
 
         ospf: MecOspf if hasOspf {
             parameters:
-                @display("p=824.76,211.72");
+                @display("p=617.78,75.840004");
         }
 
 	    // =============== X2AP ============== //
@@ -370,11 +370,12 @@ module gNodeB
         pppMEHostIf.upperLayerOut --> nl.in++ if enableMecHost;
         pppMEHost <--> pppMEHostIf.phys if enableMecHost;
 
-        npc.socketOut --> IdealChannel --> at.in++;
-        npc.socketIn <-- IdealChannel <-- at.out++;
-        ospf.ipOut --> tn.in++ if hasOspf;
-        ospf.ipIn <-- tn.out++ if hasOspf;
+        npc.socketOut --> at.in++;
+        npc.socketIn <-- at.out++;
 
         scheduler.socketOut --> at.in++;
         scheduler.socketIn <-- at.out++;
+        
+        ospf.socketOut --> at.in++;
+        ospf.socketIn <-- at.out++;
 }

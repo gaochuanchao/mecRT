@@ -28,7 +28,9 @@
 //
 package mecRT.mecrt.routing;
 
-simple MecOspf
+import inet.applications.contract.IApp;
+
+simple MecOspf like IApp
 {
     parameters:
         int localPort = default(38);    // FIXED. UDP port for OSPF messages
@@ -47,6 +49,8 @@ simple MecOspf
         @display("i=block/network2");                  // icon for visualization    
     
     gates:
-        input ipIn @labels(Ipv4ControlInfo/up);
-        output ipOut @labels(Ipv4ControlInfo/down);
+        // input ipIn @labels(Ipv4ControlInfo/up);
+        // output ipOut @labels(Ipv4ControlInfo/down);
+        output socketOut;
+        input socketIn;
 }

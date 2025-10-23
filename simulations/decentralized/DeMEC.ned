@@ -24,7 +24,6 @@ import mecRT.mecrt.common.Database;
 // import mecRT.mecrt.common.NetTopology;
 import mecRT.mecrt.coreNetwork.MecUpf;
 import mecRT.mecrt.gNodeB;
-import mecRT.mecrt.routing.MecRouter;
 import simu5g.common.binder.Binder;
 import simu5g.common.carrierAggregation.CarrierAggregation;
 import simu5g.nodes.backgroundCell.BackgroundCell;

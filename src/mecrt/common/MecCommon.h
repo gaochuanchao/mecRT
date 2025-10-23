@@ -20,20 +20,17 @@
 /**
  * Mec specific protocols
  */
-class MecProtocol {
-    public:
-        // static const inet::Protocol mecOspf;  // IP protocol on the uU interface
-        static inet::Protocol* mecOspf;  // IP protocol on the uU interface
-};
+// class MecProtocol {
+//     public:
+//         // static const inet::Protocol mecOspf;  // IP protocol on the uU interface
+//         static inet::Protocol* mecOspf;  // IP protocol on the uU interface
+// };
 
-void registerMecOspfProtocol();
+// void registerMecOspfProtocol();
 
 static const inet::Ipv4Address MEC_UE_OFFLOAD_ADDR("192.168.0.0"); // the IPv4 address used by UE to offload data to MEC server
 static const int MEC_NPC_PORT = 37; // the port number used by Node Packet Controller (NPC) module
 static const int MEC_OSPF_PORT = 38; // the port number used by MecOspf module
-
-double NEXT_SCHEDULING_TIME = 1000000;  // definition, use a large value initially
-
 
 /***
  * the next time when the scheduler should run

@@ -61,7 +61,7 @@ module SchedulerHost
 
         ospf: MecOspf if hasOspf {
             parameters:
-                @display("p=736.368,215.76");
+                @display("p=446.832,45.935997");
         }
 
         //#
@@ -175,9 +175,9 @@ module SchedulerHost
             extEth[i].upperLayerOut --> nl.in++;
             extEth[i].upperLayerIn <-- nl.out++;
         }
-        
-        ospf.ipOut --> tn.in++ if hasOspf;
-        ospf.ipIn <-- tn.out++ if hasOspf;
+
+        ospf.socketOut --> at.in++;
+        ospf.socketIn <-- at.out++;
 
 }
 
