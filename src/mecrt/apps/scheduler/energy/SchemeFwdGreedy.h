@@ -16,28 +16,33 @@
 //  License: Academic Public License -- NOT FOR COMMERCIAL USE
 //
 
-#ifndef _MECRT_SCHEDULER_SCHEME_BASE_BN_H_
-#define _MECRT_SCHEDULER_SCHEME_BASE_BN_H_
+#ifndef _MECRT_SCHEDULER_SCHEME_GREEDY_BN_H_
+#define _MECRT_SCHEDULER_SCHEME_GREEDY_BN_H_
 
 #include "mecrt/apps/scheduler/SchemeBase.h"
 
-class SchemeFwdBase : public SchemeBase
+class SchemeFwdGreedy : public SchemeBase
 {
   protected:
     double virtualLinkRate_; // the rate of the virtual link in the backhaul network
     double fairFactor_; // the fairness factor limiting the maximum resource allocation, default is 1.0
     /***
-     * Additional parameters used to store service instance information
-     * each service instance is represented by four vectors: InstAppIds_, InstOffRsuIds_, InstProcRsuIds_, InstBands_, InstCUs_
-     * the vector index represents the instance index, and the value represents the 
-     *      offload RSU index, process RSU index
+     * Parameters used to store service instance information
+     * each service instance is represented by four vectors: InstAppIds_, InstRsuIds_, InstBands_, InstCUs_
+     * the vector index represents the instance ID, and the value represents the 
+     *      application index, RSU index, resource blocks, computing units, offload RSU index, and process RSU index, respectively 
      */
+    vector<int> instAppIndex_;  // application indices for the service instances
+    vector<int> instRBs_;  // resource blocks for the service instances
+    vector<int> instCUs_;  // computing units for the service instances
+    vector<double> instUtility_;  // utility (i.e., energy savings) for the service instances
+    vector<double> instMaxOffTime_;  // maximum allowable offloading time for the service instances
     vector<int> instOffRsuIndex_;  // offload RSU indices for each service instances
     vector<int> instProRsuIndex_;  // process RSU indices for each service instances
 
   public:
-    SchemeFwdBase(Scheduler *scheduler);
-    ~SchemeFwdBase() 
+    SchemeFwdGreedy(Scheduler *scheduler);
+    ~SchemeFwdGreedy()
     {
         scheduler_ = nullptr;  // reset the pointer to avoid dangling pointer
         db_ = nullptr;  // reset the pointer to avoid dangling pointer
@@ -46,7 +51,7 @@ class SchemeFwdBase : public SchemeBase
     /***
      * Initialize the scheduling data
      */
-    virtual void initializeData() override;
+    virtual void initializeData();
 
     /***
      * Generate schedule instances based on the pending applications and the available resources
@@ -57,6 +62,12 @@ class SchemeFwdBase : public SchemeBase
      * Schedule the request
      */
     virtual vector<srvInstance> scheduleRequests() override;
+
+    /***
+     * Compute the utility for a service instance
+     * The default implementation is to return the energy savings
+     */
+    virtual double computeUtility(AppId &appId, double &offloadDelay, double &exeDelay, double &period);
 
     /***
      * Compute the data forwarding delay in the backhaul network based on the number of hops and data size

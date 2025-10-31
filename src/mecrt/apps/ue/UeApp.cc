@@ -32,7 +32,7 @@ UeApp::UeApp()
     serviceGranted_ = false;
 
     outputSize_ = 0;
-    resourceType_ = GPU;
+    resourceType_ = "GPU";
     localConsumedEnergy_ = 0;
 
     processGnbAddr_ = inet::Ipv4Address::UNSPECIFIED_ADDRESS; // the address of the gNB processing the job
@@ -90,8 +90,6 @@ void UeApp::initialize(int stage)
         initRequest_ = new cMessage("initRequest");
 
         // register signals
-        offloadPower_ = getParentModule()->getSubmodule("cellularNic")->getSubmodule("nrPhy")->par("offloadPower");
-
         localProcessSignal_ = registerSignal("localProcessCount");
         offloadSignal_ = registerSignal("offloadCount");
         savedEnergySignal_ = registerSignal("vehSavedEnergy");
@@ -127,27 +125,27 @@ void UeApp::initialize(int stage)
         db_ = check_and_cast<Database*>(getSimulation()->getModuleByPath("database"));
         if (db_ == nullptr)
             throw cRuntimeError("UeApp::initTraffic - the database module is not found");
-        imgIndex_ = intuniform(0, db_->getNumVehExeData() - 1);
-        vector<double> & srvInfo = db_->getVehExeData(imgIndex_);
 
-        int typeId = intuniform(0, SERVICE_COUNTER - 1);
-        appType_ = static_cast<VecServiceType>(typeId);
-        inputSize_ = srvInfo[0] * 1024;  // in bytes
+        appType_ = db_->sampleAppType();
+        accuracy_ = db_->getUeAppAccuracy(appType_);
+        inputSize_ = db_->sampleAppDataSize() * 1024;  // in bytes
         inputSize_ = inputSize_ + computeExtraBytes(inputSize_);
-        localExecTime_ = srvInfo[typeId*2+1] / 1000.0;    // in seconds, as the profiling time is in milliseconds
-        localExecPower_ = srvInfo[typeId*2+2];  // in mW
-        period_ = db_->appDeadline.at(appType_) / dlScale_; // in seconds
+        localExecTime_ = db_->getUeExeTime(appType_) / 1000.0;    // in seconds, as the profiling time is in milliseconds
+        localExecPower_ = db_->getLocalExecPower(appType_);  // in mW
+        offloadPower_ = db_->getOffloadPower(); // in mW
+        period_ = db_->getAppDeadline(appType_) / dlScale_; // in seconds
         period_ = round(period_ * 1000.0) / 1000.0; // round to 3 decimal places
         localExecTime_ = min(localExecTime_, period_.dbl()); // the local execution time should not exceed the period
         localConsumedEnergy_ = localExecPower_ * localExecTime_;
         nframes_ = (moveStoptime_ - moveStartTime_ - startOffset_) / period_;
 
-        EV << "UeApp::initialize - image index " << imgIndex_ << " input size " << inputSize_ << " output size " << outputSize_ 
+        EV << "UeApp::initialize - image input size " << inputSize_ << " output size " << outputSize_ 
             << " local exec time " << localExecTime_ << " local exec power " << localExecPower_ << " period " << period_ 
             << " application type " << appType_ << endl;
 
         WATCH(appType_);
         WATCH(inputSize_);
+        WATCH(accuracy_);
         WATCH(localExecTime_);
         WATCH(localExecPower_);
         WATCH(period_);
@@ -231,12 +229,6 @@ void UeApp::handleMessage(cMessage *msg)
 
 void UeApp::initTraffic()
 {
-    // std::string schedAddress = par("schedulerAddr").stringValue();
-    // cModule* schedModule = findModuleByPath(par("schedulerAddr").stringValue());
-    // if (schedModule == nullptr)
-    //     throw cRuntimeError("UeApp::initTraffic - %s address not found", schedAddress.c_str());
-
-    // schedulerAddr_ = inet::L3AddressResolver().resolve(par("schedulerAddr").stringValue());
     socket.setOutputGate(gate("socketOut"));
     socket.bind(localPort_);
 
@@ -301,14 +293,14 @@ void UeApp::sendServiceRequest()
     vecReq->setInputSize(inputSize_);
     vecReq->setOutputSize(outputSize_);
     vecReq->setPeriod(period_);
-    vecReq->setResourceType(resourceType_);
-    vecReq->setService(appType_);
+    vecReq->setResourceType(resourceType_.c_str());
+    vecReq->setService(appType_.c_str());
+    vecReq->setAccuracy(accuracy_);
     vecReq->setAppId(appId_);
     vecReq->setStopTime(moveStoptime_);
     vecReq->setEnergy(localConsumedEnergy_);
     vecReq->setOffloadPower(offloadPower_);
     vecReq->setUeIpAddress(0); // will be filled by the NPC module
-    // vecReq->addTag<CreationTimeTag>()->setCreationTime(simTime());
     packet->insertAtBack(vecReq);
 
     socket.sendTo(packet, MEC_UE_OFFLOAD_ADDR, MEC_NPC_PORT);

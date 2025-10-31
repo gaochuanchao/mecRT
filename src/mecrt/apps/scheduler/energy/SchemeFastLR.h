@@ -21,9 +21,9 @@
 #ifndef _MECRT_SCHEDULER_SCHEME_FAST_LR_H_
 #define _MECRT_SCHEDULER_SCHEME_FAST_LR_H_
 
-#include "mecrt/apps/scheduler/SchemeBase.h"
+#include "mecrt/apps/scheduler/energy/SchemeGreedy.h"
 
-class SchemeFastLR : public SchemeBase
+class SchemeFastLR : public SchemeGreedy
 {
 
   public:

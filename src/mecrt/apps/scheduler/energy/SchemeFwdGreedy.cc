@@ -1,11 +1,11 @@
 //
 //  Project: mecRT – Mobile Edge Computing Simulator for Real-Time Applications
-//  File:    SchemeFwdBase.cc / SchemeFwdBase.h
+//  File:    SchemeFwdGreedy.cc / SchemeFwdGreedy.h
 //
 //  Description:
 //    This file implements the basic scheduling scheme in the Mobile Edge Computing System with
 //    backhaul network support, where tasks can be forwarded among RSUs after being offloaded to the access RSU.
-//    The SchemeFwdBase class provides common functionalities for different scheduling schemes that support task forwarding.
+//    The SchemeFwdGreedy class provides common functionalities for different scheduling schemes that support task forwarding.
 //    By default, a greedy scheduling scheme is implemented.
 //      [scheme source: C. Gao, A. Shaan and A. Easwaran, "Deadline-constrained Multi-resource Task Mapping 
 //      and Allocation for Edge-Cloud Systems," GLOBECOM 2022, doi: 10.1109/GLOBECOM48099.2022.10001137.]
@@ -16,35 +16,64 @@
 //  License: Academic Public License -- NOT FOR COMMERCIAL USE
 //
 
-#include "mecrt/apps/scheduler/SchemeFwdBase.h"
+#include "mecrt/apps/scheduler/energy/SchemeFwdGreedy.h"
 
-SchemeFwdBase::SchemeFwdBase(Scheduler *scheduler)
+SchemeFwdGreedy::SchemeFwdGreedy(Scheduler *scheduler)
     : SchemeBase(scheduler)
 {
     // Additional initialization specific to the forwarding scheme can be added here
     virtualLinkRate_ = scheduler_->virtualLinkRate_;  // Get the virtual link rate from the scheduler
     fairFactor_ = scheduler_->fairFactor_;  // Get the fairness factor from the scheduler
 
-    EV << NOW << " SchemeFwdBase::SchemeFwdBase - Initialized" << endl;
+    EV << NOW << " SchemeFwdGreedy::SchemeFwdGreedy - Initialized" << endl;
 }
 
 
-void SchemeFwdBase::initializeData()
+void SchemeFwdGreedy::initializeData()
 {
     // Initialize the scheduling data
-    EV << NOW << " SchemeFwdBase::initializeData - Initializing scheduling data" << endl;
+    EV << NOW << " SchemeFwdGreedy::initializeData - Initializing scheduling data" << endl;
 
-    // Call the base class method to initialize common data
-    SchemeBase::initializeData();
+        // initialize the apps vector, using vector index number to represent the real application ID
+    appIds_.clear();
+    appId2Index_.clear();  // clear the mapping from application ID to index
+    appIds_.reserve(unscheduledApps_.size());  // reserve memory for the apps vector
+    for (AppId appId : unscheduledApps_)    // enumerate the unscheduled apps
+    {
+        appIds_.push_back(appId);
+        appId2Index_[appId] = appIds_.size() - 1;  // map the application ID to the index in the apps vector
+    }
 
+    // initialize the rsuIds vector, using vector index number to represent the real RSU IDs
+    rsuIds_.clear();
+    rsuId2Index_.clear();  // clear the mapping from RSU ID to index
+    rsuRBs_.clear();
+    rsuCUs_.clear();
+    for (auto &rsuPair : rsuStatus_)   // enumerate the RSUs
+    {
+        MacNodeId rsuId = rsuPair.first;  // get the RSU ID
+        rsuIds_.push_back(rsuId);  // push the RSU ID
+        rsuId2Index_[rsuId] = rsuIds_.size() - 1;  // map the RSU ID to the index in the rsuIds vector
+        rsuRBs_.push_back(rsuPair.second.bands - rsuOnholdRbs_[rsuId]);  // push the RSU band capacity
+        rsuCUs_.push_back(rsuPair.second.cmpUnits - rsuOnholdCus_[rsuId]);  // push the RSU computing capacity
+    }
+
+    // clear the service instances vectors
+    instAppIndex_.clear();  // application IDs for the service instances
+    instRBs_.clear();  // resource blocks for the service instances
+    instCUs_.clear();  // computing units for the service instances
+    instUtility_.clear();  // energy savings for the service instances
+    instMaxOffTime_.clear();  // maximum allowable offloading time for the service instances
+    appMaxOffTime_.clear();  // maximum allowable offloading time for the applications
+    appUtility_.clear();  // utility (i.e., energy savings) for the applications
     instOffRsuIndex_.clear();  // Clear the offload RSU index vector
     instProRsuIndex_.clear();  // Clear the processing RSU index vector
 }
 
 
-void SchemeFwdBase::generateScheduleInstances()
+void SchemeFwdGreedy::generateScheduleInstances()
 {
-    EV << NOW << " SchemeFwdBase::generateScheduleInstances - Generating schedule instances" << endl;
+    EV << NOW << " SchemeFwdGreedy::generateScheduleInstances - Generating schedule instances" << endl;
 
     initializeData();  // transform the scheduling data
 
@@ -109,20 +138,6 @@ void SchemeFwdBase::generateScheduleInstances()
                             instCUs_.push_back(cmpUnits);
                             instUtility_.push_back(utility);  // energy savings for the instance
                             instMaxOffTime_.push_back(period - fwdDelay - exeDelay - offloadOverhead_);  // maximum offloading time for the instance
-
-                            // if (instAppIndex_.size() == (indexDebug+1))  // debug
-                            // {
-                            //     EV << NOW << " SchemeFwdBase::generateScheduleInstances - Debug instance: AppIdx=" << instAppIndex_[indexDebug] 
-                            //        << ", OffRsuIdx=" << instOffRsuIndex_[indexDebug] << ", ProRsuIdx=" << instProRsuIndex_[indexDebug]
-                            //        << ", RBs=" << instRBs_[indexDebug] << ", CUs=" << instCUs_[indexDebug]
-                            //        << ", OffDelay=" << offloadDelay << ", FwdDelay=" << fwdDelay 
-                            //        << ", ExeDelay=" << exeDelay << ", TotalDelay=" << totalDelay 
-                            //        << ", Utility=" << instUtility_[indexDebug] 
-                            //        << ", MaxOffTime=" << (period - fwdDelay - exeDelay - offloadOverhead_) << endl;
-                            //     EV << "\t AppId=" << appId
-                            //        << ", OffRsuId=" << offRsuId
-                            //        << ", ProRsuId=" << procRsuId << endl;
-                            // }
                         }
                     }
                 }
@@ -132,13 +147,13 @@ void SchemeFwdBase::generateScheduleInstances()
 }
 
 
-vector<srvInstance> SchemeFwdBase::scheduleRequests()
+vector<srvInstance> SchemeFwdGreedy::scheduleRequests()
 {
-    EV << NOW << " SchemeFwdBase::scheduleRequests - greedy schedule scheme starts" << endl;
+    EV << NOW << " SchemeFwdGreedy::scheduleRequests - greedy schedule scheme starts" << endl;
 
     if (appIds_.empty())
     {
-        EV << NOW << " SchemeFwdBase::scheduleRequests - no applications to schedule, returning empty vector" << endl;
+        EV << NOW << " SchemeFwdGreedy::scheduleRequests - no applications to schedule, returning empty vector" << endl;
         return {};  // return an empty vector if no applications are available
     }
 
@@ -185,17 +200,6 @@ vector<srvInstance> SchemeFwdBase::scheduleRequests()
         if (rsuRBs_[rsuOffIndex] < resBlocks || rsuCUs_[rsuProIndex] < cmpUnits)
             continue;
 
-        // EV << NOW << "  Scheduled instance: AppIdx=" << appIndex << ", OffRsuIdx=" << rsuOffIndex 
-        //    << ", ProRsuIdx=" << rsuProIndex << ", RBs=" << resBlocks << ", CUs=" << cmpUnits << endl;
-
-        // EV << "\t Period=" << appInfo_[appIds_[appIndex]].period.dbl() << "s, MaxOffTime="
-        //     << instMaxOffTime_[instIdx] << "s, Utility=" << instUtility_[instIdx] << endl;
-        // EV << "\t Execution Delay=" << computeExeDelay(appIds_[appIndex], rsuIds_[rsuProIndex], cmpUnits) << endl;
-        // EV << "\t SelectedIndex=" << instIdx << endl;
-
-        // EV << NOW << "  Scheduled instance: AppId=" << appIds_[appIndex] << ", OffRsuId=" << rsuIds_[rsuOffIndex] 
-        //    << ", ProRsuId=" << rsuIds_[rsuProIndex] << ", RBs=" << resBlocks << ", CUs=" << cmpUnits << endl;
-
         // add the instance to the solution set
         solution.emplace_back(appIds_[appIndex], rsuIds_[rsuOffIndex], rsuIds_[rsuProIndex], resBlocks, cmpUnits);
         selectedApps.insert(appIndex);  // mark the application as selected
@@ -207,14 +211,14 @@ vector<srvInstance> SchemeFwdBase::scheduleRequests()
         rsuCUs_[rsuProIndex] -= cmpUnits;
     }
 
-    EV << NOW << " SchemeFwdBase::scheduleRequests - greedy schedule scheme ends, selected " << solution.size() 
+    EV << NOW << " SchemeFwdGreedy::scheduleRequests - greedy schedule scheme ends, selected " << solution.size() 
        << " instances from " << instAppIndex_.size() << " total instances" << endl;
 
     return solution;  // return the solution set
 }
 
 
-double SchemeFwdBase::computeForwardingDelay(int hopCount, int dataSize)
+double SchemeFwdGreedy::computeForwardingDelay(int hopCount, int dataSize)
 {
     /***
      * Compute the data forwarding delay from the offloading RSU to the processing RSU
@@ -228,4 +232,13 @@ double SchemeFwdBase::computeForwardingDelay(int hopCount, int dataSize)
         return 0;
 
     return (dataSize / virtualLinkRate_) * hopCount;
+}
+
+
+double SchemeFwdGreedy::computeUtility(AppId &appId, double &offloadDelay, double &exeDelay, double &period)
+{
+    // default implementation returns the energy savings
+    double savedEnergy = appInfo_[appId].energy - appInfo_[appId].offloadPower * offloadDelay;
+    
+    return savedEnergy / period;   // energy saving per second
 }

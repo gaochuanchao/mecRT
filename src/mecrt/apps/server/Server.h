@@ -38,8 +38,8 @@ struct Service
 {
     AppId appId;    // the application id
     inet::Ipv4Address ueAddr; // the IP address of the vehicle
-    int resourceType;  // whether using GPU or CPU
-    int service;        // the service name
+    string resourceType;  // whether using GPU or CPU
+    string service;        // the service name
     MacNodeId processGnbId;  // the id of processing gNB
     MacNodeId offloadGnbId;  // the id of offloading gNB
     inet::Ipv4Address offloadGnbAddr; // the IP address of offloading gNB
@@ -70,8 +70,8 @@ class Server : public omnetpp::cSimpleModule
     int cmpUnitTotal_;  // the total computing units in the RSU
     int cmpUnitFree_;   // the remaining free computing units in the RSU  
 
-    VecResourceType resourceType_;  // "GPU" or "CPU"
-    VecDeviceType deviceType_;    // "RTX3090", "RTX1080Ti", ...
+    string resourceType_;  // "GPU" or "CPU"
+    string deviceType_;    // "RTX3090", "RTX1080Ti", ...
 
     // IP address of the gateway to the Internet
     // inet::L3Address gwAddress_;
@@ -81,6 +81,7 @@ class Server : public omnetpp::cSimpleModule
     // MEC routing information
     string cellularNicName_; // the name of the cellular NIC interface
 
+    Database *db_;
     Binder *binder_;
     MacNodeId gnbId_;
     // int pppIfInterfaceId_; // the interface id of the PPP interface
@@ -91,7 +92,7 @@ class Server : public omnetpp::cSimpleModule
     std::set<AppId> appsWaitMacInitFb_;  // the apps that are waiting for the MAC layer initialization feedback
 
     // service initialization time, need to be initialized during module initialization
-    std::map<int, omnetpp::simtime_t> serviceInitTime_;
+    std::map<string, omnetpp::simtime_t> serviceInitTime_;
 
     omnetpp::cMessage * srvInitComplete_;  // flush the app pdu list
     std::vector<AppId> srvInInitVector_;  // the service that are still in initializing status

@@ -31,14 +31,15 @@ O = $(PROJECT_OUTPUT_DIR)/$(CONFIGNAME)/$(PROJECTRELATIVE_PATH)
 OBJS = \
     $O/mecrt/apps/scheduler/Scheduler.o \
     $O/mecrt/apps/scheduler/SchemeBase.o \
-    $O/mecrt/apps/scheduler/SchemeFastLR.o \
-    $O/mecrt/apps/scheduler/SchemeFwdBase.o \
-    $O/mecrt/apps/scheduler/SchemeFwdGameTheory.o \
-    $O/mecrt/apps/scheduler/SchemeFwdGraphMatch.o \
-    $O/mecrt/apps/scheduler/SchemeFwdQuickLR.o \
-    $O/mecrt/apps/scheduler/SchemeGameTheory.o \
-    $O/mecrt/apps/scheduler/SchemeIterative.o \
-    $O/mecrt/apps/scheduler/SchemeSARound.o \
+    $O/mecrt/apps/scheduler/energy/SchemeFastLR.o \
+    $O/mecrt/apps/scheduler/energy/SchemeFwdGameTheory.o \
+    $O/mecrt/apps/scheduler/energy/SchemeFwdGraphMatch.o \
+    $O/mecrt/apps/scheduler/energy/SchemeFwdGreedy.o \
+    $O/mecrt/apps/scheduler/energy/SchemeFwdQuickLR.o \
+    $O/mecrt/apps/scheduler/energy/SchemeGameTheory.o \
+    $O/mecrt/apps/scheduler/energy/SchemeGreedy.o \
+    $O/mecrt/apps/scheduler/energy/SchemeIterative.o \
+    $O/mecrt/apps/scheduler/energy/SchemeSARound.o \
     $O/mecrt/apps/server/Server.o \
     $O/mecrt/apps/ue/UeApp.o \
     $O/mecrt/common/BandManager.o \

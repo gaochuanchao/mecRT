@@ -13,8 +13,8 @@
 //
 //  License: Academic Public License -- NOT FOR COMMERCIAL USE
 //
-#ifndef _VEC_DATABASE_H_
-#define _VEC_DATABASE_H_
+#ifndef _MEC_DATABASE_H_
+#define _MEC_DATABASE_H_
 
 #include <string.h>
 #include <omnetpp.h>
@@ -24,32 +24,6 @@
 using namespace omnetpp;
 using namespace std;
 
-enum VecServiceType
-{
-    RESNET152,
-    VGG16,
-    VGG19,
-    INCEPTION_V4,
-    PEOPLENET_PRUNED,
-    SERVICE_COUNTER
-};
-
-enum VecResourceType
-{
-    GPU,
-    CPU,
-    RESOURCE_COUNTER
-};
-
-enum VecDeviceType
-{
-    RTX3090,
-    RTX4090,
-    RTX4500,
-    DEVICE_COUNTER
-};
-
-
 class Database : public omnetpp::cSimpleModule
 {
 
@@ -58,48 +32,28 @@ class Database : public omnetpp::cSimpleModule
     double serverExeScale_; // the scale for the server execution time, default is 1.0
 
     // store the data related to the application execution profiling
-    string vehExeDataPath_; // the path to store the vehicle execution data
-    string rsuExeDataPath_; // the path to store the RSU execution data
-    string rsuPosDataPath_; // the path to store the RSU position data
-    string rsuGraphPath_; // the path to store the RSU graph data
+    string ueExeDataPath_; // the path to store the UE execution data
+    string gnbExeDataPath_; // the path to store the gNB execution data
+    string gnbPosDataPath_; // the path to store the gNB position data
+    string appDataSizePath_; // the path to store the application data size
 
     double idlePower_; // the idle power consumption of the device
     double offloadPower_; // the offloading power consumption of the device
 
-    vector<vector<double>> vehExeData_; // store the vehicle execution data
-    map<pair<int, int>, double> rsuExeTime_; // store the execution time of the application
-    map<int, pair<double, double>> rsuPosData_; // store the RSU position data
+    map<string, double> ueExeTime_; // store the execution time of the application
+    map<string, double> ueAppAccuracy_; // store the application accuracy
+    vector<int> appDataSize_; // store the application data size
+    map<string, map<string, double>> gnbExeTime_; // store the execution time of the application
+    map<string, double> gnbAppAccuracy_; // store the application accuracy
+    set<string> gnbServices_; // store the gNB services
+    map<int, pair<double, double>> gnbPosData_; // store the gNB position data
+    vector<string> deviceTypes_; // store the device types
 
-  public:
     // define a map for application deadline
-    const map<int, double> appDeadline = {
-        {RESNET152, 0.07}, // 70ms
-        {VGG16, 0.08},    // 80ms
-        {VGG19, 0.1},     // 100ms
-        {INCEPTION_V4, 0.1}, // 100ms
-        {PEOPLENET_PRUNED, 0.09} // 90ms
-    };
-
-    // define a map for application name
-    const map<int, string> appType = {
-        {RESNET152, "RESNET152"},
-        {VGG16, "VGG16"},
-        {VGG19, "VGG19"},
-        {INCEPTION_V4, "INCEPTION_V4"},
-        {PEOPLENET_PRUNED, "PEOPLENET_PRUNED"}
-    };
-
-    // define a map for device name
-    const map<int, string> deviceType = {
-        {RTX3090, "RTX3090"},
-        {RTX4090, "RTX4090"},
-        {RTX4500, "RTX4500"}
-    };
-
-    // define a map for resource name
-    const map<int, string> resourceType = {
-        {GPU, "GPU"},
-        {CPU, "CPU"}
+    const map<string, double> appDeadline = {
+        {"resnet18", 0.07}, // 70ms
+        {"googlenet", 0.08},    // 80ms
+        {"regnet-x-s", 0.1}     // 100ms
     };
 
   public:
@@ -109,26 +63,32 @@ class Database : public omnetpp::cSimpleModule
     virtual void initialize(int stage) override;
     virtual int numInitStages() const override { return inet::NUM_INIT_STAGES; }
 
-    // load the vehicle execution data from the file
-    virtual void loadVehExeDataFromFile();
+    // load the UE execution data from the file
+    virtual void loadUeExeDataFromFile();
+    // load the application data size from the file
+    virtual void loadAppDataSizeFromFile();
+    // load the gNB execution data from the file
+    virtual void loadGnbExeDataFromFile();
+    // load gNB position data from the file
+    virtual void loadGnbPosDataFromFile();
 
-    // load the RSU execution data from the file
-    virtual void loadRsuExeDataFromFile();
+    // get the UE execution time
+    virtual double getUeExeTime(string appType);
+    virtual double getUeAppAccuracy(string appType);
+    virtual int sampleAppDataSize();
+    virtual double getAppDeadline(string appType);
+    virtual string sampleAppType();
 
-    // load RSU position data from the file
-    virtual void loadRsuPosDataFromFile();
+    double getIdlePower() const { return idlePower_; }
+    double getOffloadPower() const { return offloadPower_; }
+    double getLocalExecPower(string appType);
 
-    // get the vehicle execution data
-    virtual vector<double>& getVehExeData(int idx);
-
-    // get the number of vehicle execution data
-    virtual int getNumVehExeData() const { return vehExeData_.size(); }
-
-    // get the RSU execution data
-    virtual double getRsuExeTime(int appType, int deviceType);
-
-    // get the RSU position data
-    virtual pair<double, double> getRsuPosData(int rsuId);
+    // get the gNB execution data
+    virtual double getGnbExeTime(string appType, string deviceType);
+    virtual double getGnbAppAccuracy(string appType);
+    virtual pair<double, double> getGnbPosData(int gnbId);
+    virtual string sampleDeviceType();
+    virtual set<string> getGnbServiceTypes() const { return gnbServices_; }
 };
 
 #endif

@@ -18,10 +18,10 @@
 //  License: Academic Public License -- NOT FOR COMMERCIAL USE
 //
 
-#include "mecrt/apps/scheduler/SchemeFastLR.h"
+#include "mecrt/apps/scheduler/energy/SchemeFastLR.h"
 
 SchemeFastLR::SchemeFastLR(Scheduler *scheduler)
-    : SchemeBase(scheduler)
+    : SchemeGreedy(scheduler)
 {
     EV << NOW << " SchemeFastLR::SchemeFastLR - Initialized" << endl;
 }

@@ -45,8 +45,9 @@ struct RequestMeta {
     MacNodeId vehId;
     uint32_t ueIpv4Address; // the IPv4 address of the UE
     omnetpp::simtime_t period;          // in milliseconds, the deadline of single job or period of periodic task
-    int resourceType;  // whether using GPU or CPU
-    int service;            // the service name, app type
+    string resourceType;  // whether using GPU or CPU
+    string service;            // the service name, app type
+    double accuracy;       // the local execution accuracy
     omnetpp::simtime_t stopTime;    // the time when the app left the simulation
     double energy;  // the energy consumption for local processing
     double offloadPower;    // the power used for data offloading
@@ -57,8 +58,8 @@ struct RsuResource {
     int cmpCapacity;
     int bands;             // remaining free bands in the RSU
     int bandCapacity;
-    int resourceType;   // the resource type of the RSU, e.g., GPU
-    int deviceType;       // the device type of the RSU
+    string resourceType;   // the resource type of the RSU, e.g., GPU
+    string deviceType;       // the device type of the RSU
     Ipv4Address rsuAddress; // the IPv4 address of the RSU
     omnetpp::simtime_t bandUpdateTime;  // the time of updating
     omnetpp::simtime_t cmpUpdateTime;   // the time of updating
@@ -74,6 +75,8 @@ struct ServiceInstance {
     double energySaved;
     double exeTime; // the execution time of the service
     double maxOffloadTime;  // the maximum offloading time results in positive energy saving
+    string serviceType; // the service type of the application
+    double utility; // the utility of the service instance
 };
 
 

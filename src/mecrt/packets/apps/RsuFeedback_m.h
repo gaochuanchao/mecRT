@@ -27,25 +27,25 @@ class RsuFeedback;
  * class RsuFeedback extends inet::FieldsChunk
  * {
  *     // ===== specified in the gNB MAC stack ===========
- *     int gnbId;	// MacNodeId of gNB, 2 bytes
- *     int vehId;	// MacNodeId of UE, 2 bytes
- *     int serverPort;			// the port id of the server app within the gNB, 2 bytes
+ *     int gnbId;	// MacNodeId of gNB, 4 bytes
+ *     int vehId;	// MacNodeId of UE, 4 bytes
+ *     int serverPort;			// the port id of the server app within the gNB, 4 bytes
  *     double frequency; 		// carrier frequency, 4 bytes
  *     int bytePerBand;	// bytes that can be delived within 1 TTI for each band, 4 bytes
- *     int availBands;	// number of bands, 2 bytes
- *     int totalBands;	// total bands can be used for scheduling, 2 bytes
+ *     int availBands;	// number of bands, 4 bytes
+ *     int totalBands;	// total bands can be used for scheduling, 4 bytes
  *     uint32 rsuAddr;	// the IPv4 address of the RSU, 4 bytes
  * 
  *     // ===== specified in the server app of the gNB ===========
- *     int freeCmpUnits;	// the available computing units in the RSU server, 2 bytes
- *     int totalCmpUnits;	// total computing units in the RSU server, 2 bytes
- *     unsigned short deviceType;			// the device type of the server (e.g., "RTX3090"), 2 bytes
- *     unsigned short resourceType;		// the resource type of the server	(e.g., "GPU"), 2 bytes
+ *     int freeCmpUnits;	// the available computing units in the RSU server, 4 bytes
+ *     int totalCmpUnits;	// total computing units in the RSU server, 4 bytes
+ *     string deviceType;			// the device type of the server (e.g., "RTX3090"), 4 bytes
+ *     string resourceType;		// the resource type of the server	(e.g., "GPU"), 4 bytes
  * 
  *     simtime_t bandUpdateTime; // the time when the bands were updated, 8 bytes
  *     simtime_t cmpUnitUpdateTime; // the time when the computing units were updated, 8 bytes
  * 
- *     chunkLength = inet::B(44);
+ *     chunkLength = inet::B(74);
  * }
  * </pre>
  */
@@ -62,8 +62,8 @@ class RsuFeedback : public ::inet::FieldsChunk
     uint32_t rsuAddr = 0;
     int freeCmpUnits = 0;
     int totalCmpUnits = 0;
-    unsigned short deviceType = 0;
-    unsigned short resourceType = 0;
+    omnetpp::opp_string deviceType;
+    omnetpp::opp_string resourceType;
     omnetpp::simtime_t bandUpdateTime = SIMTIME_ZERO;
     omnetpp::simtime_t cmpUnitUpdateTime = SIMTIME_ZERO;
 
@@ -112,11 +112,11 @@ class RsuFeedback : public ::inet::FieldsChunk
     virtual int getTotalCmpUnits() const;
     virtual void setTotalCmpUnits(int totalCmpUnits);
 
-    virtual unsigned short getDeviceType() const;
-    virtual void setDeviceType(unsigned short deviceType);
+    virtual const char * getDeviceType() const;
+    virtual void setDeviceType(const char * deviceType);
 
-    virtual unsigned short getResourceType() const;
-    virtual void setResourceType(unsigned short resourceType);
+    virtual const char * getResourceType() const;
+    virtual void setResourceType(const char * resourceType);
 
     virtual omnetpp::simtime_t getBandUpdateTime() const;
     virtual void setBandUpdateTime(omnetpp::simtime_t bandUpdateTime);

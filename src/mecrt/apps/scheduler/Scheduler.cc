@@ -17,14 +17,14 @@
 
 #include "mecrt/apps/scheduler/Scheduler.h"
 #include "mecrt/apps/scheduler/SchemeBase.h"
-#include "mecrt/apps/scheduler/SchemeFastLR.h"
-#include "mecrt/apps/scheduler/SchemeGameTheory.h"
-#include "mecrt/apps/scheduler/SchemeIterative.h"
-#include "mecrt/apps/scheduler/SchemeSARound.h"
-#include "mecrt/apps/scheduler/SchemeFwdBase.h"
-#include "mecrt/apps/scheduler/SchemeFwdGameTheory.h"
-#include "mecrt/apps/scheduler/SchemeFwdQuickLR.h"
-#include "mecrt/apps/scheduler/SchemeFwdGraphMatch.h"
+#include "mecrt/apps/scheduler/energy/SchemeFastLR.h"
+#include "mecrt/apps/scheduler/energy/SchemeGameTheory.h"
+#include "mecrt/apps/scheduler/energy/SchemeIterative.h"
+#include "mecrt/apps/scheduler/energy/SchemeSARound.h"
+#include "mecrt/apps/scheduler/energy/SchemeFwdGreedy.h"
+#include "mecrt/apps/scheduler/energy/SchemeFwdGameTheory.h"
+#include "mecrt/apps/scheduler/energy/SchemeFwdQuickLR.h"
+#include "mecrt/apps/scheduler/energy/SchemeFwdGraphMatch.h"
 
 #include "mecrt/packets/apps/Grant2Rsu_m.h"
 #include "mecrt/packets/apps/ServiceStatus_m.h"
@@ -109,7 +109,6 @@ void Scheduler::initialize(int stage)
         vecSavedEnergySignal_ = registerSignal("savedEnergy");
         vecPendingAppCountSignal_ = registerSignal("pendingAppCount");
         vecGrantedAppCountSignal_ = registerSignal("grantedAppCount");
-
         
         WATCH(cuStep_);
         WATCH(rbStep_);
@@ -176,7 +175,7 @@ void Scheduler::initialize(int stage)
         if (!enableBackhaul_)
         {
             if (schemeName_ == "Greedy")
-                scheme_ = new SchemeBase(this);
+                scheme_ = new SchemeGreedy(this);
             else if (schemeName_ == "FastLR")
                 scheme_ = new SchemeFastLR(this);
             else if (schemeName_ == "GameTheory")
@@ -191,7 +190,7 @@ void Scheduler::initialize(int stage)
         else
         {
             if (schemeName_ == "FwdGreedy")
-                scheme_ = new SchemeFwdBase(this);
+                scheme_ = new SchemeFwdGreedy(this);
             else if (schemeName_ == "FwdGameTheory")
                 scheme_ = new SchemeFwdGameTheory(this);
             else if (schemeName_ == "FwdQuickLR")
@@ -199,7 +198,7 @@ void Scheduler::initialize(int stage)
             else if (schemeName_ == "FwdGraphMatch")
                 scheme_ = new SchemeFwdGraphMatch(this);
             else
-                scheme_ = new SchemeFwdBase(this);
+                scheme_ = new SchemeBase(this);
         }
 
         schedStarter_ = new cMessage("ScheduleStart");
@@ -465,8 +464,9 @@ void Scheduler::recordVehRequest(cMessage *msg)
     reqMeta.inputSize = vecReq->getInputSize();
     reqMeta.outputSize = vecReq->getOutputSize();
     reqMeta.period = vecReq->getPeriod();
-    reqMeta.resourceType = static_cast<VecResourceType>(vecReq->getResourceType());
-    reqMeta.service = static_cast<VecServiceType>(vecReq->getService());
+    reqMeta.resourceType = vecReq->getResourceType();
+    reqMeta.service = vecReq->getService();
+    reqMeta.accuracy = vecReq->getAccuracy();
     reqMeta.appId = appId;
     reqMeta.vehId = vehId;
     reqMeta.stopTime = vecReq->getStopTime();
@@ -479,9 +479,8 @@ void Scheduler::recordVehRequest(cMessage *msg)
     EV << NOW << " Scheduler::recordVehRequest - request from Veh[nodeId=" << vehId << "] is received, appId: " << appId
         << ", inputSize: " << reqMeta.inputSize << ", outputSize: " << reqMeta.outputSize
         << ", period: " << reqMeta.period << ", stop time: " <<  reqMeta.stopTime << ", ue address: " 
-        << Ipv4Address(reqMeta.ueIpv4Address) <<  ", resourceType: " 
-        << db_->resourceType.at(reqMeta.resourceType)
-        << ", service: " << db_->appType.at(reqMeta.service) << endl;
+        << Ipv4Address(reqMeta.ueIpv4Address) <<  ", resourceType: " << reqMeta.resourceType
+        << ", service: " << reqMeta.service << endl;
 
     // if ((!periodicScheduling_) && (!schedStarter_->isScheduled()))  // only for event trigger mode
     // {
@@ -521,16 +520,16 @@ void Scheduler::recordRsuStatus(cMessage *msg)
         rsuRes.bandCapacity = rsuStat->getTotalBands();
         rsuRes.cmpUnits = rsuStat->getFreeCmpUnits();
         rsuRes.cmpCapacity = rsuStat->getTotalCmpUnits();
-        rsuRes.deviceType = static_cast<VecDeviceType>(rsuStat->getDeviceType());
-        rsuRes.resourceType = static_cast<VecResourceType>(rsuStat->getResourceType());
+        rsuRes.deviceType = rsuStat->getDeviceType();
+        rsuRes.resourceType = rsuStat->getResourceType();
         rsuRes.rsuAddress = Ipv4Address(rsuStat->getRsuAddr());
         rsuRes.bandUpdateTime = bandUpdateTime;
         rsuRes.cmpUpdateTime = cmpUnitUpdateTime;
         rsuStatus_[gnbId] = rsuRes;
 
         EV << NOW << " Scheduler::recordRsuStatus - RSU[" << gnbIndex << "] nodeId=" << gnbId << " status recorded for the first time, bands: " << rsuRes.bands
-        << ", cmpUnits: " << rsuRes.cmpUnits << ", deviceType: " << db_->deviceType.at(rsuRes.deviceType)
-        << ", resourceType: " << db_->resourceType.at(rsuRes.resourceType) << ", rsuAddress: " << rsuRes.rsuAddress << endl;
+        << ", cmpUnits: " << rsuRes.cmpUnits << ", deviceType: " << rsuRes.deviceType
+        << ", resourceType: " << rsuRes.resourceType << ", rsuAddress: " << rsuRes.rsuAddress << endl;
 
         rsuWaitInitFbApps_[gnbId] = set<AppId>();
         // initialize the onhold resource blocks and computing units
@@ -546,8 +545,8 @@ void Scheduler::recordRsuStatus(cMessage *msg)
             rsuRes.bandUpdateTime = bandUpdateTime;
 
             EV << NOW << " Scheduler::recordRsuStatus - RSU[" << gnbIndex << "] nodeId=" << gnbId << " status updated, bands: " << rsuRes.bands
-                << ", bandCapacity: " << rsuRes.bandCapacity << ", deviceType: " << db_->deviceType.at(rsuRes.deviceType)
-                << ", resourceType: " << db_->resourceType.at(rsuRes.resourceType) << endl;
+                << ", bandCapacity: " << rsuRes.bandCapacity << ", deviceType: " << rsuRes.deviceType
+                << ", resourceType: " << rsuRes.resourceType << endl;
         }
         else
         {
@@ -560,8 +559,8 @@ void Scheduler::recordRsuStatus(cMessage *msg)
             rsuRes.cmpUpdateTime = cmpUnitUpdateTime;
 
             EV << NOW << " Scheduler::recordRsuStatus - RSU[" << gnbIndex << "] nodeId=" << gnbId << " status updated, cmpUnits: " << rsuRes.cmpUnits
-                << ", cmpCapacity: " << rsuRes.cmpCapacity << ", deviceType: " << db_->deviceType.at(rsuRes.deviceType)
-                << ", resourceType: " << db_->resourceType.at(rsuRes.resourceType) << endl;
+                << ", cmpCapacity: " << rsuRes.cmpCapacity << ", deviceType: " << rsuRes.deviceType
+                << ", resourceType: " << rsuRes.resourceType << endl;
         }
         else
         {
@@ -750,6 +749,7 @@ void Scheduler::scheduleRequest()
         srv.cmpUnits = get<4>(ins);
         srv.exeTime = scheme_->computeExeDelay(appId, processGnbId, srv.cmpUnits);
         srv.energySaved = scheme_->getAppUtility(appId);
+        srv.serviceType = scheme_->getAppAssignedService(appId);
 
         if (srv.energySaved <= 0)
         {
@@ -922,8 +922,8 @@ void Scheduler::sendGrantPacket(ServiceInstance& srv, bool isStart, bool isStop)
     grant->setOffloadGnbId(offloadGnbId);
     grant->setOffloadGnbAddr(rsuStatus_[offloadGnbId].rsuAddress.getInt());
     grant->setProcessGnbId(processGnbId);
-    grant->setResourceType(appInfo_[appId].resourceType);
-    grant->setService(appInfo_[appId].service);
+    grant->setResourceType(appInfo_[appId].resourceType.c_str());
+    grant->setService(srv.serviceType.c_str());
     grant->setCmpUnits(srv.cmpUnits);
     grant->setBands(srv.bands);
     grant->setDeadline(appInfo_[appId].period);
@@ -940,9 +940,7 @@ void Scheduler::sendGrantPacket(ServiceInstance& srv, bool isStart, bool isStop)
         << "], appId: " << appId << ", processGnbId: " << processGnbId << ", offloadGnbId: " << offloadGnbId
         << ", cmpUnits: " << srv.cmpUnits << ", bands: " << srv.bands
         << ", exeTime: " << srv.exeTime << ", maxOffloadTime: " << srv.maxOffloadTime
-        << ", resourceType: " << db_->resourceType.at(appInfo_[appId].resourceType)
-        << ", service: " << db_->appType.at(appInfo_[appId].service) 
-        << endl;
+        << ", resourceType: " << appInfo_[appId].resourceType << ", service: " << srv.serviceType << endl;
 
     // check if the processing server is the local server
     Ipv4Address processGnbAddr = rsuStatus_[processGnbId].rsuAddress;

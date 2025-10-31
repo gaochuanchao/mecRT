@@ -20,8 +20,8 @@ class Grant2Rsu extends inet::FieldsChunk
 {
 	unsigned int appId;				// the application id of the vehicle, 4 bytes
 	uint32 ueAddr;			// the IP address of the vehicle, 4 bytes
-	unsigned short resourceType;	// the resource type of the server	(e.g., "GPU"), 2 bytes
-	unsigned short service;			// the service name, 2 bytes
+	string resourceType;	// the resource type of the server	(e.g., "GPU"), 4 bytes
+	string service;			// the service name, 4 bytes
 	unsigned short processGnbId;	// the gNB id of processing gNB, 2 bytes
 	unsigned short offloadGnbId;	// the gNB id of offloading gNB, 2 bytes
 	uint32 offloadGnbAddr;		// the IP address of offloading gNB, 4 bytes
@@ -35,5 +35,5 @@ class Grant2Rsu extends inet::FieldsChunk
 	bool start;
 	bool stop;
 	
-	chunkLength = inet::B(48);
+	chunkLength = inet::B(66);
 }

@@ -205,11 +205,6 @@ module gNodeB
                 @display("p=963.195,212.68001");
         }
 
-    //    ospf: <default("Ospfv2")> like IOspf if hasOspf {
-    //        parameters:
-    //            @display("p=824.76,211.72");
-    //    }
-
         ospf: MecOspf if hasOspf {
             parameters:
                 @display("p=617.78,75.840004");

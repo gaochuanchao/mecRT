@@ -16,10 +16,10 @@
 //  License: Academic Public License -- NOT FOR COMMERCIAL USE
 //
 
-#include "mecrt/apps/scheduler/SchemeFwdGraphMatch.h"
+#include "mecrt/apps/scheduler/energy/SchemeFwdGraphMatch.h"
 
 SchemeFwdGraphMatch::SchemeFwdGraphMatch(Scheduler *scheduler)
-    : SchemeFwdBase(scheduler),
+    : SchemeFwdGreedy(scheduler),
       env_()    // initialize the Gurobi environment
 {
     // we only need to initialize the Gurobi environment once
@@ -65,7 +65,7 @@ void SchemeFwdGraphMatch::initializeData()
     EV << NOW << " SchemeFwdGraphMatch::initializeData - Initializing scheduling data" << endl;
 
     // Call the base class method to initialize common data
-    SchemeFwdBase::initializeData();
+    SchemeFwdGreedy::initializeData();
 
     // Additional initialization specific to the graph matching scheme can be added here
     instPerOffRsuIndex_.clear();  // Clear the instances per offload RSU index vector

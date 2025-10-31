@@ -154,7 +154,7 @@ Register_Class(Grant2Rsu)
 
 Grant2Rsu::Grant2Rsu() : ::inet::FieldsChunk()
 {
-    this->setChunkLength(inet::B(48));
+    this->setChunkLength(inet::B(66));
 
 }
 
@@ -259,23 +259,23 @@ void Grant2Rsu::setUeAddr(uint32_t ueAddr)
     this->ueAddr = ueAddr;
 }
 
-unsigned short Grant2Rsu::getResourceType() const
+const char * Grant2Rsu::getResourceType() const
 {
-    return this->resourceType;
+    return this->resourceType.c_str();
 }
 
-void Grant2Rsu::setResourceType(unsigned short resourceType)
+void Grant2Rsu::setResourceType(const char * resourceType)
 {
     handleChange();
     this->resourceType = resourceType;
 }
 
-unsigned short Grant2Rsu::getService() const
+const char * Grant2Rsu::getService() const
 {
-    return this->service;
+    return this->service.c_str();
 }
 
-void Grant2Rsu::setService(unsigned short service)
+void Grant2Rsu::setService(const char * service)
 {
     handleChange();
     this->service = service;
@@ -595,8 +595,8 @@ const char *Grant2RsuDescriptor::getFieldTypeString(int field) const
     static const char *fieldTypeStrings[] = {
         "unsigned int",    // FIELD_appId
         "uint32",    // FIELD_ueAddr
-        "unsigned short",    // FIELD_resourceType
-        "unsigned short",    // FIELD_service
+        "string",    // FIELD_resourceType
+        "string",    // FIELD_service
         "unsigned short",    // FIELD_processGnbId
         "unsigned short",    // FIELD_offloadGnbId
         "uint32",    // FIELD_offloadGnbAddr
@@ -695,8 +695,8 @@ std::string Grant2RsuDescriptor::getFieldValueAsString(omnetpp::any_ptr object, 
     switch (field) {
         case FIELD_appId: return ulong2string(pp->getAppId());
         case FIELD_ueAddr: return ulong2string(pp->getUeAddr());
-        case FIELD_resourceType: return ulong2string(pp->getResourceType());
-        case FIELD_service: return ulong2string(pp->getService());
+        case FIELD_resourceType: return oppstring2string(pp->getResourceType());
+        case FIELD_service: return oppstring2string(pp->getService());
         case FIELD_processGnbId: return ulong2string(pp->getProcessGnbId());
         case FIELD_offloadGnbId: return ulong2string(pp->getOffloadGnbId());
         case FIELD_offloadGnbAddr: return ulong2string(pp->getOffloadGnbAddr());
@@ -727,8 +727,8 @@ void Grant2RsuDescriptor::setFieldValueAsString(omnetpp::any_ptr object, int fie
     switch (field) {
         case FIELD_appId: pp->setAppId(string2ulong(value)); break;
         case FIELD_ueAddr: pp->setUeAddr(string2ulong(value)); break;
-        case FIELD_resourceType: pp->setResourceType(string2ulong(value)); break;
-        case FIELD_service: pp->setService(string2ulong(value)); break;
+        case FIELD_resourceType: pp->setResourceType((value)); break;
+        case FIELD_service: pp->setService((value)); break;
         case FIELD_processGnbId: pp->setProcessGnbId(string2ulong(value)); break;
         case FIELD_offloadGnbId: pp->setOffloadGnbId(string2ulong(value)); break;
         case FIELD_offloadGnbAddr: pp->setOffloadGnbAddr(string2ulong(value)); break;
@@ -757,8 +757,8 @@ omnetpp::cValue Grant2RsuDescriptor::getFieldValue(omnetpp::any_ptr object, int 
     switch (field) {
         case FIELD_appId: return (omnetpp::intval_t)(pp->getAppId());
         case FIELD_ueAddr: return (omnetpp::intval_t)(pp->getUeAddr());
-        case FIELD_resourceType: return (omnetpp::intval_t)(pp->getResourceType());
-        case FIELD_service: return (omnetpp::intval_t)(pp->getService());
+        case FIELD_resourceType: return pp->getResourceType();
+        case FIELD_service: return pp->getService();
         case FIELD_processGnbId: return (omnetpp::intval_t)(pp->getProcessGnbId());
         case FIELD_offloadGnbId: return (omnetpp::intval_t)(pp->getOffloadGnbId());
         case FIELD_offloadGnbAddr: return (omnetpp::intval_t)(pp->getOffloadGnbAddr());
@@ -789,8 +789,8 @@ void Grant2RsuDescriptor::setFieldValue(omnetpp::any_ptr object, int field, int 
     switch (field) {
         case FIELD_appId: pp->setAppId(omnetpp::checked_int_cast<unsigned int>(value.intValue())); break;
         case FIELD_ueAddr: pp->setUeAddr(omnetpp::checked_int_cast<uint32_t>(value.intValue())); break;
-        case FIELD_resourceType: pp->setResourceType(omnetpp::checked_int_cast<unsigned short>(value.intValue())); break;
-        case FIELD_service: pp->setService(omnetpp::checked_int_cast<unsigned short>(value.intValue())); break;
+        case FIELD_resourceType: pp->setResourceType(value.stringValue()); break;
+        case FIELD_service: pp->setService(value.stringValue()); break;
         case FIELD_processGnbId: pp->setProcessGnbId(omnetpp::checked_int_cast<unsigned short>(value.intValue())); break;
         case FIELD_offloadGnbId: pp->setOffloadGnbId(omnetpp::checked_int_cast<unsigned short>(value.intValue())); break;
         case FIELD_offloadGnbAddr: pp->setOffloadGnbAddr(omnetpp::checked_int_cast<uint32_t>(value.intValue())); break;

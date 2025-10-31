@@ -18,10 +18,10 @@
 //  License: Academic Public License -- NOT FOR COMMERCIAL USE
 //
 
-#include "mecrt/apps/scheduler/SchemeFwdQuickLR.h"
+#include "mecrt/apps/scheduler/energy/SchemeFwdQuickLR.h"
 
 SchemeFwdQuickLR::SchemeFwdQuickLR(Scheduler *scheduler)
-    : SchemeFwdBase(scheduler)
+    : SchemeFwdGreedy(scheduler)
 {
     separateInstType_ = 1;  // default is to separate type 1 instances, light in terms of RB but heavy in terms of CU
     EV << NOW << " SchemeFwdQuickLR::SchemeFwdQuickLR - Initialized" << endl;

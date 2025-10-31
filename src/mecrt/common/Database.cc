@@ -44,59 +44,102 @@ void Database::initialize(int stage)
         if (enableInitDebug_)
             std::cout << "Database::initialize - stage: INITSTAGE_LOCAL - begins" << std::endl;
 
-        vehExeDataPath_ = par("vehExeDataPath").stringValue();
-        rsuExeDataPath_ = par("rsuExeDataPath").stringValue();
-        rsuPosDataPath_ = par("rsuPosDataPath").stringValue();
-        rsuGraphPath_ = par("rsuGraphPath").stringValue();
+        ueExeDataPath_ = par("ueExeDataPath").stringValue();
+        appDataSizePath_ = par("appDataSizePath").stringValue();
+        gnbExeDataPath_ = par("gnbExeDataPath").stringValue();
+        gnbPosDataPath_ = par("gnbPosDataPath").stringValue();
         idlePower_ = par("idlePower");
         offloadPower_ = par("offloadPower");
         serverExeScale_ = par("serverExeScale");
 
-        loadVehExeDataFromFile();
-        loadRsuExeDataFromFile();
-        loadRsuPosDataFromFile();
+        appDataSize_.clear();
+        ueExeTime_.clear();
+        ueAppAccuracy_.clear();
+        gnbExeTime_.clear();
+        gnbAppAccuracy_.clear();
+        deviceTypes_.clear();
+        gnbServices_.clear();
+
+        loadAppDataSizeFromFile();
+        loadUeExeDataFromFile();
+        loadGnbExeDataFromFile();
+        loadGnbPosDataFromFile();
+
+        WATCH_MAP(ueExeTime_);
+        WATCH_MAP(ueAppAccuracy_);
+        WATCH_MAP(gnbAppAccuracy_);
 
         if (enableInitDebug_)
             std::cout << "Database::initialize - stage: INITSTAGE_LOCAL - ends" << std::endl;
     }
 }
 
+
 /***
- * load the vehicle execution data from the file
- * data is in following format (each line):
- *                    RESNET152        VGG16           VGG19       INCEPTION_V4  PEOPLENET_PRUNED
- * image size (B)|T1 (ms)|P1 (mW)|T2 (ms)|P2 (mW)|T3 (ms)|P3 (mW)|T4 (ms)|P4 (mW)|T5 (ms)|P5 (mW)
- *      e.g.: 74.86	21	1599	28	3067	49	3866	70	4289	79	4576	95	4652
- * store the data in the vector of vector<double>
+ * load the application data size from the file
+ * data is in following format (single line):
+ *      app_data_size(KB)
  */
-void Database::loadVehExeDataFromFile()
+void Database::loadAppDataSizeFromFile()
 {
-    EV << "Database::loadVehExeDataFromFile - loading vehicle execution data from file: " << vehExeDataPath_ << endl;
-    
-    ifstream inputFile(vehExeDataPath_.c_str());
+    EV << "Database::loadAppDataSizeFromFile - loading application data size from file: " << appDataSizePath_ << endl;
+
+    ifstream inputFile(appDataSizePath_.c_str());
     if (!inputFile.is_open())
     {
-        EV << "Database::loadVehExeDataFromFile - Error opening file: " << vehExeDataPath_ << endl;
+        EV << "Database::loadAppDataSizeFromFile - Error opening file: " << appDataSizePath_ << endl;
         return;
     }
 
-    vehExeData_.clear();
     string line;
+    if (getline(inputFile, line))
+    {
+        if (!line.empty())
+        {
+            // Create a string stream from the input string
+            istringstream iss(line);
+            int appDataSize;
+            iss >> appDataSize;
+            appDataSize_.push_back(appDataSize);
+        }
+    }
+    inputFile.close();
+}
+
+/***
+ * load the vehicle execution data from the file
+ * data is in following format (each line):
+ *      network_name exe_time accuracy
+ * store the data in the vector of vector<double>
+ */
+void Database::loadUeExeDataFromFile()
+{
+    EV << "Database::loadUeExeDataFromFile - loading UE execution data from file: " << ueExeDataPath_ << endl;
+
+    ifstream inputFile(ueExeDataPath_.c_str());
+    if (!inputFile.is_open())
+    {
+        EV << "Database::loadUeExeDataFromFile - Error opening file: " << ueExeDataPath_ << endl;
+        return;
+    }
+
+    string line;
+    getline(inputFile, line); // skip the header line
+
+    string name;
+    double exe_time;
+    double accuracy;
     while (getline(inputFile, line))
     {
         if (!line.empty())
         {
-            vector<double> data;
             // Create a string stream from the input string
             istringstream iss(line);
-            // Variable to store each token (word)
-            string token;
-    
-            // Read tokens one by one
-            while (iss >> token) {
-                data.push_back(stod(token));
-            }
-            vehExeData_.push_back(data);
+            iss >> name >> exe_time >> accuracy;
+            ueExeTime_[name] = exe_time;
+            ueAppAccuracy_[name] = accuracy;
+
+            gnbServices_.insert(name);
         }
     }
     inputFile.close();
@@ -106,46 +149,46 @@ void Database::loadVehExeDataFromFile()
 /***
  * load the server execution data from the file
  * data is in following format (each line):
- *                   RTX3090   RTX4090   RTX4500
- *   RESNET152          *         *         *
- *   VGG16              *         *         *
- *   VGG19              *         *         *
- *   INCEPTION_V4       *         *         *
- *   PEOPLENET_PRUNED   *         *         *
+ *                   RTX3090   RTX4090   RTX4500    Accuracy
+ *      network          *         *         *          *
  * store the data in the vector of vector<double>
  */
-void Database::loadRsuExeDataFromFile()
+void Database::loadGnbExeDataFromFile()
 {
-    EV << "Database::loadRsuExeDataFromFile - loading RSU execution data from file: " << rsuExeDataPath_ << endl;
-    
-    ifstream inputFile(rsuExeDataPath_.c_str());
+    EV << "Database::loadGnbExeDataFromFile - loading gNB execution data from file: " << gnbExeDataPath_ << endl;
+
+    ifstream inputFile(gnbExeDataPath_.c_str());
     if (!inputFile.is_open())
     {
-        EV << "Database::loadRsuExeDataFromFile - Error opening file: " << rsuExeDataPath_ << endl;
+        EV << "Database::loadGnbExeDataFromFile - Error opening file: " << gnbExeDataPath_ << endl;
         return;
     }
 
-    rsuExeTime_.clear();
     string line;
-    int apptype = 0;
+    getline(inputFile, line); // skip the header line
+    
+    istringstream iss(line);
+    string name, gpu1, gpu2, gpu3, dummy;
+    iss >> name >> gpu1 >> gpu2 >> gpu3 >> dummy; // read the header line
+    deviceTypes_.push_back(gpu1);
+    deviceTypes_.push_back(gpu2);
+    deviceTypes_.push_back(gpu3);
+
+    double time1, time2, time3, accuracy;
     while (getline(inputFile, line))
     {
         if (!line.empty())
         {
-            vector<double> data;
+            
             // Create a string stream from the input string
             istringstream iss(line);
-            // Variable to store each token (word)
-            string token;
+            iss >> name >> time1 >> time2 >> time3 >> accuracy;
+            gnbExeTime_[name][gpu1] = time1;
+            gnbExeTime_[name][gpu2] = time2;
+            gnbExeTime_[name][gpu3] = time3;
+            gnbAppAccuracy_[name] = accuracy;
 
-            // Read tokens one by one
-            int deviceType = 0;
-            while (iss >> token) {
-                double value = stod(token) / 1000.0; // convert to seconds
-                rsuExeTime_[make_pair(apptype, deviceType)] = value;
-                deviceType += 1;
-            }
-            apptype += 1;
+            gnbServices_.insert(name);
         }
     }
     inputFile.close();
@@ -155,19 +198,19 @@ void Database::loadRsuExeDataFromFile()
  * load RSU position data from the file. each line of the data is in the following format:
  *      x_pos, y_pos
  */
-void Database::loadRsuPosDataFromFile()
+void Database::loadGnbPosDataFromFile()
 {
-    EV << "Database::loadRsuPosDataFromFile - loading RSU position data from file: " << rsuPosDataPath_ << endl;
-    
-    ifstream inputFile(rsuPosDataPath_.c_str());
+    EV << "Database::loadGnbPosDataFromFile - loading gNB position data from file: " << gnbPosDataPath_ << endl;
+
+    ifstream inputFile(gnbPosDataPath_.c_str());
     if (!inputFile.is_open())
     {
-        EV << "Database::loadRsuPosDataFromFile - Error opening file: " << rsuPosDataPath_ << endl;
+        EV << "Database::loadGnbPosDataFromFile - Error opening file: " << gnbPosDataPath_ << endl;
         return;
     }
 
     string line;
-    int rsuId = 0;
+    int gnbId = 0;
     while (getline(inputFile, line))
     {
         if (!line.empty())
@@ -183,8 +226,8 @@ void Database::loadRsuPosDataFromFile()
             x_pos = stod(x_str);
             y_pos = stod(y_str);
 
-            rsuPosData_[rsuId] = make_pair(x_pos, y_pos);
-            rsuId += 1;
+            gnbPosData_[gnbId] = make_pair(x_pos, y_pos);
+            gnbId += 1;
         }
     }
     inputFile.close();
@@ -192,35 +235,77 @@ void Database::loadRsuPosDataFromFile()
 
 
 /***
- * get the vehicle execution data
- * @param idx: the index of the data (image index in the file)
- * @return the data
+ * UE related data access functions
  */
-vector<double>& Database::getVehExeData(int idx)
+double Database::getUeExeTime(string appType)
 {
-    return vehExeData_[idx];
+    return ueExeTime_[appType];
 }
+
+double Database::getUeAppAccuracy(string appType)
+{
+    return ueAppAccuracy_[appType];
+}
+
+int Database::sampleAppDataSize()
+{
+    // return a random image data size from the list
+    int index = intuniform(0, appDataSize_.size() - 1);
+    return appDataSize_[index];
+}
+
+double Database::getAppDeadline(string appType)
+{
+    // if the appType is not found, return a default value of 0s
+    auto it = appDeadline.find(appType);
+    if (it != appDeadline.end()) {
+        return it->second;
+    } else {
+        EV << "Database::getAppDeadline - Warning: appType " << appType 
+            << " not found in appDeadline map. Returning default deadline of 0s." << endl;
+        return 0.0;
+    }
+}
+
+double Database::getLocalExecPower(string appType)
+{
+    // TODO: This suppose to be obtained from profiling data
+    // Here, we return a dummy value for demonstration purposes
+    return idlePower_ + 500.0; // in mW
+}
+
+string Database::sampleAppType()
+{
+    // sample an application type based on a uniform distribution
+    int typeId = intuniform(0, appDeadline.size() - 1);
+    auto it = appDeadline.begin();
+    std::advance(it, typeId);
+    return it->first;
+}
+
 
 /***
- * get the execution time of the application
- * @param appType: the application type
- * @param gpuType: the GPU type
- * @return the execution time
+ * get the gNB related data
  */
-double Database::getRsuExeTime(int appType, int deviceType)
+double Database::getGnbExeTime(string appType, string deviceType)
 {
-    return rsuExeTime_[make_pair(appType, deviceType)] * serverExeScale_; // scale the execution time by the server execution scale
+    return gnbExeTime_[appType][deviceType] * serverExeScale_; // scale the execution time by the server execution scale
 }
 
-/***
- * get the RSU position data
- * @param rsuId: the RSU index in the NED file, i.e., k-th RSU in the RSU list
- * @return the position data
- */
-pair<double, double> Database::getRsuPosData(int rsuId)
+double Database::getGnbAppAccuracy(string appType)
 {
-    return rsuPosData_[rsuId];
+    return gnbAppAccuracy_[appType];
 }
 
+pair<double, double> Database::getGnbPosData(int gnbId)
+{
+    return gnbPosData_[gnbId];
+}
 
+string Database::sampleDeviceType()
+{
+    // sample a device type based on a uniform distribution
+    int typeId = intuniform(0, deviceTypes_.size() - 1);
+    return deviceTypes_[typeId];
+}
 

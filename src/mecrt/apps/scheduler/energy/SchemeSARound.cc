@@ -16,10 +16,10 @@
 //  License: Academic Public License -- NOT FOR COMMERCIAL USE
 //
 
-#include "mecrt/apps/scheduler/SchemeSARound.h"
+#include "mecrt/apps/scheduler/energy/SchemeSARound.h"
 
 SchemeSARound::SchemeSARound(Scheduler *scheduler)
-    : SchemeBase(scheduler),
+    : SchemeGreedy(scheduler),
       env_()    // initialize the Gurobi environment
 {
     // we only need to initialize the Gurobi environment once
@@ -58,7 +58,7 @@ void SchemeSARound::initializeData()
     EV << NOW << " SchemeSARound::initializeData - initialize scheduling data" << endl;
 
     // call the base class method to initialize the data
-    SchemeBase::initializeData();
+    SchemeGreedy::initializeData();
 
     // initialize the per-RSU instance index vector
     instPerRsuIndex_.clear();

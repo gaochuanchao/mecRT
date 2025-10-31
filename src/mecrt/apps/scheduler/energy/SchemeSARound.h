@@ -19,11 +19,11 @@
 #ifndef _MECRT_SCHEDULER_SCHEME_SAROUND_H_
 #define _MECRT_SCHEDULER_SCHEME_SAROUND_H_
 
-#include "mecrt/apps/scheduler/SchemeBase.h"
+#include "mecrt/apps/scheduler/energy/SchemeGreedy.h"
 #include "gurobi_c++.h"
 
 
-class SchemeSARound : public SchemeBase
+class SchemeSARound : public SchemeGreedy
 {
   protected:
     vector<double> reductPerAppIndex_;  // vector to store the reduction of utility for each application

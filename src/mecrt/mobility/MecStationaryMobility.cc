@@ -76,9 +76,9 @@ void MecStationaryMobility::setInitialPosition()
         return;
     }
 
-    auto rsuPos = database_->getRsuPosData(nodeVectorIdx_);
-    lastPosition.x = rsuPos.first;
-    lastPosition.y = rsuPos.second;
+    auto gnbPos = database_->getGnbPosData(nodeVectorIdx_);
+    lastPosition.x = gnbPos.first;
+    lastPosition.y = gnbPos.second;
 
     if (par("updateDisplayString"))
         updateDisplayStringFromMobilityState();

@@ -22,9 +22,9 @@
 #ifndef _MECRT_SCHEDULER_SCHEME_FWD_QUICK_LR_H_
 #define _MECRT_SCHEDULER_SCHEME_FWD_QUICK_LR_H_
 
-#include "mecrt/apps/scheduler/SchemeFwdBase.h"
+#include "mecrt/apps/scheduler/energy/SchemeFwdGreedy.h"
 
-class SchemeFwdQuickLR : public SchemeFwdBase
+class SchemeFwdQuickLR : public SchemeFwdGreedy
 {
   protected:
     int separateInstType_; // the instance type to be separated, 1 or 2, default is 1

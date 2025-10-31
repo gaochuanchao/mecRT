@@ -645,7 +645,7 @@ Register_Class(VecRequest)
 
 VecRequest::VecRequest() : ::inet::FieldsChunk()
 {
-    this->setChunkLength(inet::B(44));
+    this->setChunkLength(inet::B(52));
 
 }
 
@@ -676,6 +676,7 @@ void VecRequest::copy(const VecRequest& other)
     this->service = other.service;
     this->appId = other.appId;
     this->stopTime = other.stopTime;
+    this->accuracy = other.accuracy;
     this->energy = other.energy;
     this->offloadPower = other.offloadPower;
 }
@@ -691,6 +692,7 @@ void VecRequest::parsimPack(omnetpp::cCommBuffer *b) const
     doParsimPacking(b,this->service);
     doParsimPacking(b,this->appId);
     doParsimPacking(b,this->stopTime);
+    doParsimPacking(b,this->accuracy);
     doParsimPacking(b,this->energy);
     doParsimPacking(b,this->offloadPower);
 }
@@ -706,6 +708,7 @@ void VecRequest::parsimUnpack(omnetpp::cCommBuffer *b)
     doParsimUnpacking(b,this->service);
     doParsimUnpacking(b,this->appId);
     doParsimUnpacking(b,this->stopTime);
+    doParsimUnpacking(b,this->accuracy);
     doParsimUnpacking(b,this->energy);
     doParsimUnpacking(b,this->offloadPower);
 }
@@ -754,23 +757,23 @@ void VecRequest::setPeriod(omnetpp::simtime_t period)
     this->period = period;
 }
 
-unsigned short VecRequest::getResourceType() const
+const char * VecRequest::getResourceType() const
 {
-    return this->resourceType;
+    return this->resourceType.c_str();
 }
 
-void VecRequest::setResourceType(unsigned short resourceType)
+void VecRequest::setResourceType(const char * resourceType)
 {
     handleChange();
     this->resourceType = resourceType;
 }
 
-unsigned short VecRequest::getService() const
+const char * VecRequest::getService() const
 {
-    return this->service;
+    return this->service.c_str();
 }
 
-void VecRequest::setService(unsigned short service)
+void VecRequest::setService(const char * service)
 {
     handleChange();
     this->service = service;
@@ -796,6 +799,17 @@ void VecRequest::setStopTime(omnetpp::simtime_t stopTime)
 {
     handleChange();
     this->stopTime = stopTime;
+}
+
+double VecRequest::getAccuracy() const
+{
+    return this->accuracy;
+}
+
+void VecRequest::setAccuracy(double accuracy)
+{
+    handleChange();
+    this->accuracy = accuracy;
 }
 
 double VecRequest::getEnergy() const
@@ -833,6 +847,7 @@ class VecRequestDescriptor : public omnetpp::cClassDescriptor
         FIELD_service,
         FIELD_appId,
         FIELD_stopTime,
+        FIELD_accuracy,
         FIELD_energy,
         FIELD_offloadPower,
     };
@@ -901,7 +916,7 @@ const char *VecRequestDescriptor::getProperty(const char *propertyName) const
 int VecRequestDescriptor::getFieldCount() const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
-    return base ? 10+base->getFieldCount() : 10;
+    return base ? 11+base->getFieldCount() : 11;
 }
 
 unsigned int VecRequestDescriptor::getFieldTypeFlags(int field) const
@@ -921,10 +936,11 @@ unsigned int VecRequestDescriptor::getFieldTypeFlags(int field) const
         FD_ISEDITABLE,    // FIELD_service
         FD_ISEDITABLE,    // FIELD_appId
         FD_ISEDITABLE,    // FIELD_stopTime
+        FD_ISEDITABLE,    // FIELD_accuracy
         FD_ISEDITABLE,    // FIELD_energy
         FD_ISEDITABLE,    // FIELD_offloadPower
     };
-    return (field >= 0 && field < 10) ? fieldTypeFlags[field] : 0;
+    return (field >= 0 && field < 11) ? fieldTypeFlags[field] : 0;
 }
 
 const char *VecRequestDescriptor::getFieldName(int field) const
@@ -944,10 +960,11 @@ const char *VecRequestDescriptor::getFieldName(int field) const
         "service",
         "appId",
         "stopTime",
+        "accuracy",
         "energy",
         "offloadPower",
     };
-    return (field >= 0 && field < 10) ? fieldNames[field] : nullptr;
+    return (field >= 0 && field < 11) ? fieldNames[field] : nullptr;
 }
 
 int VecRequestDescriptor::findField(const char *fieldName) const
@@ -962,8 +979,9 @@ int VecRequestDescriptor::findField(const char *fieldName) const
     if (strcmp(fieldName, "service") == 0) return baseIndex + 5;
     if (strcmp(fieldName, "appId") == 0) return baseIndex + 6;
     if (strcmp(fieldName, "stopTime") == 0) return baseIndex + 7;
-    if (strcmp(fieldName, "energy") == 0) return baseIndex + 8;
-    if (strcmp(fieldName, "offloadPower") == 0) return baseIndex + 9;
+    if (strcmp(fieldName, "accuracy") == 0) return baseIndex + 8;
+    if (strcmp(fieldName, "energy") == 0) return baseIndex + 9;
+    if (strcmp(fieldName, "offloadPower") == 0) return baseIndex + 10;
     return base ? base->findField(fieldName) : -1;
 }
 
@@ -980,14 +998,15 @@ const char *VecRequestDescriptor::getFieldTypeString(int field) const
         "int",    // FIELD_outputSize
         "uint32_t",    // FIELD_ueIpAddress
         "omnetpp::simtime_t",    // FIELD_period
-        "unsigned short",    // FIELD_resourceType
-        "unsigned short",    // FIELD_service
+        "string",    // FIELD_resourceType
+        "string",    // FIELD_service
         "unsigned int",    // FIELD_appId
         "omnetpp::simtime_t",    // FIELD_stopTime
+        "double",    // FIELD_accuracy
         "double",    // FIELD_energy
         "double",    // FIELD_offloadPower
     };
-    return (field >= 0 && field < 10) ? fieldTypeStrings[field] : nullptr;
+    return (field >= 0 && field < 11) ? fieldTypeStrings[field] : nullptr;
 }
 
 const char **VecRequestDescriptor::getFieldPropertyNames(int field) const
@@ -1074,10 +1093,11 @@ std::string VecRequestDescriptor::getFieldValueAsString(omnetpp::any_ptr object,
         case FIELD_outputSize: return long2string(pp->getOutputSize());
         case FIELD_ueIpAddress: return ulong2string(pp->getUeIpAddress());
         case FIELD_period: return simtime2string(pp->getPeriod());
-        case FIELD_resourceType: return ulong2string(pp->getResourceType());
-        case FIELD_service: return ulong2string(pp->getService());
+        case FIELD_resourceType: return oppstring2string(pp->getResourceType());
+        case FIELD_service: return oppstring2string(pp->getService());
         case FIELD_appId: return ulong2string(pp->getAppId());
         case FIELD_stopTime: return simtime2string(pp->getStopTime());
+        case FIELD_accuracy: return double2string(pp->getAccuracy());
         case FIELD_energy: return double2string(pp->getEnergy());
         case FIELD_offloadPower: return double2string(pp->getOffloadPower());
         default: return "";
@@ -1100,10 +1120,11 @@ void VecRequestDescriptor::setFieldValueAsString(omnetpp::any_ptr object, int fi
         case FIELD_outputSize: pp->setOutputSize(string2long(value)); break;
         case FIELD_ueIpAddress: pp->setUeIpAddress(string2ulong(value)); break;
         case FIELD_period: pp->setPeriod(string2simtime(value)); break;
-        case FIELD_resourceType: pp->setResourceType(string2ulong(value)); break;
-        case FIELD_service: pp->setService(string2ulong(value)); break;
+        case FIELD_resourceType: pp->setResourceType((value)); break;
+        case FIELD_service: pp->setService((value)); break;
         case FIELD_appId: pp->setAppId(string2ulong(value)); break;
         case FIELD_stopTime: pp->setStopTime(string2simtime(value)); break;
+        case FIELD_accuracy: pp->setAccuracy(string2double(value)); break;
         case FIELD_energy: pp->setEnergy(string2double(value)); break;
         case FIELD_offloadPower: pp->setOffloadPower(string2double(value)); break;
         default: throw omnetpp::cRuntimeError("Cannot set field %d of class 'VecRequest'", field);
@@ -1124,10 +1145,11 @@ omnetpp::cValue VecRequestDescriptor::getFieldValue(omnetpp::any_ptr object, int
         case FIELD_outputSize: return pp->getOutputSize();
         case FIELD_ueIpAddress: return (omnetpp::intval_t)(pp->getUeIpAddress());
         case FIELD_period: return pp->getPeriod().dbl();
-        case FIELD_resourceType: return (omnetpp::intval_t)(pp->getResourceType());
-        case FIELD_service: return (omnetpp::intval_t)(pp->getService());
+        case FIELD_resourceType: return pp->getResourceType();
+        case FIELD_service: return pp->getService();
         case FIELD_appId: return (omnetpp::intval_t)(pp->getAppId());
         case FIELD_stopTime: return pp->getStopTime().dbl();
+        case FIELD_accuracy: return pp->getAccuracy();
         case FIELD_energy: return pp->getEnergy();
         case FIELD_offloadPower: return pp->getOffloadPower();
         default: throw omnetpp::cRuntimeError("Cannot return field %d of class 'VecRequest' as cValue -- field index out of range?", field);
@@ -1150,10 +1172,11 @@ void VecRequestDescriptor::setFieldValue(omnetpp::any_ptr object, int field, int
         case FIELD_outputSize: pp->setOutputSize(omnetpp::checked_int_cast<int>(value.intValue())); break;
         case FIELD_ueIpAddress: pp->setUeIpAddress(omnetpp::checked_int_cast<uint32_t>(value.intValue())); break;
         case FIELD_period: pp->setPeriod(value.doubleValue()); break;
-        case FIELD_resourceType: pp->setResourceType(omnetpp::checked_int_cast<unsigned short>(value.intValue())); break;
-        case FIELD_service: pp->setService(omnetpp::checked_int_cast<unsigned short>(value.intValue())); break;
+        case FIELD_resourceType: pp->setResourceType(value.stringValue()); break;
+        case FIELD_service: pp->setService(value.stringValue()); break;
         case FIELD_appId: pp->setAppId(omnetpp::checked_int_cast<unsigned int>(value.intValue())); break;
         case FIELD_stopTime: pp->setStopTime(value.doubleValue()); break;
+        case FIELD_accuracy: pp->setAccuracy(value.doubleValue()); break;
         case FIELD_energy: pp->setEnergy(value.doubleValue()); break;
         case FIELD_offloadPower: pp->setOffloadPower(value.doubleValue()); break;
         default: throw omnetpp::cRuntimeError("Cannot set field %d of class 'VecRequest'", field);

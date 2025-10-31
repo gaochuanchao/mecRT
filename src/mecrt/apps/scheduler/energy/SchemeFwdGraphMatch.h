@@ -19,7 +19,7 @@
 #ifndef _MECRT_SCHEDULER_SCHEME_FWD_GRAPH_MATCH_H_
 #define _MECRT_SCHEDULER_SCHEME_FWD_GRAPH_MATCH_H_
 
-#include "mecrt/apps/scheduler/SchemeFwdBase.h"
+#include "mecrt/apps/scheduler/energy/SchemeFwdGreedy.h"
 #include "gurobi_c++.h"
 
 
@@ -64,7 +64,7 @@ struct TripartiteGraph
 };
 
 
-class SchemeFwdGraphMatch : public SchemeFwdBase
+class SchemeFwdGraphMatch : public SchemeFwdGreedy
 {
 
   protected:

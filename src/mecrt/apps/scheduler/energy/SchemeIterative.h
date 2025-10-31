@@ -17,9 +17,9 @@
 #ifndef _MECRT_SCHEDULER_SCHEME_ITERATIVE_H_
 #define _MECRT_SCHEDULER_SCHEME_ITERATIVE_H_
 
-#include "mecrt/apps/scheduler/SchemeBase.h"
+#include "mecrt/apps/scheduler/energy/SchemeGreedy.h"
 
-class SchemeIterative : public SchemeBase
+class SchemeIterative : public SchemeGreedy
 {
   protected:
     int maxIter_ = 0;  // maximum number of iterations for the iterative scheme

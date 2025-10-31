@@ -22,7 +22,7 @@ simple Server like IApp
     parameters:
         int localPort = default(-1);
         int cmpUnitTotal = default(16);
-        int resourceType = default(0);	// whether using GPU or CPU
+        string resourceType = default("GPU");	// whether using GPU or CPU
         int serviceInitMinTime = default(10);	// the minimum service starting time
         int serviceInitMaxTime = default(50);	// the maximum service starting time
         string nodeInfoModulePath = default("^.nodeInfo");

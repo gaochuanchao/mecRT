@@ -16,9 +16,9 @@
 #ifndef _MECRT_SCHEDULER_SCHEME_FWD_GAME_THEORY_H_
 #define _MECRT_SCHEDULER_SCHEME_FWD_GAME_THEORY_H_
 
-#include "mecrt/apps/scheduler/SchemeFwdBase.h"
+#include "mecrt/apps/scheduler/energy/SchemeFwdGreedy.h"
 
-class SchemeFwdGameTheory : public SchemeFwdBase
+class SchemeFwdGameTheory : public SchemeFwdGreedy
 {
   public:
     SchemeFwdGameTheory(Scheduler *scheduler);

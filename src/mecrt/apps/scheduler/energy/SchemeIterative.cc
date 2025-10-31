@@ -14,10 +14,10 @@
 //  License: Academic Public License -- NOT FOR COMMERCIAL USE
 //
 
-#include "mecrt/apps/scheduler/SchemeIterative.h"
+#include "mecrt/apps/scheduler/energy/SchemeIterative.h"
 
 SchemeIterative::SchemeIterative(Scheduler *scheduler)
-    : SchemeBase(scheduler)
+    : SchemeGreedy(scheduler)
 {
     maxIter_ = 30;  // set the maximum number of iterations for the iterative scheme
     EV << NOW << " SchemeIterative::SchemeIterative - Initialized" << endl;
@@ -29,7 +29,7 @@ void SchemeIterative::initializeData()
     EV << NOW << " SchemeIterative::initializeData - initialize scheduling data" << endl;
 
     // call the base class method to initialize the data
-    SchemeBase::initializeData();
+    SchemeGreedy::initializeData();
 
     int numApp = appIds_.size();  // number of applications
     // initialize the mapping vectors

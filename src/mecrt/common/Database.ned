@@ -19,17 +19,17 @@ package mecRT.mecrt.common;
 simple Database 
 {
     parameters:
-        // store the application local execution time, execution power
-        string vehExeDataPath = default("");
-        
-        // store the server execution time
-        string rsuExeDataPath = default("");
-        
-        // store the RSU/gNB location
-        string rsuPosDataPath = default("");
+        // store the application local execution profiling data
+        string ueExeDataPath = default("");
 
-        // store the RSU graph data
-        string rsuGraphPath = default("");
+        // store the gNB execution profiling data
+        string gnbExeDataPath = default("");
+
+        // store the application data size
+        string appDataSizePath = default("");
+
+        // store the gNB location
+        string gnbPosDataPath = default("");
 
         // the idle power of vehicle computing device, default 1900mW
         double idlePower = default(1900);
@@ -37,8 +37,8 @@ simple Database
         // offloading power of vehicle NIC, default 2210mW
         double offloadPower = default(2210);
 
-        // server execution scale, default 1.0
-        double serverExeScale = default(1.0);
+        // gNB execution scale, default 1.0
+        double gnbExeScale = default(1.0);
 
         @display("i=block/cogwheel");
 }

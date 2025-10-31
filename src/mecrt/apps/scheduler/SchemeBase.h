@@ -3,12 +3,8 @@
 //  File:    SchemeBase.cc / SchemeBase.h
 //
 //  Description:
-//    This file implements the basic scheduling scheme in the Mobile Edge Computing System.
-//    The SchemeBase class provides common functionalities for different scheduling schemes,
-//    such as data initialization, service instance generation, and utility computation.
-//    By default, a greedy scheduling scheme is implemented.
-//      [scheme source: C. Gao, A. Shaan and A. Easwaran, "Deadline-constrained Multi-resource Task Mapping 
-//      and Allocation for Edge-Cloud Systems," GLOBECOM 2022, doi: 10.1109/GLOBECOM48099.2022.10001137.]
+//    This file provides the basic functions for the global scheduler in the Mobile Edge Computing System.
+//    Real implementation of different scheduling schemes should be derived from this base class.
 //
 //  Author:  Gao Chuanchao (Nanyang Technological University)
 //  Date:    2025-09-01
@@ -28,8 +24,6 @@ typedef tuple<AppId, MacNodeId, MacNodeId, int, int> srvInstance;
 
 class SchemeBase
 {
-    friend class Scheduler;
-
   protected:
     // Protected members to access VecScheduler's data structures
     Scheduler *scheduler_;  // pointer to the VecScheduler instance
@@ -62,19 +56,7 @@ class SchemeBase
     vector<int> rsuCUs_;  // using vector index number to represent the computing units of the RSUs
     map<AppId, double> appMaxOffTime_;  // map to store the maximum offloading time for each application
     map<AppId, double> appUtility_;  // map to store the utility (i.e., energy savings) for each application
-
-    /***
-     * Parameters used to store service instance information
-     * each service instance is represented by four vectors: InstAppIds_, InstRsuIds_, InstBands_, InstCUs_
-     * the vector index represents the instance ID, and the value represents the 
-     *      application index, RSU index, resource blocks, and computing units respectively
-     */
-    vector<int> instAppIndex_;  // application indices for the service instances
-    vector<int> instRsuIndex_;  // RSU indices for the service instances
-    vector<int> instRBs_;  // resource blocks for the service instances
-    vector<int> instCUs_;  // computing units for the service instances
-    vector<double> instUtility_;  // utility (i.e., energy savings) for the service instances
-    vector<double> instMaxOffTime_;  // maximum allowable offloading time for the service instances
+    map<AppId, string> appServiceType_; // map to store the service type for each application
 
   public:
     SchemeBase(Scheduler *scheduler);
@@ -84,57 +66,45 @@ class SchemeBase
         db_ = nullptr;  // reset the pointer to avoid dangling pointer
     }
 
-
     /***
-     * Initialize the scheduling data
-     * This function should be called before scheduling requests
+     * Update reachable RSUs from each RSU based on the new backhaul network topology
      */
-    virtual void initializeData();
-
-    /***
-     * Schedule the request
-     */
-    virtual vector<srvInstance> scheduleRequests();
+    virtual void updateReachableRsus(const map<MacNodeId, map<MacNodeId, double>>& topology);
 
     /***
      * Generate schedule instances based on the pending applications and the available resources
      */
-    virtual void generateScheduleInstances();
-    
+    virtual void generateScheduleInstances() {};
+
     /***
-     * Compute offload delay for an application to a specific RSU
+     * Schedule the request
      */
-    virtual double computeOffloadDelay(MacNodeId vehId, MacNodeId rsuId, int bands, int dataSize);
-    
+    virtual vector<srvInstance> scheduleRequests() { return vector<srvInstance>(); };
+
     /***
      * Compute execution delay for an application on a specific RSU
      */
     virtual double computeExeDelay(AppId appId, MacNodeId rsuId, double cmpUnits);
 
     /***
-     * Compute the utility for a service instance
-     * The default implementation is to return the energy savings
+     * Compute offload delay for an application to a specific RSU
      */
-    virtual double computeUtility(AppId &appId, double &offloadDelay, double &exeDelay, double &period);
-
-
-    /***
-     * Get the maximum allowable offloading time for an application
-     */
-    virtual double getMaxOffloadTime(AppId appId);
-
+    virtual double computeOffloadDelay(MacNodeId vehId, MacNodeId rsuId, int bands, int dataSize);
 
     /***
      * Get the utility value for each selected application
      */
     virtual double getAppUtility(AppId appId);
 
+    /***
+     * Get the maximum allowable offloading time for an application
+     */
+    virtual double getMaxOffloadTime(AppId appId);
 
     /***
-     * Update reachable RSUs from each RSU based on the new backhaul network topology
+     * Get the service type for the scheduled application
      */
-    virtual void updateReachableRsus(const map<MacNodeId, map<MacNodeId, double>>& topology);
+    virtual string getAppAssignedService(AppId appId);
+
 };
-
-#endif // _SCHEME_BASE_H_
-
+#endif // _MECRT_SCHEDULER_SCHEME_BASE_H_

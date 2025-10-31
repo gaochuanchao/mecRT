@@ -28,8 +28,8 @@ class Grant2Rsu;
  * {
  *     unsigned int appId;				// the application id of the vehicle, 4 bytes
  *     uint32 ueAddr;			// the IP address of the vehicle, 4 bytes
- *     unsigned short resourceType;	// the resource type of the server	(e.g., "GPU"), 2 bytes
- *     unsigned short service;			// the service name, 2 bytes
+ *     string resourceType;	// the resource type of the server	(e.g., "GPU"), 4 bytes
+ *     string service;			// the service name, 4 bytes
  *     unsigned short processGnbId;	// the gNB id of processing gNB, 2 bytes
  *     unsigned short offloadGnbId;	// the gNB id of offloading gNB, 2 bytes
  *     uint32 offloadGnbAddr;		// the IP address of offloading gNB, 4 bytes
@@ -43,7 +43,7 @@ class Grant2Rsu;
  *     bool start;
  *     bool stop;
  * 
- *     chunkLength = inet::B(48);
+ *     chunkLength = inet::B(66);
  * }
  * </pre>
  */
@@ -52,8 +52,8 @@ class Grant2Rsu : public ::inet::FieldsChunk
   protected:
     unsigned int appId = 0;
     uint32_t ueAddr = 0;
-    unsigned short resourceType = 0;
-    unsigned short service = 0;
+    omnetpp::opp_string resourceType;
+    omnetpp::opp_string service;
     unsigned short processGnbId = 0;
     unsigned short offloadGnbId = 0;
     uint32_t offloadGnbAddr = 0;
@@ -88,11 +88,11 @@ class Grant2Rsu : public ::inet::FieldsChunk
     virtual uint32_t getUeAddr() const;
     virtual void setUeAddr(uint32_t ueAddr);
 
-    virtual unsigned short getResourceType() const;
-    virtual void setResourceType(unsigned short resourceType);
+    virtual const char * getResourceType() const;
+    virtual void setResourceType(const char * resourceType);
 
-    virtual unsigned short getService() const;
-    virtual void setService(unsigned short service);
+    virtual const char * getService() const;
+    virtual void setService(const char * service);
 
     virtual unsigned short getProcessGnbId() const;
     virtual void setProcessGnbId(unsigned short processGnbId);

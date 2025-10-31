@@ -64,18 +64,20 @@ class UeApp : public omnetpp::cSimpleModule
     int outputSize_;     // output data size
     unsigned int appId_;
     omnetpp::simtime_t period_;          // in milliseconds, the deadline of single job or period of periodic task
-    VecResourceType resourceType_;    // whether using GPU or CPU
-    VecServiceType appType_;            // the service name
+    string resourceType_;    // whether using GPU or CPU
+    string appType_;            // the application name
+
+    // for performance related
+    double accuracy_;          // the accuracy of the application
+
+    // for energy related parameters
     double localExecTime_;          // the local execution time of the job
     double localExecPower_;          // the local execution power of the job
     double offloadPower_;          // the offloading power of the ue
-    double dlScale_;          // the scale for the deadline of the app, default is 1.0. dl = dl / dlScale_
-    
     double localConsumedEnergy_;    // the local consumed energy of the job
     double fullyLocalConsumedEnergy_;    // the local consumed energy of the job is all processed locally
-    
-    int imgIndex_;  // the random assigned index for the application image
 
+    double dlScale_;          // the scale for the deadline of the app, default is 1.0. dl = dl / dlScale_
     bool serviceGranted_;    // whether the service has been granted by the RSU server
 
     int processGnbPort_;

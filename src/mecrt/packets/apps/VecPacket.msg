@@ -32,13 +32,14 @@ class VecRequest extends inet::FieldsChunk {
 	int outputSize = 0;		// output data size, 4 bytes
 	uint32_t ueIpAddress;	// the IP address of the UE, 4 bytes
 	simtime_t period;			// the deadline of single job or period of periodic task, 8 bytes
-	unsigned short resourceType;	// whether using GPU or CPU, 2 bytes
-	unsigned short service;			// the service name, 2 bytes
+	string resourceType;	// whether using GPU or CPU, 4 bytes
+	string service;			// the service name, 4 bytes
 	unsigned int appId;	// the unique id of this application, 4 bytes
-	simtime_t stopTime;	// the time that this application stops
+	simtime_t stopTime;	// the time that this application stops, 8 bytes
+	double accuracy;		// the accuracy requirement of the application, 4 bytes
 	double energy;	// the energy consumed by processing an application locally
 	double offloadPower;	// the offloading power of the Gnb
-	chunkLength = inet::B(44); // total size: 44 bytes
+	chunkLength = inet::B(52); // total size: 52 bytes
 }
 
 

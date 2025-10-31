@@ -154,7 +154,7 @@ Register_Class(RsuFeedback)
 
 RsuFeedback::RsuFeedback() : ::inet::FieldsChunk()
 {
-    this->setChunkLength(inet::B(44));
+    this->setChunkLength(inet::B(74));
 
 }
 
@@ -341,23 +341,23 @@ void RsuFeedback::setTotalCmpUnits(int totalCmpUnits)
     this->totalCmpUnits = totalCmpUnits;
 }
 
-unsigned short RsuFeedback::getDeviceType() const
+const char * RsuFeedback::getDeviceType() const
 {
-    return this->deviceType;
+    return this->deviceType.c_str();
 }
 
-void RsuFeedback::setDeviceType(unsigned short deviceType)
+void RsuFeedback::setDeviceType(const char * deviceType)
 {
     handleChange();
     this->deviceType = deviceType;
 }
 
-unsigned short RsuFeedback::getResourceType() const
+const char * RsuFeedback::getResourceType() const
 {
-    return this->resourceType;
+    return this->resourceType.c_str();
 }
 
-void RsuFeedback::setResourceType(unsigned short resourceType)
+void RsuFeedback::setResourceType(const char * resourceType)
 {
     handleChange();
     this->resourceType = resourceType;
@@ -567,8 +567,8 @@ const char *RsuFeedbackDescriptor::getFieldTypeString(int field) const
         "uint32",    // FIELD_rsuAddr
         "int",    // FIELD_freeCmpUnits
         "int",    // FIELD_totalCmpUnits
-        "unsigned short",    // FIELD_deviceType
-        "unsigned short",    // FIELD_resourceType
+        "string",    // FIELD_deviceType
+        "string",    // FIELD_resourceType
         "omnetpp::simtime_t",    // FIELD_bandUpdateTime
         "omnetpp::simtime_t",    // FIELD_cmpUnitUpdateTime
     };
@@ -665,8 +665,8 @@ std::string RsuFeedbackDescriptor::getFieldValueAsString(omnetpp::any_ptr object
         case FIELD_rsuAddr: return ulong2string(pp->getRsuAddr());
         case FIELD_freeCmpUnits: return long2string(pp->getFreeCmpUnits());
         case FIELD_totalCmpUnits: return long2string(pp->getTotalCmpUnits());
-        case FIELD_deviceType: return ulong2string(pp->getDeviceType());
-        case FIELD_resourceType: return ulong2string(pp->getResourceType());
+        case FIELD_deviceType: return oppstring2string(pp->getDeviceType());
+        case FIELD_resourceType: return oppstring2string(pp->getResourceType());
         case FIELD_bandUpdateTime: return simtime2string(pp->getBandUpdateTime());
         case FIELD_cmpUnitUpdateTime: return simtime2string(pp->getCmpUnitUpdateTime());
         default: return "";
@@ -695,8 +695,8 @@ void RsuFeedbackDescriptor::setFieldValueAsString(omnetpp::any_ptr object, int f
         case FIELD_rsuAddr: pp->setRsuAddr(string2ulong(value)); break;
         case FIELD_freeCmpUnits: pp->setFreeCmpUnits(string2long(value)); break;
         case FIELD_totalCmpUnits: pp->setTotalCmpUnits(string2long(value)); break;
-        case FIELD_deviceType: pp->setDeviceType(string2ulong(value)); break;
-        case FIELD_resourceType: pp->setResourceType(string2ulong(value)); break;
+        case FIELD_deviceType: pp->setDeviceType((value)); break;
+        case FIELD_resourceType: pp->setResourceType((value)); break;
         case FIELD_bandUpdateTime: pp->setBandUpdateTime(string2simtime(value)); break;
         case FIELD_cmpUnitUpdateTime: pp->setCmpUnitUpdateTime(string2simtime(value)); break;
         default: throw omnetpp::cRuntimeError("Cannot set field %d of class 'RsuFeedback'", field);
@@ -723,8 +723,8 @@ omnetpp::cValue RsuFeedbackDescriptor::getFieldValue(omnetpp::any_ptr object, in
         case FIELD_rsuAddr: return (omnetpp::intval_t)(pp->getRsuAddr());
         case FIELD_freeCmpUnits: return pp->getFreeCmpUnits();
         case FIELD_totalCmpUnits: return pp->getTotalCmpUnits();
-        case FIELD_deviceType: return (omnetpp::intval_t)(pp->getDeviceType());
-        case FIELD_resourceType: return (omnetpp::intval_t)(pp->getResourceType());
+        case FIELD_deviceType: return pp->getDeviceType();
+        case FIELD_resourceType: return pp->getResourceType();
         case FIELD_bandUpdateTime: return pp->getBandUpdateTime().dbl();
         case FIELD_cmpUnitUpdateTime: return pp->getCmpUnitUpdateTime().dbl();
         default: throw omnetpp::cRuntimeError("Cannot return field %d of class 'RsuFeedback' as cValue -- field index out of range?", field);
@@ -753,8 +753,8 @@ void RsuFeedbackDescriptor::setFieldValue(omnetpp::any_ptr object, int field, in
         case FIELD_rsuAddr: pp->setRsuAddr(omnetpp::checked_int_cast<uint32_t>(value.intValue())); break;
         case FIELD_freeCmpUnits: pp->setFreeCmpUnits(omnetpp::checked_int_cast<int>(value.intValue())); break;
         case FIELD_totalCmpUnits: pp->setTotalCmpUnits(omnetpp::checked_int_cast<int>(value.intValue())); break;
-        case FIELD_deviceType: pp->setDeviceType(omnetpp::checked_int_cast<unsigned short>(value.intValue())); break;
-        case FIELD_resourceType: pp->setResourceType(omnetpp::checked_int_cast<unsigned short>(value.intValue())); break;
+        case FIELD_deviceType: pp->setDeviceType(value.stringValue()); break;
+        case FIELD_resourceType: pp->setResourceType(value.stringValue()); break;
         case FIELD_bandUpdateTime: pp->setBandUpdateTime(value.doubleValue()); break;
         case FIELD_cmpUnitUpdateTime: pp->setCmpUnitUpdateTime(value.doubleValue()); break;
         default: throw omnetpp::cRuntimeError("Cannot set field %d of class 'RsuFeedback'", field);

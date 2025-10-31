@@ -97,13 +97,14 @@ inline void doParsimUnpacking(omnetpp::cCommBuffer *b, JobPacket& obj) {obj.pars
  *     int outputSize = 0;		// output data size, 4 bytes
  *     uint32_t ueIpAddress;	// the IP address of the UE, 4 bytes
  *     simtime_t period;			// the deadline of single job or period of periodic task, 8 bytes
- *     unsigned short resourceType;	// whether using GPU or CPU, 2 bytes
- *     unsigned short service;			// the service name, 2 bytes
+ *     string resourceType;	// whether using GPU or CPU, 4 bytes
+ *     string service;			// the service name, 4 bytes
  *     unsigned int appId;	// the unique id of this application, 4 bytes
- *     simtime_t stopTime;	// the time that this application stops
+ *     simtime_t stopTime;	// the time that this application stops, 8 bytes
+ *     double accuracy;		// the accuracy requirement of the application, 4 bytes
  *     double energy;	// the energy consumed by processing an application locally
  *     double offloadPower;	// the offloading power of the Gnb
- *     chunkLength = inet::B(44); // total size: 44 bytes
+ *     chunkLength = inet::B(52); // total size: 52 bytes
  * }
  * </pre>
  */
@@ -114,10 +115,11 @@ class VecRequest : public ::inet::FieldsChunk
     int outputSize = 0;
     uint32_t ueIpAddress = 0;
     omnetpp::simtime_t period = SIMTIME_ZERO;
-    unsigned short resourceType = 0;
-    unsigned short service = 0;
+    omnetpp::opp_string resourceType;
+    omnetpp::opp_string service;
     unsigned int appId = 0;
     omnetpp::simtime_t stopTime = SIMTIME_ZERO;
+    double accuracy = 0;
     double energy = 0;
     double offloadPower = 0;
 
@@ -148,17 +150,20 @@ class VecRequest : public ::inet::FieldsChunk
     virtual omnetpp::simtime_t getPeriod() const;
     virtual void setPeriod(omnetpp::simtime_t period);
 
-    virtual unsigned short getResourceType() const;
-    virtual void setResourceType(unsigned short resourceType);
+    virtual const char * getResourceType() const;
+    virtual void setResourceType(const char * resourceType);
 
-    virtual unsigned short getService() const;
-    virtual void setService(unsigned short service);
+    virtual const char * getService() const;
+    virtual void setService(const char * service);
 
     virtual unsigned int getAppId() const;
     virtual void setAppId(unsigned int appId);
 
     virtual omnetpp::simtime_t getStopTime() const;
     virtual void setStopTime(omnetpp::simtime_t stopTime);
+
+    virtual double getAccuracy() const;
+    virtual void setAccuracy(double accuracy);
 
     virtual double getEnergy() const;
     virtual void setEnergy(double energy);

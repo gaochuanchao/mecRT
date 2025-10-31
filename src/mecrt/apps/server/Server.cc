@@ -33,6 +33,8 @@ Server::Server()
     srvInitComplete_ = nullptr;
     enableInitDebug_ = false;
     nodeInfo_ = nullptr;
+    db_ = nullptr;
+    binder_ = nullptr;
 }
 
 Server::~Server()
@@ -65,16 +67,9 @@ void Server::initialize(int stage)
         localPort_ = par("localPort");
         cmpUnitTotal_ = par("cmpUnitTotal");
         cmpUnitFree_ = cmpUnitTotal_;
-        int resType = par("resourceType");
-        resourceType_ = static_cast<VecResourceType>(resType);
-        int devType = intuniform(0, DEVICE_COUNTER - 1);
-        deviceType_ = static_cast<VecDeviceType>(devType);
+        resourceType_ = par("resourceType").stringValue();
 
-        int minTime = par("serviceInitMinTime");
-        int maxTime = par("serviceInitMaxTime");
-        initServiceStartingTime(minTime, maxTime);
         WATCH(cmpUnitFree_);
-        WATCH(deviceType_);
 
         meetDlPktSignal_ = registerSignal("meetDlPkt");
         failedSrvDownSignal_ = registerSignal("failedSrvDownPkt");
@@ -108,6 +103,14 @@ void Server::initialize(int stage)
             nodeInfo_ = nullptr;
         }
 
+        db_ = check_and_cast<Database*>(getSimulation()->getModuleByPath("database"));
+        if (db_ == nullptr)
+            throw cRuntimeError("UeApp::initTraffic - the database module is not found");
+        deviceType_ = db_->sampleDeviceType();
+        int minTime = par("serviceInitMinTime");
+        int maxTime = par("serviceInitMaxTime");
+        initServiceStartingTime(minTime, maxTime);
+        
         binder_ = getBinder();
         gnbId_ = getAncestorPar("macNodeId");
 
@@ -118,6 +121,7 @@ void Server::initialize(int stage)
         srvInitCompleteTime_ = std::map<AppId, simtime_t>();
         appsWaitMacInitFb_ = std::set<AppId>();
 
+        WATCH(deviceType_);
         WATCH_VECTOR(srvInInitVector_);
         WATCH_MAP(srvInitCompleteTime_);
 
@@ -128,10 +132,11 @@ void Server::initialize(int stage)
 
 void Server::initServiceStartingTime(int minTime, int maxTime)
 {
-    for(int i = 0; i < SERVICE_COUNTER; ++i)
+    auto serviceTypes = db_->getGnbServiceTypes();
+    for (const auto& service : serviceTypes)
     {
         int time = uniform(minTime, maxTime);
-        serviceInitTime_[i] = SimTime(time, SIMTIME_MS);
+        serviceInitTime_[service] = SimTime(time, SIMTIME_MS);
     }
 }
 
@@ -281,8 +286,8 @@ void Server::handleRsuFeedback(inet::Packet *pkt)
 
     auto rsuFdCopy = makeShared<RsuFeedback>(*rsuFd);
     rsuFdCopy->setFreeCmpUnits(cmpUnitFree_);
-    rsuFdCopy->setDeviceType(deviceType_);
-    rsuFdCopy->setResourceType(resourceType_);
+    rsuFdCopy->setDeviceType(deviceType_.c_str());
+    rsuFdCopy->setResourceType(resourceType_.c_str());
     rsuFdCopy->setTotalCmpUnits(cmpUnitTotal_);
     rsuFdCopy->setCmpUnitUpdateTime(simTime());
 
@@ -440,8 +445,8 @@ void Server::initializeService(inet::Ptr<const Grant2Rsu> pkt)
     srv.processGnbId = processGnbId;
     srv.offloadGnbId = offloadGnbId;
     srv.offloadGnbAddr = Ipv4Address(pkt->getOffloadGnbAddr());
-    srv.resourceType = static_cast<VecResourceType>(pkt->getResourceType());
-    srv.service = static_cast<VecServiceType>(pkt->getService());
+    srv.resourceType = pkt->getResourceType();
+    srv.service = pkt->getService();
     srv.cmpUnits = pkt->getCmpUnits();
     srv.bands = pkt->getBands();
     srv.deadline = pkt->getDeadline();
