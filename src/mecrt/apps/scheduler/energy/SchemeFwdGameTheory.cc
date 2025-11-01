@@ -67,6 +67,7 @@ vector<srvInstance> SchemeFwdGameTheory::scheduleRequests()
         selectedApps.insert(appIndex);  // mark the application as selected
         appMaxOffTime_[appIds_[appIndex]] = instMaxOffTime_[instIdx];  // store the maximum offloading time for the application
         appUtility_[appIds_[appIndex]] = instUtility_[instIdx];  // store the utility for the application
+        appExeDelay_[appIds_[appIndex]] = instExeDelay_[instIdx];  // store the execution delay for the application
 
         // update the RSU status
         rsuRBs_[rsuOffIndex] -= resBlocks;

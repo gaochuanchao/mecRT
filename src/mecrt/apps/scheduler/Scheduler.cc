@@ -170,36 +170,7 @@ void Scheduler::initialize(int stage)
         NumerologyIndex numerologyIndex = par("numerologyIndex");
         ttiPeriod_ = binder_->getSlotDurationFromNumerologyIndex(numerologyIndex);
 
-        schemeName_ = par("scheduleScheme").stringValue();
-
-        if (!enableBackhaul_)
-        {
-            if (schemeName_ == "Greedy")
-                scheme_ = new SchemeGreedy(this);
-            else if (schemeName_ == "FastLR")
-                scheme_ = new SchemeFastLR(this);
-            else if (schemeName_ == "GameTheory")
-                scheme_ = new SchemeGameTheory(this);
-            else if (schemeName_ == "Iterative")
-                scheme_ = new SchemeIterative(this);
-            else if (schemeName_ == "SARound")
-                scheme_ = new SchemeSARound(this);
-            else
-                scheme_ = new SchemeBase(this);
-        }
-        else
-        {
-            if (schemeName_ == "FwdGreedy")
-                scheme_ = new SchemeFwdGreedy(this);
-            else if (schemeName_ == "FwdGameTheory")
-                scheme_ = new SchemeFwdGameTheory(this);
-            else if (schemeName_ == "FwdQuickLR")
-                scheme_ = new SchemeFwdQuickLR(this);
-            else if (schemeName_ == "FwdGraphMatch")
-                scheme_ = new SchemeFwdGraphMatch(this);
-            else
-                scheme_ = new SchemeBase(this);
-        }
+        selectSchedulingScheme();
 
         schedStarter_ = new cMessage("ScheduleStart");
         schedStarter_->setSchedulingPriority(1);        // after other messages
@@ -368,6 +339,41 @@ void Scheduler::handleMessage(cMessage *msg)
         updateRsuSrvStatusFeedback(msg);
         delete msg;
         msg = nullptr;
+    }
+}
+
+
+void Scheduler::selectSchedulingScheme()
+{
+    schemeName_ = par("scheduleScheme").stringValue();
+
+    if (!enableBackhaul_)
+    {
+        if (schemeName_ == "Greedy")
+            scheme_ = new SchemeGreedy(this);
+        else if (schemeName_ == "FastLR")
+            scheme_ = new SchemeFastLR(this);
+        else if (schemeName_ == "GameTheory")
+            scheme_ = new SchemeGameTheory(this);
+        else if (schemeName_ == "Iterative")
+            scheme_ = new SchemeIterative(this);
+        else if (schemeName_ == "SARound")
+            scheme_ = new SchemeSARound(this);
+        else
+            scheme_ = new SchemeBase(this);
+    }
+    else
+    {
+        if (schemeName_ == "FwdGreedy")
+            scheme_ = new SchemeFwdGreedy(this);
+        else if (schemeName_ == "FwdGameTheory")
+            scheme_ = new SchemeFwdGameTheory(this);
+        else if (schemeName_ == "FwdQuickLR")
+            scheme_ = new SchemeFwdQuickLR(this);
+        else if (schemeName_ == "FwdGraphMatch")
+            scheme_ = new SchemeFwdGraphMatch(this);
+        else
+            scheme_ = new SchemeBase(this);
     }
 }
 
@@ -747,7 +753,7 @@ void Scheduler::scheduleRequest()
         srv.processGnbId = processGnbId;
         srv.bands = get<3>(ins);
         srv.cmpUnits = get<4>(ins);
-        srv.exeTime = scheme_->computeExeDelay(appId, processGnbId, srv.cmpUnits);
+        srv.exeTime = scheme_->getAppExeDelay(appId);
         srv.energySaved = scheme_->getAppUtility(appId);
         srv.serviceType = scheme_->getAppAssignedService(appId);
 

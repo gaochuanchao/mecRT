@@ -44,7 +44,7 @@ class Database : public omnetpp::cSimpleModule
     map<string, double> ueAppAccuracy_; // store the application accuracy
     vector<int> appDataSize_; // store the application data size
     map<string, map<string, double>> gnbExeTime_; // store the execution time of the application
-    map<string, double> gnbAppAccuracy_; // store the application accuracy
+    map<string, double> gnbServiceAccuracy_; // store the service accuracy
     set<string> gnbServices_; // store the gNB services
     map<int, pair<double, double>> gnbPosData_; // store the gNB position data
     vector<string> deviceTypes_; // store the device types
@@ -85,9 +85,10 @@ class Database : public omnetpp::cSimpleModule
 
     // get the gNB execution data
     virtual double getGnbExeTime(string appType, string deviceType);
-    virtual double getGnbAppAccuracy(string appType);
+    virtual double getGnbServiceAccuracy(string appType);
     virtual pair<double, double> getGnbPosData(int gnbId);
     virtual string sampleDeviceType();
+    // TODO: change to app dependent service types in the future
     virtual set<string> getGnbServiceTypes() const { return gnbServices_; }
 };
 

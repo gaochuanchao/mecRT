@@ -1,14 +1,12 @@
 //
 //  Project: mecRT – Mobile Edge Computing Simulator for Real-Time Applications
-//  File:    SchemeFwdBase.cc / SchemeFwdBase.h
+//  File:    AccuracyGreedy.cc / AccuracyGreedy.h
 //
 //  Description:
 //    This file implements the basic scheduling scheme in the Mobile Edge Computing System with
 //    backhaul network support, where tasks can be forwarded among RSUs after being offloaded to the access RSU.
-//    The SchemeFwdBase class provides common functionalities for different scheduling schemes that support task forwarding.
-//    By default, a greedy scheduling scheme is implemented.
-//      [scheme source: C. Gao, A. Shaan and A. Easwaran, "Deadline-constrained Multi-resource Task Mapping 
-//      and Allocation for Edge-Cloud Systems," GLOBECOM 2022, doi: 10.1109/GLOBECOM48099.2022.10001137.]
+//    The AccuracyGreedy class provides common functionalities for different scheduling schemes that support task forwarding.
+//    By default, a greedy scheduling scheme is implemented to maximize accuracy.
 //
 //  Author:  Gao Chuanchao (Nanyang Technological University)
 //  Date:    2025-09-01
@@ -16,12 +14,12 @@
 //  License: Academic Public License -- NOT FOR COMMERCIAL USE
 //
 
-#ifndef _MECRT_SCHEDULER_SCHEME_GREEDY_BN_H_
-#define _MECRT_SCHEDULER_SCHEME_GREEDY_BN_H_
+#ifndef _MECRT_SCHEDULER_SCHEME_ACCURACY_GREEDY_BN_H_
+#define _MECRT_SCHEDULER_SCHEME_ACCURACY_GREEDY_BN_H_
 
 #include "mecrt/apps/scheduler/SchemeBase.h"
 
-class SchemeFwdGreedy : public SchemeBase
+class AccuracyGreedy : public SchemeBase
 {
   protected:
     double virtualLinkRate_; // the rate of the virtual link in the backhaul network
@@ -35,15 +33,16 @@ class SchemeFwdGreedy : public SchemeBase
     vector<int> instAppIndex_;  // application indices for the service instances
     vector<int> instRBs_;  // resource blocks for the service instances
     vector<int> instCUs_;  // computing units for the service instances
-    vector<double> instUtility_;  // utility (i.e., energy savings) for the service instances
+    vector<double> instUtility_;  // utility (e.g., performance accuracy) for the service instances
     vector<double> instMaxOffTime_;  // maximum allowable offloading time for the service instances
     vector<int> instOffRsuIndex_;  // offload RSU indices for each service instances
     vector<int> instProRsuIndex_;  // process RSU indices for each service instances
-    vector<double> instExeDelay_;  // execution delay for each service instances
+    vector<string> instServiceType_;  // selected service types for each service instances
+    vector<double> instExeDelay_;  // execution delay for each service instance
 
   public:
-    SchemeFwdGreedy(Scheduler *scheduler);
-    ~SchemeFwdGreedy()
+    AccuracyGreedy(Scheduler *scheduler);
+    ~AccuracyGreedy()
     {
         scheduler_ = nullptr;  // reset the pointer to avoid dangling pointer
         db_ = nullptr;  // reset the pointer to avoid dangling pointer
@@ -67,13 +66,16 @@ class SchemeFwdGreedy : public SchemeBase
     /***
      * Compute execution delay for an application on a specific RSU
      */
-    virtual double computeExeDelay(AppId appId, MacNodeId rsuId, double cmpUnits);
+    virtual double computeExeDelay(MacNodeId rsuId, double cmpUnits, string serviceType);
+
+    virtual int computeMinRequiredCUs(MacNodeId rsuId, double exeTimeThreshold, string serviceType);
+    virtual int computeMinRequiredRBs(MacNodeId vehId, MacNodeId rsuId, double offloadTimeThreshold, int dataSize);
 
     /***
      * Compute the utility for a service instance
      * The default implementation is to return the energy savings
      */
-    virtual double computeUtility(AppId &appId, double &offloadDelay, double &exeDelay, double &period);
+    virtual double computeUtility(AppId appId, string serviceType);
 
     /***
      * Compute the data forwarding delay in the backhaul network based on the number of hops and data size
@@ -81,4 +83,5 @@ class SchemeFwdGreedy : public SchemeBase
     virtual double computeForwardingDelay(int hopCount, int dataSize);
 };
 
-#endif // _SCHEME_BASE_BN_H_
+#endif /* _MECRT_SCHEDULER_SCHEME_ACCURACY_GREEDY_BN_H_ */
+

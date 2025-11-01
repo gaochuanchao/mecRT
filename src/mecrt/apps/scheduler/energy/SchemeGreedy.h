@@ -43,6 +43,7 @@ class SchemeGreedy : public SchemeBase
     vector<int> instCUs_;  // computing units for the service instances
     vector<double> instUtility_;  // utility (i.e., energy savings) for the service instances
     vector<double> instMaxOffTime_;  // maximum allowable offloading time for the service instances
+    vector<double> instExeDelay_;  // execution delay for the service instances
 
   public:
     SchemeGreedy(Scheduler *scheduler);
@@ -67,6 +68,11 @@ class SchemeGreedy : public SchemeBase
      * Generate schedule instances based on the pending applications and the available resources
      */
     virtual void generateScheduleInstances() override;
+
+    /***
+     * Compute execution delay for an application on a specific RSU
+     */
+    virtual double computeExeDelay(AppId appId, MacNodeId rsuId, double cmpUnits);
     
     /***
      * Compute the utility for a service instance

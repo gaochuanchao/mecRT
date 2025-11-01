@@ -105,6 +105,7 @@ void SchemeIterative::generateScheduleInstances()
                         instCUs_.push_back(cmpUnits);
                         instUtility_.push_back(utility);  // energy savings for the instance
                         instMaxOffTime_.push_back(period - exeDelay - offloadOverhead_);  // maximum offloading time for the instance
+                        instExeDelay_.push_back(exeDelay);  // execution delay for the instance
 
                         instPerRSUPerApp_[appIndex][rsuIndex].push_back(instCount);  // store the instance index in the per-RSU per-application vector
                         instCount++;  // increment the instance count
@@ -257,6 +258,7 @@ vector<srvInstance> SchemeIterative::scheduleRequests()
         // compute the maximum offloading time for this application
         appMaxOffTime_[appId] = instMaxOffTime_[instIdx];  // store the maximum offloading time for this application
         appUtility_[appId] = instUtility_[instIdx];  // store the utility for this application
+        appExeDelay_[appId] = instExeDelay_[instIdx];  // store the execution delay for this application
 
         // update the temporary resource blocks and computing units
         rsuRbTemp[rsuIndex] -= rb;  // subtract the resource blocks

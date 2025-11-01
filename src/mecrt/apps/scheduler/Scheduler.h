@@ -179,7 +179,8 @@ class Scheduler : public omnetpp::cSimpleModule
     /***
      * Initialize the module
      */
-    void initialize(int stage) override;
+    virtual void initialize(int stage) override;
+    virtual void selectSchedulingScheme();
 
     /***
      * Handle the messages

@@ -96,29 +96,6 @@ void SchemeBase::updateReachableRsus(const map<MacNodeId, map<MacNodeId, double>
 }
 
 
-double SchemeBase::computeExeDelay(AppId appId, MacNodeId rsuId, double cmpUnits)
-{
-    /***
-     * total computing cycle = T * C
-     * where T is the execution time for the full computing resource allocation, and C is the capacity
-     *      time = T * C / n
-     * * where n is the number of computing units allocated to the application
-     */
-
-    //check if db_ is not null
-    if (!db_) {
-        std::cout << " SchemeBase::computeExeDelay - db_ is null, cannot compute execution delay" << endl;
-    }
-    // execution time for the full computing resource allocation
-    double exeTime = db_->getGnbExeTime(appInfo_[appId].service, rsuStatus_[rsuId].deviceType);
-    if (rsuStatus_[rsuId].cmpCapacity <= 0) {
-        return INFINITY;
-    }
-
-    return exeTime * rsuStatus_[rsuId].cmpCapacity / cmpUnits;
-}
-
-
 double SchemeBase::computeOffloadDelay(MacNodeId vehId, MacNodeId rsuId, int bands, int dataSize)
 {
     /***
@@ -131,9 +108,9 @@ double SchemeBase::computeOffloadDelay(MacNodeId vehId, MacNodeId rsuId, int ban
      */
     double rate = veh2RsuRate_[make_tuple(vehId, rsuId)] * bands;  // byte per TTI
     double actualSize = dataSize + 33;
-    int numFrames = ceil(actualSize / rate);
+    int numTTI = ceil(actualSize / rate);
 
-    return numFrames * ttiPeriod_;
+    return numTTI * ttiPeriod_;
 }
 
 
@@ -147,13 +124,23 @@ double SchemeBase::getAppUtility(AppId appId)
 }
 
 
+double SchemeBase::getAppExeDelay(AppId appId)
+{
+    auto it = appExeDelay_.find(appId);
+    if (it != appExeDelay_.end())
+        return it->second;  // return the execution delay for the application
+    else
+        return INFINITY;  // if not found, return infinity
+}
+
+
 double SchemeBase::getMaxOffloadTime(AppId appId)
 {
     auto it = appMaxOffTime_.find(appId);
     if (it != appMaxOffTime_.end())
         return it->second;  // return the maximum offloading time for the application
     else
-        return 0.0;  // if not found, return 0
+        return INFINITY;  // if not found, return infinity
 }
 
 

@@ -118,6 +118,7 @@ void SchemeSARound::generateScheduleInstances()
                         instCUs_.push_back(cmpUnits);
                         instUtility_.push_back(utility);  // energy savings for the instance
                         instMaxOffTime_.push_back(period - exeDelay - offloadOverhead_);  // maximum offloading time for the instance
+                        instExeDelay_.push_back(exeDelay);  // execution delay for the instance
 
                         instPerRsuIndex_[rsuIndex].push_back(instCount);  // add the instance index to the RSU ID
                         instCount++;  // increment the instance count
@@ -190,6 +191,7 @@ vector<srvInstance> SchemeSARound::scheduleRequests()
             selectedApps.insert(appIndex);  // mark the application as selected
             appMaxOffTime_[appIds_[appIndex]] = instMaxOffTime_[instIdx];  // store the maximum offloading time for the application
             appUtility_[appIds_[appIndex]] = instUtility_[instIdx];  // store the utility for the application
+            appExeDelay_[appIds_[appIndex]] = instExeDelay_[instIdx];  // store the execution delay for the application
         }
     }
 

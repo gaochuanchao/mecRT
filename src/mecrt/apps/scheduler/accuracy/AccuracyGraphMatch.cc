@@ -1,6 +1,6 @@
 //
 //  Project: mecRT – Mobile Edge Computing Simulator for Real-Time Applications
-//  File:    SchemeFwdGraphMatch.cc / SchemeFwdGraphMatch.h
+//  File:    AccuracyGraphMatch.cc / AccuracyGraphMatch.h
 //
 //  Description:
 //    This file implements the Graph Matching based scheduling scheme in the Mobile Edge Computing System with
@@ -16,10 +16,11 @@
 //  License: Academic Public License -- NOT FOR COMMERCIAL USE
 //
 
-#include "mecrt/apps/scheduler/energy/SchemeFwdGraphMatch.h"
+#include "mecrt/apps/scheduler/accuracy/AccuracyGraphMatch.h"
 
-SchemeFwdGraphMatch::SchemeFwdGraphMatch(Scheduler *scheduler)
-    : SchemeFwdGreedy(scheduler),
+
+AccuracyGraphMatch::AccuracyGraphMatch(Scheduler *scheduler)
+    : AccuracyGreedy(scheduler),
       env_()    // initialize the Gurobi environment
 {
     // we only need to initialize the Gurobi environment once
@@ -41,14 +42,14 @@ SchemeFwdGraphMatch::SchemeFwdGraphMatch(Scheduler *scheduler)
     // check the value of fairFactor_
     if (fairFactor_ > 1.0 || fairFactor_ < 0.0)
     {
-        throw cRuntimeError("SchemeFwdGraphMatch::SchemeFwdGraphMatch - fairFactor_ must be in the range [0.0, 1.0]");
+        throw cRuntimeError("AccuracyGraphMatch::AccuracyGraphMatch - fairFactor_ must be in the range [0.0, 1.0]");
     }
     
-    EV << NOW << " SchemeFwdGraphMatch::SchemeFwdGraphMatch - Initialized" << endl;
+    EV << NOW << " AccuracyGraphMatch::AccuracyGraphMatch - Initialized" << endl;
 }
 
 
-void SchemeFwdGraphMatch::warmUpGurobiEnv()
+void AccuracyGraphMatch::warmUpGurobiEnv()
 {
     GRBModel dummyModel(env_);
     GRBVar x = dummyModel.addVar(0.0, 1.0, 0.0, GRB_BINARY, "x");
@@ -59,13 +60,13 @@ void SchemeFwdGraphMatch::warmUpGurobiEnv()
 }
 
 
-void SchemeFwdGraphMatch::initializeData()
+void AccuracyGraphMatch::initializeData()
 {
     // Initialize the scheduling data
-    EV << NOW << " SchemeFwdGraphMatch::initializeData - Initializing scheduling data" << endl;
+    EV << NOW << " AccuracyGraphMatch::initializeData - Initializing scheduling data" << endl;
 
     // Call the base class method to initialize common data
-    SchemeFwdGreedy::initializeData();
+    AccuracyGreedy::initializeData();
 
     // Additional initialization specific to the graph matching scheme can be added here
     instPerOffRsuIndex_.clear();  // Clear the instances per offload RSU index vector
@@ -77,9 +78,9 @@ void SchemeFwdGraphMatch::initializeData()
 }
 
 
-void SchemeFwdGraphMatch::generateScheduleInstances()
+void AccuracyGraphMatch::generateScheduleInstances()
 {
-    EV << NOW << " SchemeFwdGraphMatch::generateScheduleInstances - Generating schedule instances" << endl;
+    EV << NOW << " AccuracyGraphMatch::generateScheduleInstances - Generating schedule instances" << endl;
 
     initializeData();  // transform the scheduling data
 
@@ -159,13 +160,13 @@ void SchemeFwdGraphMatch::generateScheduleInstances()
 }
 
 
-vector<srvInstance> SchemeFwdGraphMatch::scheduleRequests()
+vector<srvInstance> AccuracyGraphMatch::scheduleRequests()
 {
-    EV << NOW << " SchemeFwdGraphMatch::scheduleRequests - graph matching schedule scheme starts" << endl;
+    EV << NOW << " AccuracyGraphMatch::scheduleRequests - graph matching schedule scheme starts" << endl;
 
     if (appIds_.empty())
     {
-        EV << NOW << " SchemeFwdGraphMatch::scheduleRequests - no applications to schedule, returning empty vector" << endl;
+        EV << NOW << " AccuracyGraphMatch::scheduleRequests - no applications to schedule, returning empty vector" << endl;
         return {};  // return an empty vector if no applications are available
     }
 
@@ -215,14 +216,14 @@ vector<srvInstance> SchemeFwdGraphMatch::scheduleRequests()
     // 5. obtain the scheduled instances based on the fractional local ratio method
     vector<srvInstance> solution = fractionalLocalRatioMethod(triGraph, tgmSolution);  // get the scheduled instances
 
-    EV << NOW << " SchemeFwdGraphMatch::scheduleRequests - graph matching schedule scheme ends, selected " 
+    EV << NOW << " AccuracyGraphMatch::scheduleRequests - graph matching schedule scheme ends, selected " 
        << solution.size() << " instances from " << instAppIndex_.size() << " total instances" << endl;
 
     return solution;
 }
 
 
-void SchemeFwdGraphMatch::solvingLP(map<int, double> & lpSolution)
+void AccuracyGraphMatch::solvingLP(map<int, double> & lpSolution)
 {
     /***
      * First solving the relaxed LP problem to get the fractional solution
@@ -313,7 +314,7 @@ void SchemeFwdGraphMatch::solvingLP(map<int, double> & lpSolution)
     try {
         model.optimize();  // optimize the model
     } catch (GRBException& e) {
-        EV << NOW << " SchemeFwdGraphMatch::solvingLP - Gurobi exception: " << e.getMessage() << endl;
+        EV << NOW << " AccuracyGraphMatch::solvingLP - Gurobi exception: " << e.getMessage() << endl;
         return;
     }
 
@@ -328,7 +329,7 @@ void SchemeFwdGraphMatch::solvingLP(map<int, double> & lpSolution)
 }
 
 
-void SchemeFwdGraphMatch::constructBipartiteGraph(BipartiteGraph& bg, map<int, vector<int>>& instIdx2EdgeVecIdx, 
+void AccuracyGraphMatch::constructBipartiteGraph(BipartiteGraph& bg, map<int, vector<int>>& instIdx2EdgeVecIdx, 
     map<int, double>& lpSolution, bool isOffload)
 {
     vector<int> & instResource = isOffload ? instRBs_ : instCUs_;  // select the resource vector based on offloading
@@ -429,7 +430,7 @@ void SchemeFwdGraphMatch::constructBipartiteGraph(BipartiteGraph& bg, map<int, v
 }
 
 
-void SchemeFwdGraphMatch::mergeBipartiteGraphs(TripartiteGraph& triGraph, const BipartiteGraph& offGraph, const map<int, vector<int>>& instIdx2OffEdgeVecIdx, 
+void AccuracyGraphMatch::mergeBipartiteGraphs(TripartiteGraph& triGraph, const BipartiteGraph& offGraph, const map<int, vector<int>>& instIdx2OffEdgeVecIdx, 
 		const BipartiteGraph& proGraph, const map<int, vector<int>>& instIdx2ProEdgeVecIdx, map<int, double>& lpSolution)
 {
     triGraph.offRsuNodeVec = offGraph.rsuNodeVec;  // copy the offload RSU nodes from the offload graph
@@ -497,7 +498,7 @@ void SchemeFwdGraphMatch::mergeBipartiteGraphs(TripartiteGraph& triGraph, const 
 }
 
 
-void SchemeFwdGraphMatch::solvingRelaxedTripartiteGraphMatching(TripartiteGraph& triGraph, map<int, double>& lpSolution)
+void AccuracyGraphMatch::solvingRelaxedTripartiteGraphMatching(TripartiteGraph& triGraph, map<int, double>& lpSolution)
 {
     /***
      * First solving the relaxed tripartite graph matching problem to get the fractional solution
@@ -583,7 +584,7 @@ void SchemeFwdGraphMatch::solvingRelaxedTripartiteGraphMatching(TripartiteGraph&
     try {
         model.optimize();  // optimize the model
     } catch (GRBException& e) {
-        EV << NOW << " SchemeFwdGraphMatch::solvingLP - Gurobi exception: " << e.getMessage() << endl;
+        EV << NOW << " AccuracyGraphMatch::solvingLP - Gurobi exception: " << e.getMessage() << endl;
         return;
     }
 
@@ -598,7 +599,7 @@ void SchemeFwdGraphMatch::solvingRelaxedTripartiteGraphMatching(TripartiteGraph&
 }
 
 
-vector<srvInstance> SchemeFwdGraphMatch::fractionalLocalRatioMethod(TripartiteGraph& triGraph, map<int, double>& lpSolution)
+vector<srvInstance> AccuracyGraphMatch::fractionalLocalRatioMethod(TripartiteGraph& triGraph, map<int, double>& lpSolution)
 {
     // 1. analyze the LP solution for the relaxed tripartite graph matching problem
     // lpSolution is a map of {edge vector index: fractional value}
@@ -779,4 +780,3 @@ vector<srvInstance> SchemeFwdGraphMatch::fractionalLocalRatioMethod(TripartiteGr
 
     return solution;  // return the scheduled instances
 }
-

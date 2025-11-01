@@ -68,6 +68,8 @@ void SchemeFwdGreedy::initializeData()
     appUtility_.clear();  // utility (i.e., energy savings) for the applications
     instOffRsuIndex_.clear();  // Clear the offload RSU index vector
     instProRsuIndex_.clear();  // Clear the processing RSU index vector
+    appExeDelay_.clear();  // execution delay for the applications
+    instExeDelay_.clear();  // execution delay for the service instances
 }
 
 
@@ -138,6 +140,7 @@ void SchemeFwdGreedy::generateScheduleInstances()
                             instCUs_.push_back(cmpUnits);
                             instUtility_.push_back(utility);  // energy savings for the instance
                             instMaxOffTime_.push_back(period - fwdDelay - exeDelay - offloadOverhead_);  // maximum offloading time for the instance
+                            instExeDelay_.push_back(exeDelay);  // execution delay for the instance
                         }
                     }
                 }
@@ -205,6 +208,7 @@ vector<srvInstance> SchemeFwdGreedy::scheduleRequests()
         selectedApps.insert(appIndex);  // mark the application as selected
         appMaxOffTime_[appIds_[appIndex]] = instMaxOffTime_[instIdx];  // store the maximum offloading time for the application
         appUtility_[appIds_[appIndex]] = instUtility_[instIdx];  // store the utility for the application
+        appExeDelay_[appIds_[appIndex]] = instExeDelay_[instIdx];  // store the execution delay for the application
 
         // update the RSU status
         rsuRBs_[rsuOffIndex] -= resBlocks;
@@ -215,6 +219,38 @@ vector<srvInstance> SchemeFwdGreedy::scheduleRequests()
        << " instances from " << instAppIndex_.size() << " total instances" << endl;
 
     return solution;  // return the solution set
+}
+
+
+double SchemeFwdGreedy::computeExeDelay(AppId appId, MacNodeId rsuId, double cmpUnits)
+{
+    /***
+     * total computing cycle = T * C
+     * where T is the execution time for the full computing resource allocation, and C is the capacity
+     *      time = T * C / n
+     * * where n is the number of computing units allocated to the application
+     */
+
+    //check if db_ is not null
+    if (!db_) 
+    {
+        throw std::runtime_error("SchemeFwdGreedy::computeExeDelay - db_ is null, cannot compute execution delay");
+    }
+    // execution time for the full computing resource allocation
+    double exeTime = db_->getGnbExeTime(appInfo_[appId].service, rsuStatus_[rsuId].deviceType);
+    if (exeTime <= 0) 
+    {
+        stringstream ss;
+        ss << NOW << " SchemeFwdGreedy::computeExeDelay - the demanded service " << appInfo_[appId].service 
+           << " is not supported on RSU[nodeId=" << rsuId << "], return INFINITY";
+        throw std::runtime_error(ss.str());
+    }
+
+    if (rsuStatus_[rsuId].cmpCapacity <= 0 || cmpUnits <= 0) {
+        return INFINITY;
+    }
+
+    return exeTime * rsuStatus_[rsuId].cmpCapacity / cmpUnits;
 }
 
 

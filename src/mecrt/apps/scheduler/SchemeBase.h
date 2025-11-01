@@ -57,6 +57,7 @@ class SchemeBase
     map<AppId, double> appMaxOffTime_;  // map to store the maximum offloading time for each application
     map<AppId, double> appUtility_;  // map to store the utility (i.e., energy savings) for each application
     map<AppId, string> appServiceType_; // map to store the service type for each application
+    map<AppId, double> appExeDelay_;  // map to store the execution delay for each application
 
   public:
     SchemeBase(Scheduler *scheduler);
@@ -82,11 +83,6 @@ class SchemeBase
     virtual vector<srvInstance> scheduleRequests() { return vector<srvInstance>(); };
 
     /***
-     * Compute execution delay for an application on a specific RSU
-     */
-    virtual double computeExeDelay(AppId appId, MacNodeId rsuId, double cmpUnits);
-
-    /***
      * Compute offload delay for an application to a specific RSU
      */
     virtual double computeOffloadDelay(MacNodeId vehId, MacNodeId rsuId, int bands, int dataSize);
@@ -95,6 +91,11 @@ class SchemeBase
      * Get the utility value for each selected application
      */
     virtual double getAppUtility(AppId appId);
+
+    /***
+     * Get the execution delay for an application
+     */
+    virtual double getAppExeDelay(AppId appId);
 
     /***
      * Get the maximum allowable offloading time for an application

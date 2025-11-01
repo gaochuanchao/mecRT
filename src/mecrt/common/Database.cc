@@ -50,13 +50,13 @@ void Database::initialize(int stage)
         gnbPosDataPath_ = par("gnbPosDataPath").stringValue();
         idlePower_ = par("idlePower");
         offloadPower_ = par("offloadPower");
-        serverExeScale_ = par("serverExeScale");
+        serverExeScale_ = par("gnbExeScale");
 
         appDataSize_.clear();
         ueExeTime_.clear();
         ueAppAccuracy_.clear();
         gnbExeTime_.clear();
-        gnbAppAccuracy_.clear();
+        gnbServiceAccuracy_.clear();
         deviceTypes_.clear();
         gnbServices_.clear();
 
@@ -67,7 +67,7 @@ void Database::initialize(int stage)
 
         WATCH_MAP(ueExeTime_);
         WATCH_MAP(ueAppAccuracy_);
-        WATCH_MAP(gnbAppAccuracy_);
+        WATCH_MAP(gnbServiceAccuracy_);
 
         if (enableInitDebug_)
             std::cout << "Database::initialize - stage: INITSTAGE_LOCAL - ends" << std::endl;
@@ -138,8 +138,6 @@ void Database::loadUeExeDataFromFile()
             iss >> name >> exe_time >> accuracy;
             ueExeTime_[name] = exe_time;
             ueAppAccuracy_[name] = accuracy;
-
-            gnbServices_.insert(name);
         }
     }
     inputFile.close();
@@ -186,7 +184,7 @@ void Database::loadGnbExeDataFromFile()
             gnbExeTime_[name][gpu1] = time1;
             gnbExeTime_[name][gpu2] = time2;
             gnbExeTime_[name][gpu3] = time3;
-            gnbAppAccuracy_[name] = accuracy;
+            gnbServiceAccuracy_[name] = accuracy;
 
             gnbServices_.insert(name);
         }
@@ -292,9 +290,9 @@ double Database::getGnbExeTime(string appType, string deviceType)
     return gnbExeTime_[appType][deviceType] * serverExeScale_; // scale the execution time by the server execution scale
 }
 
-double Database::getGnbAppAccuracy(string appType)
+double Database::getGnbServiceAccuracy(string appType)
 {
-    return gnbAppAccuracy_[appType];
+    return gnbServiceAccuracy_[appType];
 }
 
 pair<double, double> Database::getGnbPosData(int gnbId)

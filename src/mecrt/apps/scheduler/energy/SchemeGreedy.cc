@@ -63,6 +63,8 @@ void SchemeGreedy::initializeData()
     instMaxOffTime_.clear();  // maximum allowable offloading time for the service instances
     appMaxOffTime_.clear();  // maximum allowable offloading time for the applications
     appUtility_.clear();  // utility (i.e., energy savings) for the applications
+    appExeDelay_.clear();  // execution delay for the applications
+    instExeDelay_.clear();  // execution delay for the service instances
 }
 
 void SchemeGreedy::generateScheduleInstances()
@@ -116,6 +118,7 @@ void SchemeGreedy::generateScheduleInstances()
                         instCUs_.push_back(cmpUnits);
                         instUtility_.push_back(utility);  // energy savings for the instance
                         instMaxOffTime_.push_back(period - exeDelay - offloadOverhead_);
+                        instExeDelay_.push_back(exeDelay);
                     }
                 }
             }
@@ -130,6 +133,38 @@ double SchemeGreedy::computeUtility(AppId &appId, double &offloadDelay, double &
     double savedEnergy = appInfo_[appId].energy - appInfo_[appId].offloadPower * offloadDelay;
     
     return savedEnergy / period;   // energy saving per second
+}
+
+
+double SchemeGreedy::computeExeDelay(AppId appId, MacNodeId rsuId, double cmpUnits)
+{
+    /***
+     * total computing cycle = T * C
+     * where T is the execution time for the full computing resource allocation, and C is the capacity
+     *      time = T * C / n
+     * * where n is the number of computing units allocated to the application
+     */
+
+    //check if db_ is not null
+    if (!db_) 
+    {
+        throw std::runtime_error("SchemeGreedy::computeExeDelay - db_ is null, cannot compute execution delay");
+    }
+    // execution time for the full computing resource allocation
+    double exeTime = db_->getGnbExeTime(appInfo_[appId].service, rsuStatus_[rsuId].deviceType);
+    if (exeTime <= 0) 
+    {
+        stringstream ss;
+        ss << NOW << " SchemeGreedy::computeExeDelay - the demanded service " << appInfo_[appId].service 
+           << " is not supported on RSU[nodeId=" << rsuId << "], return INFINITY";
+        throw std::runtime_error(ss.str());
+    }
+
+    if (rsuStatus_[rsuId].cmpCapacity <= 0 || cmpUnits <= 0) {
+        return INFINITY;
+    }
+
+    return exeTime * rsuStatus_[rsuId].cmpCapacity / cmpUnits;
 }
 
 
@@ -183,6 +218,7 @@ vector<srvInstance> SchemeGreedy::scheduleRequests()
         selectedApps.insert(appIndex);  // mark the application as selected
         appMaxOffTime_[appIds_[appIndex]] = instMaxOffTime_[instIdx];  // store the maximum offloading time for the application
         appUtility_[appIds_[appIndex]] = instUtility_[instIdx];  // store the utility for the application
+        appExeDelay_[appIds_[appIndex]] = instExeDelay_[instIdx];  // store the execution delay for the application
 
         // update the RSU status
         rsuRBs_[rsuIndex] -= resBlocks;

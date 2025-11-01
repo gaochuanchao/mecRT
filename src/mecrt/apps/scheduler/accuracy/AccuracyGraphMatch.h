@@ -1,6 +1,6 @@
 //
 //  Project: mecRT – Mobile Edge Computing Simulator for Real-Time Applications
-//  File:    SchemeFwdGraphMatch.cc / SchemeFwdGraphMatch.h
+//  File:    AccuracyGraphMatch.cc / AccuracyGraphMatch.h
 //
 //  Description:
 //    This file implements the Graph Matching based scheduling scheme in the Mobile Edge Computing System with
@@ -16,14 +16,13 @@
 //  License: Academic Public License -- NOT FOR COMMERCIAL USE
 //
 
-#ifndef _MECRT_SCHEDULER_SCHEME_FWD_GRAPH_MATCH_H_
-#define _MECRT_SCHEDULER_SCHEME_FWD_GRAPH_MATCH_H_
+#ifndef _MECRT_SCHEDULER_SCHEME_ACCURACY_GRAPH_MATCH_BN_H_
+#define _MECRT_SCHEDULER_SCHEME_ACCURACY_GRAPH_MATCH_BN_H_
 
-#include "mecrt/apps/scheduler/energy/SchemeFwdGreedy.h"
+#include "mecrt/apps/scheduler/accuracy/AccuracyGreedy.h"
 #include "gurobi_c++.h"
 
-
-class SchemeFwdGraphMatch : public SchemeFwdGreedy
+class AccuracyGraphMatch : public AccuracyGreedy
 {
 
   protected:
@@ -74,8 +73,8 @@ class SchemeFwdGraphMatch : public SchemeFwdGreedy
     GRBEnv env_;  // Gurobi environment for solving LP problems
 
   public:
-    SchemeFwdGraphMatch(Scheduler *scheduler);
-    ~SchemeFwdGraphMatch() 
+    AccuracyGraphMatch(Scheduler *scheduler);
+    ~AccuracyGraphMatch() 
     {
         scheduler_ = nullptr;  // reset the pointer to avoid dangling pointer
         db_ = nullptr;  // reset the pointer to avoid dangling pointer
@@ -113,4 +112,4 @@ class SchemeFwdGraphMatch : public SchemeFwdGreedy
     virtual void warmUpGurobiEnv();
 };
 
-#endif // _VEC_SCHEDULER_SCHEME_FWD_GRAPH_MATCH_H_
+#endif

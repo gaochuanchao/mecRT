@@ -59,6 +59,7 @@ vector<srvInstance> SchemeFwdQuickLR::scheduleRequests()
         solution.emplace_back(appIds_[appIndex], rsuIds_[offRsuIndex], rsuIds_[proRsuIndex], instRBs_[instIdx], instCUs_[instIdx]);
         appMaxOffTime_[appIds_[appIndex]] = instMaxOffTime_[instIdx];  // store the maximum offloading time for the application
         appUtility_[appIds_[appIndex]] = instUtility_[instIdx];  // store the utility for the application
+        appExeDelay_[appIds_[appIndex]] = instExeDelay_[instIdx];  // store the execution delay for the application
     }
 
     EV << NOW << " SchemeFwdQuickLR::scheduleRequests - QuickLR schedule scheme ends, selected " << solution.size() 
