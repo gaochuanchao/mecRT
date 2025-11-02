@@ -74,6 +74,7 @@ void Server::initialize(int stage)
         meetDlPktSignal_ = registerSignal("meetDlPkt");
         failedSrvDownSignal_ = registerSignal("failedSrvDownPkt");
         missDlPktSignal_ = registerSignal("missDlPkt");
+        utilitySignal_ = registerSignal("utility");
 
         if (enableInitDebug_)
             std::cout << "Server::initialize - stage: INITSTAGE_LOCAL - ends" << std::endl;
@@ -122,8 +123,12 @@ void Server::initialize(int stage)
         appsWaitMacInitFb_ = std::set<AppId>();
 
         WATCH(deviceType_);
+        WATCH(localPort_);
         WATCH_VECTOR(srvInInitVector_);
         WATCH_MAP(srvInitCompleteTime_);
+        WATCH_MAP(serviceInitTime_);
+        WATCH_SET(appsWaitMacInitFb_);
+        WATCH_SET(appsWaitStop_);
 
         if (enableInitDebug_)
             std::cout << "Server::initialize - stage: INITSTAGE_APPLICATION_LAYER - ends" << std::endl;
@@ -228,6 +233,8 @@ void Server::handleAppData(inet::Packet *pkt)
         {
             EV << "Server::handleMessage - app " << appId << " frame " << frameId << " - application deadline is met" << endl;
             emit(meetDlPktSignal_, 1);
+            double utilityPerJob = grantedService_[appId].utility * grantedService_[appId].deadline.dbl();
+            emit(utilitySignal_, utilityPerJob);
         }
     }
 }
@@ -452,6 +459,7 @@ void Server::initializeService(inet::Ptr<const Grant2Rsu> pkt)
     srv.deadline = pkt->getDeadline();
     srv.outputSize = pkt->getOutputSize();
     srv.inputSize = pkt->getInputSize();
+    srv.utility = pkt->getUtility();
     srv.appId = appId;
     srv.ueAddr = Ipv4Address(pkt->getUeAddr());
     srv.exeTime = pkt->getExeTime();

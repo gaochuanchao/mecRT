@@ -27,7 +27,7 @@ simple BandManager
         // numerology index
         int numerologyIndex = default(0);
 
-        @signal[offloadEnergyConsumed];
-        @statistic[offloadEnergyConsumed](title="energy consumed for offloading data"; unit="mJ"; source="offloadEnergyConsumed"; record=sum,timeavg);
+        // @signal[offloadEnergyConsumed];
+        // @statistic[offloadEnergyConsumed](title="energy consumed for offloading data"; unit="mJ"; source="offloadEnergyConsumed"; record=sum,timeavg);
         
 }

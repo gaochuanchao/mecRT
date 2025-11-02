@@ -81,6 +81,8 @@ void AccuracyGreedy::generateScheduleInstances()
 
     initializeData();  // transform the scheduling data
 
+    bool debugMode = false;
+
     for (int appIndex = 0; appIndex < appIds_.size(); appIndex++)    // enumerate the unscheduled apps
     {
         AppId appId = appIds_[appIndex];  // get the application ID
@@ -95,6 +97,9 @@ void AccuracyGreedy::generateScheduleInstances()
         MacNodeId vehId = appInfo_[appId].vehId;
         if (vehAccessRsu_.find(vehId) != vehAccessRsu_.end())     // if there exists RSU in access
         {   
+            if (debugMode)
+                EV << "\t the number of accessible RSUs for vehicle " << vehId << " is " << vehAccessRsu_[vehId].size() << endl;
+            
             for(MacNodeId offRsuId : vehAccessRsu_[vehId])   // enumerate the RSUs in access
             {
                 if (rsuStatus_.find(offRsuId) == rsuStatus_.end())
@@ -112,12 +117,21 @@ void AccuracyGreedy::generateScheduleInstances()
                     int procRsuId = pair.first;
                     int procRsuIndex = rsuId2Index_[procRsuId];  // get the index of the processing RSU
                     int maxCU = floor(rsuCUs_[procRsuIndex] * fairFactor_);  // maximum computing units for the processing RSU
+
+                    if (debugMode)
+                        EV << "\t period: " << period << ", offload RSU " << offRsuId << " to process RSU " << procRsuId
+                            << " (maxRB: " << maxRB << ", maxCU: " << maxCU << ", fwdDelay: " << fwdDelay << "s)" << endl;
                     // if maxRB/rbStep_ is smaller than maxCU/cuStep_, enumerate RB
                     if (maxRB / rbStep_ < maxCU / cuStep_)
                     {
                         for (int resBlocks = maxRB; resBlocks > 0; resBlocks -= rbStep_)
                         {
                             double offloadDelay = computeOffloadDelay(vehId, offRsuId, resBlocks, appInfo_[appId].inputSize);
+                            if (debugMode)
+                            {
+                                EV << "\t\tenumerate resBlocks " << resBlocks << ", offloadDelay: " << offloadDelay << "s" << endl;
+                            }
+                                
                             if (fwdDelay + offloadDelay + offloadOverhead_ >= period)
                                 break;  // if the forwarding delay is too long, break
 
@@ -127,11 +141,17 @@ void AccuracyGreedy::generateScheduleInstances()
                             for (const string& serviceType : serviceTypes)
                             {
                                 int minCU = computeMinRequiredCUs(procRsuId, exeDelayThreshold, serviceType);
+                                if (debugMode)
+                                {
+                                    EV << "\t\t\tservice type " << serviceType << ", minCU: " << minCU << ", exeDelayThreshold: " << exeDelayThreshold << endl;
+                                    debugMode = false;  // only print once
+                                }
+
                                 if (minCU > maxCU)
                                     continue;  // if the minimum computing units required is larger than the maximum computing units available, skip
 
                                 double exeDelay = computeExeDelay(procRsuId, minCU, serviceType);
-                                double utility = computeUtility(appId, serviceType);
+                                double utility = computeUtility(appId, serviceType) / period;   // utility per second
                                 if (utility <= 0)   // if the saved energy is less than 0, skip
                                     continue;
 
@@ -166,7 +186,7 @@ void AccuracyGreedy::generateScheduleInstances()
                                 if (minRB > maxRB)
                                     break;  // if the minimum resource blocks required is larger than the maximum resource blocks available, break
 
-                                double utility = computeUtility(appId, serviceType);
+                                double utility = computeUtility(appId, serviceType) / period;   // utility per second
                                 if (utility <= 0)   // if the saved energy is less than 0, skip
                                     continue;
 
@@ -251,6 +271,12 @@ vector<srvInstance> AccuracyGreedy::scheduleRequests()
         appUtility_[appIds_[appIndex]] = instUtility_[instIdx];  // store the utility for the application
         appExeDelay_[appIds_[appIndex]] = instExeDelay_[instIdx];  // store the execution delay for the application
         appServiceType_[appIds_[appIndex]] = instServiceType_[instIdx];  // store the service type for the application
+
+        // EV << NOW << " AccuracyGreedy::scheduleRequests - selected application " << appIds_[appIndex]
+        //    << " offloaded to RSU " << rsuIds_[rsuOffIndex] << " and processed on RSU " << rsuIds_[rsuProIndex]
+        //    << " (RBs: " << resBlocks << ", CUs: " << cmpUnits << ", utility: " << instUtility_[instIdx] << ")" << endl;
+        // EV << "\t instance index: " << instIdx << ", max offload time: " << instMaxOffTime_[instIdx]
+        //    << "s, execution delay: " << instExeDelay_[instIdx] << "s, service type: " << instServiceType_[instIdx] << endl;
 
         // update the RSU status
         rsuRBs_[rsuOffIndex] -= resBlocks;

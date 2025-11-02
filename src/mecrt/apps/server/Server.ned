@@ -36,6 +36,9 @@ simple Server like IApp
         @signal[missDlPkt](type="int");
         @statistic[missDlPkt](title="number of jobs missing deadline"; source="missDlPkt"; record=sum);
 
+        @signal[utility](type="double");
+        @statistic[utility](title="utility gain"; source="utility"; record=vector, mean, sum);
+
         @display("i=block/app2");
     gates:
         output socketOut;

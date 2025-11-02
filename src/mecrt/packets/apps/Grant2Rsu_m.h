@@ -42,8 +42,9 @@ class Grant2Rsu;
  *     int inputSize;		// input size in bytes, 4 bytes
  *     bool start;
  *     bool stop;
+ *     double utility;		// the utility of the service instance per second, 8 bytes
  * 
- *     chunkLength = inet::B(66);
+ *     chunkLength = inet::B(70);
  * }
  * </pre>
  */
@@ -66,6 +67,7 @@ class Grant2Rsu : public ::inet::FieldsChunk
     int inputSize = 0;
     bool start = false;
     bool stop = false;
+    double utility = 0;
 
   private:
     void copy(const Grant2Rsu& other);
@@ -129,6 +131,9 @@ class Grant2Rsu : public ::inet::FieldsChunk
 
     virtual bool getStop() const;
     virtual void setStop(bool stop);
+
+    virtual double getUtility() const;
+    virtual void setUtility(double utility);
 };
 
 inline void doParsimPacking(omnetpp::cCommBuffer *b, const Grant2Rsu& obj) {obj.parsimPack(b);}

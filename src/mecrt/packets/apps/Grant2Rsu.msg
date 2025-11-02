@@ -34,6 +34,7 @@ class Grant2Rsu extends inet::FieldsChunk
 	int inputSize;		// input size in bytes, 4 bytes
 	bool start;
 	bool stop;
+	double utility;		// the utility of the service instance per second, 8 bytes
 	
-	chunkLength = inet::B(66);
+	chunkLength = inet::B(70);
 }

@@ -58,8 +58,8 @@ void BandManager::initialize(int stage)
         transmitMapUl_.clear();
         uePhy_.clear();
 
-        offloadEnergyConsumedSignal_ = registerSignal("offloadEnergyConsumed");
-        offloadConsumedEnergy_ = 0.0;
+        // offloadEnergyConsumedSignal_ = registerSignal("offloadEnergyConsumed");
+        // offloadConsumedEnergy_ = 0.0;
 
         WATCH(dir_);
         WATCH(frequency_);
@@ -183,12 +183,12 @@ void BandManager::updateTransmissionUl()
     }
 
     // update the offload energy consumed signal
-    offloadConsumedEnergy_ = 0;
-    for (MacNodeId ueId : activeUes)
-    {
-        offloadConsumedEnergy_ += offloadPower_[ueId] * ttiPeriod_;
-    }
+    // offloadConsumedEnergy_ = 0;
+    // for (MacNodeId ueId : activeUes)
+    // {
+    //     offloadConsumedEnergy_ += offloadPower_[ueId] * ttiPeriod_;
+    // }
 
-    emit(offloadEnergyConsumedSignal_, offloadConsumedEnergy_);
+    // emit(offloadEnergyConsumedSignal_, offloadConsumedEnergy_);
 }
 

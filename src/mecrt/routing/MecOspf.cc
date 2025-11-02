@@ -207,6 +207,7 @@ void MecOspf::initialize(int stage)
         selfLsa_->setNodeId(nodeInfo_ ? nodeInfo_->getNodeId() : -1);   // set nodeId if nodeInfo_ is available (gNB), otherwise -1
         lsaPacketCache_[routerIdKey_] = selfLsa_;
         ipv4ToMacNodeId_[routerIdKey_] = selfLsa_->getNodeId();
+        topology_[routerIdKey_] = map<uint32_t, double>();
 
         WATCH(routerId_);
         WATCH(routerIdKey_);
@@ -887,15 +888,12 @@ void MecOspf::recomputeIndirectRouting()
             }
         }
     }
-    // if (nodeInfo_) {
-    //     nodeInfo_->setRtState(true); // mark routing table is ready
-    // }
 
     // ======= Step 4: determine the scheduler node ========
     // select the reachable node with maximum number of neighbors as the scheduler
-    // (if multiple, select the one with the lowest IP address)
-    // because 
+    // (if multiple, select the one with the lowest IP address) 
     size_t maxNeighbors = 0;
+    schedulerAddr_ = routerId_; // default to self
     for (auto nodeKey : reachableNodes) {
         // only consider nodes has positive nodeId (i.e., gNBs)
         if (lsaPacketCache_[nodeKey]->getNodeId() <= 0) continue;
@@ -973,6 +971,7 @@ void MecOspf::updateAdjListToScheduler()
         for (const auto& kv : topology_)    // map<uint32_t, map<uint32_t, double>> topology_
         {
             MacNodeId src = ipv4ToMacNodeId_[kv.first];
+            adjList[src] = map<MacNodeId, double>();
             for (const auto& nbr : kv.second)
             {
                 MacNodeId dst = ipv4ToMacNodeId_[nbr.first];

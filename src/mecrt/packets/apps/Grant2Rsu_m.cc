@@ -154,7 +154,7 @@ Register_Class(Grant2Rsu)
 
 Grant2Rsu::Grant2Rsu() : ::inet::FieldsChunk()
 {
-    this->setChunkLength(inet::B(66));
+    this->setChunkLength(inet::B(70));
 
 }
 
@@ -193,6 +193,7 @@ void Grant2Rsu::copy(const Grant2Rsu& other)
     this->inputSize = other.inputSize;
     this->start = other.start;
     this->stop = other.stop;
+    this->utility = other.utility;
 }
 
 void Grant2Rsu::parsimPack(omnetpp::cCommBuffer *b) const
@@ -214,6 +215,7 @@ void Grant2Rsu::parsimPack(omnetpp::cCommBuffer *b) const
     doParsimPacking(b,this->inputSize);
     doParsimPacking(b,this->start);
     doParsimPacking(b,this->stop);
+    doParsimPacking(b,this->utility);
 }
 
 void Grant2Rsu::parsimUnpack(omnetpp::cCommBuffer *b)
@@ -235,6 +237,7 @@ void Grant2Rsu::parsimUnpack(omnetpp::cCommBuffer *b)
     doParsimUnpacking(b,this->inputSize);
     doParsimUnpacking(b,this->start);
     doParsimUnpacking(b,this->stop);
+    doParsimUnpacking(b,this->utility);
 }
 
 unsigned int Grant2Rsu::getAppId() const
@@ -413,6 +416,17 @@ void Grant2Rsu::setStop(bool stop)
     this->stop = stop;
 }
 
+double Grant2Rsu::getUtility() const
+{
+    return this->utility;
+}
+
+void Grant2Rsu::setUtility(double utility)
+{
+    handleChange();
+    this->utility = utility;
+}
+
 class Grant2RsuDescriptor : public omnetpp::cClassDescriptor
 {
   private:
@@ -434,6 +448,7 @@ class Grant2RsuDescriptor : public omnetpp::cClassDescriptor
         FIELD_inputSize,
         FIELD_start,
         FIELD_stop,
+        FIELD_utility,
     };
   public:
     Grant2RsuDescriptor();
@@ -500,7 +515,7 @@ const char *Grant2RsuDescriptor::getProperty(const char *propertyName) const
 int Grant2RsuDescriptor::getFieldCount() const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
-    return base ? 16+base->getFieldCount() : 16;
+    return base ? 17+base->getFieldCount() : 17;
 }
 
 unsigned int Grant2RsuDescriptor::getFieldTypeFlags(int field) const
@@ -528,8 +543,9 @@ unsigned int Grant2RsuDescriptor::getFieldTypeFlags(int field) const
         FD_ISEDITABLE,    // FIELD_inputSize
         FD_ISEDITABLE,    // FIELD_start
         FD_ISEDITABLE,    // FIELD_stop
+        FD_ISEDITABLE,    // FIELD_utility
     };
-    return (field >= 0 && field < 16) ? fieldTypeFlags[field] : 0;
+    return (field >= 0 && field < 17) ? fieldTypeFlags[field] : 0;
 }
 
 const char *Grant2RsuDescriptor::getFieldName(int field) const
@@ -557,8 +573,9 @@ const char *Grant2RsuDescriptor::getFieldName(int field) const
         "inputSize",
         "start",
         "stop",
+        "utility",
     };
-    return (field >= 0 && field < 16) ? fieldNames[field] : nullptr;
+    return (field >= 0 && field < 17) ? fieldNames[field] : nullptr;
 }
 
 int Grant2RsuDescriptor::findField(const char *fieldName) const
@@ -581,6 +598,7 @@ int Grant2RsuDescriptor::findField(const char *fieldName) const
     if (strcmp(fieldName, "inputSize") == 0) return baseIndex + 13;
     if (strcmp(fieldName, "start") == 0) return baseIndex + 14;
     if (strcmp(fieldName, "stop") == 0) return baseIndex + 15;
+    if (strcmp(fieldName, "utility") == 0) return baseIndex + 16;
     return base ? base->findField(fieldName) : -1;
 }
 
@@ -609,8 +627,9 @@ const char *Grant2RsuDescriptor::getFieldTypeString(int field) const
         "int",    // FIELD_inputSize
         "bool",    // FIELD_start
         "bool",    // FIELD_stop
+        "double",    // FIELD_utility
     };
-    return (field >= 0 && field < 16) ? fieldTypeStrings[field] : nullptr;
+    return (field >= 0 && field < 17) ? fieldTypeStrings[field] : nullptr;
 }
 
 const char **Grant2RsuDescriptor::getFieldPropertyNames(int field) const
@@ -709,6 +728,7 @@ std::string Grant2RsuDescriptor::getFieldValueAsString(omnetpp::any_ptr object, 
         case FIELD_inputSize: return long2string(pp->getInputSize());
         case FIELD_start: return bool2string(pp->getStart());
         case FIELD_stop: return bool2string(pp->getStop());
+        case FIELD_utility: return double2string(pp->getUtility());
         default: return "";
     }
 }
@@ -741,6 +761,7 @@ void Grant2RsuDescriptor::setFieldValueAsString(omnetpp::any_ptr object, int fie
         case FIELD_inputSize: pp->setInputSize(string2long(value)); break;
         case FIELD_start: pp->setStart(string2bool(value)); break;
         case FIELD_stop: pp->setStop(string2bool(value)); break;
+        case FIELD_utility: pp->setUtility(string2double(value)); break;
         default: throw omnetpp::cRuntimeError("Cannot set field %d of class 'Grant2Rsu'", field);
     }
 }
@@ -771,6 +792,7 @@ omnetpp::cValue Grant2RsuDescriptor::getFieldValue(omnetpp::any_ptr object, int 
         case FIELD_inputSize: return pp->getInputSize();
         case FIELD_start: return pp->getStart();
         case FIELD_stop: return pp->getStop();
+        case FIELD_utility: return pp->getUtility();
         default: throw omnetpp::cRuntimeError("Cannot return field %d of class 'Grant2Rsu' as cValue -- field index out of range?", field);
     }
 }
@@ -803,6 +825,7 @@ void Grant2RsuDescriptor::setFieldValue(omnetpp::any_ptr object, int field, int 
         case FIELD_inputSize: pp->setInputSize(omnetpp::checked_int_cast<int>(value.intValue())); break;
         case FIELD_start: pp->setStart(value.boolValue()); break;
         case FIELD_stop: pp->setStop(value.boolValue()); break;
+        case FIELD_utility: pp->setUtility(value.doubleValue()); break;
         default: throw omnetpp::cRuntimeError("Cannot set field %d of class 'Grant2Rsu'", field);
     }
 }

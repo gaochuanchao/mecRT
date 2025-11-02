@@ -26,7 +26,8 @@ simple Scheduler like IApp
         int cuStep = default(1);  // the step for computing units, default is 1
         int rbStep = default(1);  // the step for resource blocks, default is 1
         double srvTimeScale = default(1.0); // the scale for app execution time on servers with full resource, default is 1.0
-        bool enableBackhaul = default(false); // whether to enable the backhaul network, default is false
+        bool enableBackhaul = default(true); // whether to enable the backhaul network, default is true
+        string optimizeObjective = default("accuracy"); // the optimization objective for scheduling scheme, default is "accuracy"
         // the maximum number of hops for task forwarding in the backhaul network
         // default is 1, which means the task can only be forwarded to neighboring RSUs after being offloaded
         int maxHops = default(1);
@@ -37,13 +38,13 @@ simple Scheduler like IApp
         @signal[schedulingTime](type="double");
         @signal[schemeTime](type="double");
         @signal[instanceGenerateTime](type="double");
-        @signal[savedEnergy](type="double");
+        @signal[utility](type="double");
         @signal[pendingAppCount](type="int");
         @signal[grantedAppCount](type="int");
         @statistic[schedulingTime](title="scheduling time"; source="schedulingTime"; record=vector, mean, sum);
         @statistic[schemeTime](title="scheme execution time"; source="schemeTime"; record=vector, mean, sum);
         @statistic[instanceGenerateTime](title="schedule instance generating time"; source="instanceGenerateTime"; record=vector, mean, sum);
-        @statistic[savedEnergy](title="total energy saved"; source="savedEnergy"; record=vector, timeavg, sum);
+        @statistic[utility](title="total utility"; source="utility"; record=vector, mean, sum);
         @statistic[pendingAppCount](title="number of apps pending to schedule"; source="pendingAppCount"; record=vector, mean, sum);
         @statistic[grantedAppCount](title="number of granted apps"; source="grantedAppCount"; record=vector, mean, sum);
 

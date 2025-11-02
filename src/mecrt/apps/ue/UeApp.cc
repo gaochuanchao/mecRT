@@ -92,8 +92,8 @@ void UeApp::initialize(int stage)
         // register signals
         localProcessSignal_ = registerSignal("localProcessCount");
         offloadSignal_ = registerSignal("offloadCount");
-        savedEnergySignal_ = registerSignal("vehSavedEnergy");
-        energyConsumedIfLocalSignal_ = registerSignal("vehEnergyConsumedIfLocal");
+        // savedEnergySignal_ = registerSignal("vehSavedEnergy");
+        // energyConsumedIfLocalSignal_ = registerSignal("vehEnergyConsumedIfLocal");
         dlScale_ = par("dlScale");
 
         if (enableInitDebug_)
@@ -271,17 +271,17 @@ void UeApp::sendJobPacket()
 
         emit(offloadSignal_, 1);
         emit(localProcessSignal_, 0);
-        emit(savedEnergySignal_, localConsumedEnergy_);
+        // emit(savedEnergySignal_, localConsumedEnergy_);
     }
     else
     {
         EV << "UeApp::sendJobPacket - service for app " << appId_ << " is not granted, processed locally!" <<endl;
         emit(offloadSignal_, 0);
         emit(localProcessSignal_, 1);
-        emit(savedEnergySignal_, 0);
+        // emit(savedEnergySignal_, 0);
     }
 
-    emit(energyConsumedIfLocalSignal_, localConsumedEnergy_);
+    // emit(energyConsumedIfLocalSignal_, localConsumedEnergy_);
 }
 
 void UeApp::sendServiceRequest()

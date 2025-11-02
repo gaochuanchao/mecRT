@@ -31,6 +31,10 @@ O = $(PROJECT_OUTPUT_DIR)/$(CONFIGNAME)/$(PROJECTRELATIVE_PATH)
 OBJS = \
     $O/mecrt/apps/scheduler/Scheduler.o \
     $O/mecrt/apps/scheduler/SchemeBase.o \
+    $O/mecrt/apps/scheduler/accuracy/AccuracyFastSA.o \
+    $O/mecrt/apps/scheduler/accuracy/AccuracyGameTheory.o \
+    $O/mecrt/apps/scheduler/accuracy/AccuracyGraphMatch.o \
+    $O/mecrt/apps/scheduler/accuracy/AccuracyGreedy.o \
     $O/mecrt/apps/scheduler/energy/SchemeFastLR.o \
     $O/mecrt/apps/scheduler/energy/SchemeFwdGameTheory.o \
     $O/mecrt/apps/scheduler/energy/SchemeFwdGraphMatch.o \

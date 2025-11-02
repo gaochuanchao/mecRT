@@ -72,11 +72,10 @@ struct ServiceInstance {
     int cmpUnits;      // allocated computing units of the service
     int bands;         // allocated bands for accessing the service
     omnetpp::simtime_t srvGrantTime;    // the time when the grant of the service is sended
-    double energySaved;
+    double utility;       // the utility of the service instance per second
     double exeTime; // the execution time of the service
     double maxOffloadTime;  // the maximum offloading time results in positive energy saving
     string serviceType; // the service type of the application
-    double utility; // the utility of the service instance
 };
 
 
@@ -100,7 +99,6 @@ class Scheduler : public omnetpp::cSimpleModule
     int cuStep_ = 1;  // the step for computing units, default is 1
     int rbStep_ = 1;  // the step for resource blocks, default is 1
     double srvTimeScale_; // the scale for app execution time on servers with full resource, default is 1.0
-    bool enableBackhaul_ = false; // whether to enable the backhaul network, default is false
     double virtualLinkRate_; // the rate of the virtual link in the backhaul network
     double fairFactor_; // the fairness factor for scheduling scheme with forwarding, default is 1.0
     int maxHops_ = 1; // the maximum number of hops for task forwarding in the backhaul network, default is 1
@@ -113,9 +111,12 @@ class Scheduler : public omnetpp::cSimpleModule
     omnetpp::simsignal_t vecSchedulingTimeSignal_;
     omnetpp::simsignal_t vecSchemeTimeSignal_;
     omnetpp::simsignal_t vecInsGenerateTimeSignal_;
-    omnetpp::simsignal_t vecSavedEnergySignal_;
+    omnetpp::simsignal_t vecUtilitySignal_;
     omnetpp::simsignal_t vecPendingAppCountSignal_;
     omnetpp::simsignal_t vecGrantedAppCountSignal_;
+
+    bool enableBackhaul_ = true; // whether to enable the backhaul network, default is true
+    string optimizeObjective_; // the optimization objective for scheduling scheme, default is "accuracy"
 
     /*
      * Data Structures
@@ -180,7 +181,7 @@ class Scheduler : public omnetpp::cSimpleModule
      * Initialize the module
      */
     virtual void initialize(int stage) override;
-    virtual void selectSchedulingScheme();
+    virtual void initializeSchedulingScheme();
 
     /***
      * Handle the messages

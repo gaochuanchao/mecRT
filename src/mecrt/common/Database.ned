@@ -40,5 +40,13 @@ simple Database
         // gNB execution scale, default 1.0
         double gnbExeScale = default(1.0);
 
+        // parameters to inject errors
+        int numLinks = default(0); // number of links in the network
+        bool linkErrorInjection = default(false);
+        double linkErrorProb = default(0.0);
+        bool serverErrorInjection = default(false);
+        double serverErrorProb = default(0.0);
+        double failureRecoveryInterval @unit(s) = default(10s); // time for failure recovery
+
         @display("i=block/cogwheel");
 }

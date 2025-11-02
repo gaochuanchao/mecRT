@@ -51,6 +51,7 @@ struct Service
     int outputSize;  // the output data size of the job, in bytes
     bool initComplete;
     omnetpp::simtime_t maxOffloadTime;  // the maximum offloading time results in positive energy saving
+    double utility; // the utility of the service instance per second
 };
 
 class NodeInfo;
@@ -101,6 +102,7 @@ class Server : public omnetpp::cSimpleModule
     omnetpp::simsignal_t meetDlPktSignal_;  // the number of packets that meet the deadline
     omnetpp::simsignal_t failedSrvDownSignal_;  // the number of failed packets due to service down
     omnetpp::simsignal_t missDlPktSignal_;  // the number of packets that miss the deadline
+    omnetpp::simsignal_t utilitySignal_;  // the utility of the service instance per second
 
   public:
 

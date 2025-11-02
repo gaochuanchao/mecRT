@@ -221,8 +221,6 @@ void UeMac::initialize(int stage)
         if (enableInitDebug_)
             std::cout << "UeMac::initialize - stage: INITSTAGE_NETWORK_LAYER - begins" << std::endl;
 
-
-
         /* Insert UeInfo in the Binder */
         UeInfo* info = new UeInfo();
         info->id = nodeId_;            // local mac ID
@@ -648,6 +646,23 @@ void UeMac::vecHandleVehicularGrant(cPacket* pktAux)
 
     if (grant->getNewGrant())   // new grant for the application
     {
+        if (grantedApp_.find(appId) != grantedApp_.end())
+        {
+            EV << "\t Warning: New grant received for AppId: " << appId << ", but this app has already been granted before!" << endl;
+
+            // check if the offload gNB ID is the same
+            auto existingGrant = vecGrant_[appId];
+            if (existingGrant->getOffloadGnbId() != grant->getOffloadGnbId())
+            {
+                EV << "\t existing grant offload gNB ID: " << existingGrant->getOffloadGnbId()
+                   << ", new grant offload gNB ID: " << grant->getOffloadGnbId() << endl;
+                // delete the new grant packet
+                delete pkt;
+                pkt = nullptr;
+                return;
+            }
+        }
+        
         grantedApp_.insert(appId);
         // store received grant
         auto userInfo = pkt->getTag<UserControlInfo>();
@@ -687,6 +702,18 @@ void UeMac::vecHandleVehicularGrant(cPacket* pktAux)
         }
         else
         {
+            // check if the offload gNB ID is the same
+            auto existingGrant = vecGrant_[appId];
+            if (existingGrant->getOffloadGnbId() != grant->getOffloadGnbId())
+            {
+                EV << "\t existing grant offload gNB ID: " << existingGrant->getOffloadGnbId()
+                   << ", new grant offload gNB ID: " << grant->getOffloadGnbId() << endl;
+                // delete the new grant packet
+                delete pkt;
+                pkt = nullptr;
+                return;
+            }
+
             EV << "\t Pause the grant for AppId: " << appId << endl;
         }
     }

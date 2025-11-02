@@ -49,6 +49,18 @@ class Database : public omnetpp::cSimpleModule
     map<int, pair<double, double>> gnbPosData_; // store the gNB position data
     vector<string> deviceTypes_; // store the device types
 
+    // error injection parameters
+    bool linkErrorInjection_;
+    double linkErrorProb_;
+    bool serverErrorInjection_;
+    double serverErrorProb_;
+    int numLinks_;
+    double failureRecoveryInterval_; // time for failure recovery in seconds
+    map<MacNodeId, int> failedLinkPerGnb_; // store the number of failed links per gNB
+    vector<MacNodeId> failedGnbs_; // store the failed gNBs
+
+    omnetpp::cMessage* errorInjectionTimer_; // timer for error injection
+
     // define a map for application deadline
     const map<string, double> appDeadline = {
         {"resnet18", 0.07}, // 70ms
@@ -62,6 +74,8 @@ class Database : public omnetpp::cSimpleModule
 
     virtual void initialize(int stage) override;
     virtual int numInitStages() const override { return inet::NUM_INIT_STAGES; }
+
+    virtual void handleMessage(omnetpp::cMessage *msg) override;
 
     // load the UE execution data from the file
     virtual void loadUeExeDataFromFile();
@@ -90,6 +104,12 @@ class Database : public omnetpp::cSimpleModule
     virtual string sampleDeviceType();
     // TODO: change to app dependent service types in the future
     virtual set<string> getGnbServiceTypes() const { return gnbServices_; }
+
+
+    // inject link error
+    virtual void injectLinkError();
+    // inject server error
+    virtual void injectServerError();
 };
 
-#endif
+#endif  // _MEC_DATABASE_H_

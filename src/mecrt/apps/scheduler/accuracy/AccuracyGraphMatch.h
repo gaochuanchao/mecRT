@@ -60,6 +60,7 @@ class AccuracyGraphMatch : public AccuracyGreedy
         vector<int> rbDemand;  // bandwidth resource demand for each edge index, {edge vector index: demand}
         vector<int> cuDemand;  // computational resource demand for each edge index, {edge vector index: demand}
         vector<double> weight;    // utility value of each edge index, {edge vector index: weight}
+        vector<string> serviceType;  // service type for each edge index, {edge vector index: service type}
 
         vector<vector<int>> edges4App;  // {app vector index: vector of hyper edges indices}
         vector<vector<int>> edges4OffRsu;  // {offload RSU node vector index : vector of hyper edges indices}

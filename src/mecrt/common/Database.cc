@@ -51,6 +51,12 @@ void Database::initialize(int stage)
         idlePower_ = par("idlePower");
         offloadPower_ = par("offloadPower");
         serverExeScale_ = par("gnbExeScale");
+        linkErrorInjection_ = par("linkErrorInjection").boolValue();
+        linkErrorProb_ = par("linkErrorProb");
+        serverErrorInjection_ = par("serverErrorInjection").boolValue();
+        serverErrorProb_ = par("serverErrorProb");
+        numLinks_ = par("numLinks");
+        failureRecoveryInterval_ = par("failureRecoveryInterval").doubleValue();
 
         appDataSize_.clear();
         ueExeTime_.clear();
@@ -65,12 +71,56 @@ void Database::initialize(int stage)
         loadGnbExeDataFromFile();
         loadGnbPosDataFromFile();
 
+        errorInjectionTimer_ = new omnetpp::cMessage("errorInjectionTimer");
+        scheduleAt(simTime() + failureRecoveryInterval_, errorInjectionTimer_);
+
         WATCH_MAP(ueExeTime_);
         WATCH_MAP(ueAppAccuracy_);
         WATCH_MAP(gnbServiceAccuracy_);
 
         if (enableInitDebug_)
             std::cout << "Database::initialize - stage: INITSTAGE_LOCAL - ends" << std::endl;
+    }
+}
+
+
+void Database::handleMessage(omnetpp::cMessage *msg)
+{
+    if (msg->isSelfMessage())
+    {
+
+    }
+    
+    // currently no timer is used
+    delete msg;
+}
+
+
+/***
+ * inject link error based on the probability
+ */
+void Database::injectLinkError()
+{
+    if (linkErrorInjection_)
+    {
+        double randVal = uniform(0, 1);
+        if (randVal < linkErrorProb_)
+        {
+            throw cRuntimeError("Database::injectLinkError - Link error injected!");
+        }
+    }
+}
+
+
+void Database::injectServerError()
+{
+    if (serverErrorInjection_)
+    {
+        double randVal = uniform(0, 1);
+        if (randVal < serverErrorProb_)
+        {
+            throw cRuntimeError("Database::injectServerError - Server error injected!");
+        }
     }
 }
 
@@ -136,11 +186,19 @@ void Database::loadUeExeDataFromFile()
             // Create a string stream from the input string
             istringstream iss(line);
             iss >> name >> exe_time >> accuracy;
-            ueExeTime_[name] = exe_time;
+            ueExeTime_[name] = exe_time / 1000.0; // convert ms to s
             ueAppAccuracy_[name] = accuracy;
         }
     }
     inputFile.close();
+
+    // print the loaded data for debugging
+    EV << "\tLoaded UE execution data:" << endl;
+    for (const auto& entry : ueExeTime_)
+    {
+        EV << "\t\tApplication: " << entry.first << ", Execution Time: " << entry.second
+           << "s, Accuracy: " << ueAppAccuracy_[entry.first] << endl;
+    }
 }
 
 
@@ -181,15 +239,34 @@ void Database::loadGnbExeDataFromFile()
             // Create a string stream from the input string
             istringstream iss(line);
             iss >> name >> time1 >> time2 >> time3 >> accuracy;
-            gnbExeTime_[name][gpu1] = time1;
-            gnbExeTime_[name][gpu2] = time2;
-            gnbExeTime_[name][gpu3] = time3;
+            gnbExeTime_[name][gpu1] = time1 / 1000.0; // convert ms to s
+            gnbExeTime_[name][gpu2] = time2 / 1000.0;
+            gnbExeTime_[name][gpu3] = time3 / 1000.0;
             gnbServiceAccuracy_[name] = accuracy;
 
             gnbServices_.insert(name);
         }
     }
     inputFile.close();
+
+    // print the loaded data for debugging
+    EV << "\tLoaded gNB execution data:" << endl;
+    for (const auto& entry : gnbExeTime_)
+    {
+        EV << "\t\tApplication: " << entry.first 
+           << ", Execution Times: [";
+        for (const auto& deviceEntry : entry.second)
+        {
+            EV << deviceEntry.first << ": " << deviceEntry.second << "s, ";
+        }
+        EV << "]" << endl;
+    }
+
+    EV << "\tLoaded gNB service accuracy data:" << endl;
+    for (const auto& entry : gnbServiceAccuracy_)
+    {
+        EV << "\t\tApplication: " << entry.first << ", Service Accuracy: " << entry.second << endl;
+    }
 }
 
 /***

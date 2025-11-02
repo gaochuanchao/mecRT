@@ -25,6 +25,11 @@
 #include "mecrt/apps/scheduler/energy/SchemeFwdGameTheory.h"
 #include "mecrt/apps/scheduler/energy/SchemeFwdQuickLR.h"
 #include "mecrt/apps/scheduler/energy/SchemeFwdGraphMatch.h"
+#include "mecrt/apps/scheduler/energy/SchemeGreedy.h"
+#include "mecrt/apps/scheduler/accuracy/AccuracyGreedy.h"
+#include "mecrt/apps/scheduler/accuracy/AccuracyFastSA.h"
+#include "mecrt/apps/scheduler/accuracy/AccuracyGameTheory.h"
+#include "mecrt/apps/scheduler/accuracy/AccuracyGraphMatch.h"
 
 #include "mecrt/packets/apps/Grant2Rsu_m.h"
 #include "mecrt/packets/apps/ServiceStatus_m.h"
@@ -51,6 +56,12 @@ Scheduler::~Scheduler()
 {
     if (enableInitDebug_)
         std::cout << "Scheduler::~Scheduler - destroying Scheduler module\n";
+
+    if (scheme_)
+    {
+        delete scheme_;
+        scheme_ = nullptr;
+    }
 
     if (schedStarter_)
     {
@@ -99,6 +110,8 @@ void Scheduler::initialize(int stage)
         srvTimeScale_ = par("srvTimeScale");
         countExeTime_ = par("countExeTime");
         enableBackhaul_ = par("enableBackhaul");
+        optimizeObjective_ = par("optimizeObjective").stringValue();
+        schemeName_ = par("scheduleScheme").stringValue();
         maxHops_ = par("maxHops");
         virtualLinkRate_ = par("virtualLinkRate");
         fairFactor_ = par("fairFactor");
@@ -106,7 +119,7 @@ void Scheduler::initialize(int stage)
         vecSchedulingTimeSignal_ = registerSignal("schedulingTime");
         vecSchemeTimeSignal_ = registerSignal("schemeTime");
         vecInsGenerateTimeSignal_ = registerSignal("instanceGenerateTime");
-        vecSavedEnergySignal_ = registerSignal("savedEnergy");
+        vecUtilitySignal_ = registerSignal("utility");
         vecPendingAppCountSignal_ = registerSignal("pendingAppCount");
         vecGrantedAppCountSignal_ = registerSignal("grantedAppCount");
         
@@ -119,6 +132,8 @@ void Scheduler::initialize(int stage)
         WATCH(rescheduleAll_);
         WATCH(countExeTime_);
         WATCH(enableBackhaul_);
+        WATCH(optimizeObjective_);
+        WATCH(schemeName_);
         WATCH(maxHops_);
         WATCH(virtualLinkRate_);
 
@@ -170,7 +185,7 @@ void Scheduler::initialize(int stage)
         NumerologyIndex numerologyIndex = par("numerologyIndex");
         ttiPeriod_ = binder_->getSlotDurationFromNumerologyIndex(numerologyIndex);
 
-        selectSchedulingScheme();
+        initializeSchedulingScheme();
 
         schedStarter_ = new cMessage("ScheduleStart");
         schedStarter_->setSchedulingPriority(1);        // after other messages
@@ -186,7 +201,6 @@ void Scheduler::initialize(int stage)
         WATCH_SET(allocatedApps_);
         WATCH_SET(unscheduledApps_);
         WATCH_SET(appsWaitInitFb_);
-        WATCH(schemeName_);
         WATCH(localPort_);
         WATCH(socketId_);
 
@@ -343,11 +357,9 @@ void Scheduler::handleMessage(cMessage *msg)
 }
 
 
-void Scheduler::selectSchedulingScheme()
+void Scheduler::initializeSchedulingScheme()
 {
-    schemeName_ = par("scheduleScheme").stringValue();
-
-    if (!enableBackhaul_)
+    if (!enableBackhaul_ && optimizeObjective_ == "energy")
     {
         if (schemeName_ == "Greedy")
             scheme_ = new SchemeGreedy(this);
@@ -362,7 +374,7 @@ void Scheduler::selectSchedulingScheme()
         else
             scheme_ = new SchemeBase(this);
     }
-    else
+    else if (enableBackhaul_ && optimizeObjective_ == "energy")
     {
         if (schemeName_ == "FwdGreedy")
             scheme_ = new SchemeFwdGreedy(this);
@@ -374,6 +386,23 @@ void Scheduler::selectSchedulingScheme()
             scheme_ = new SchemeFwdGraphMatch(this);
         else
             scheme_ = new SchemeBase(this);
+    }
+    else if (enableBackhaul_ && optimizeObjective_ == "accuracy")
+    {
+        if (schemeName_ == "Greedy")
+            scheme_ = new AccuracyGreedy(this);
+        else if (schemeName_ == "FastSA")
+            scheme_ = new AccuracyFastSA(this);
+        else if (schemeName_ == "GameTheory")
+            scheme_ = new AccuracyGameTheory(this);
+        else if (schemeName_ == "GraphMatch")
+            scheme_ = new AccuracyGraphMatch(this);
+        else
+            scheme_ = new SchemeBase(this);
+    }
+    else
+    {
+        scheme_ = new SchemeBase(this);
     }
 }
 
@@ -731,7 +760,7 @@ void Scheduler::scheduleRequest()
     emit(vecPendingAppCountSignal_, int(unscheduledApps_.size()));
 
     vecSchedule_.clear();
-    double totalEnergy = 0;
+    double totalUtility = 0;
 
     // record the time for generating the schedule instances
     auto start = chrono::steady_clock::now();
@@ -754,10 +783,10 @@ void Scheduler::scheduleRequest()
         srv.bands = get<3>(ins);
         srv.cmpUnits = get<4>(ins);
         srv.exeTime = scheme_->getAppExeDelay(appId);
-        srv.energySaved = scheme_->getAppUtility(appId);
+        srv.utility = scheme_->getAppUtility(appId);
         srv.serviceType = scheme_->getAppAssignedService(appId);
 
-        if (srv.energySaved <= 0)
+        if (srv.utility <= 0)
         {
             // add time as well
             throw cRuntimeError("%f Scheduler::scheduleRequest - application %d has 0 utility, please check the scheduling scheme", simTime().dbl(), appId);
@@ -769,12 +798,16 @@ void Scheduler::scheduleRequest()
             throw cRuntimeError("%f Scheduler::scheduleRequest - application %d has 0 max offload time, please check the scheduling scheme", simTime().dbl(), appId);
         }
 
+        srv.maxOffloadTime = appMaxoffloadTime;
         // determine the offloading delay result in positive energy saving
-        double energyMaxOffloadTime = appInfo_[appId].energy / appInfo_[appId].offloadPower;
-        srv.maxOffloadTime = min(energyMaxOffloadTime, appMaxoffloadTime);
-
+        if (optimizeObjective_ == "energy")
+        {
+            double energyMaxOffloadTime = appInfo_[appId].energy / appInfo_[appId].offloadPower;
+            srv.maxOffloadTime = min(energyMaxOffloadTime, appMaxoffloadTime);
+        }
+        
         vecSchedule_.push_back(srv);
-        totalEnergy += srv.energySaved * schedulingInterval_.dbl();
+        totalUtility += srv.utility;
     }
 
     int grantedAppCount = vecSchedule_.size();
@@ -784,12 +817,12 @@ void Scheduler::scheduleRequest()
         grantedAppCount += allocatedApps_.size();
         for (AppId appId : allocatedApps_)
         {
-            totalEnergy += runningService_[appId].energySaved * schedulingInterval_.dbl();
+            totalUtility += runningService_[appId].utility;
         }
     }
     
     emit(vecGrantedAppCountSignal_, grantedAppCount);
-    emit(vecSavedEnergySignal_, totalEnergy);
+    emit(vecUtilitySignal_, totalUtility);
 }
 
 
@@ -939,6 +972,7 @@ void Scheduler::sendGrantPacket(ServiceInstance& srv, bool isStart, bool isStop)
     grant->setStop(isStop);
     grant->setExeTime(srv.exeTime);
     grant->setMaxOffloadTime(srv.maxOffloadTime);
+    grant->setUtility(srv.utility);
     
     pkt->insertAtBack(grant);
 
@@ -946,7 +980,8 @@ void Scheduler::sendGrantPacket(ServiceInstance& srv, bool isStart, bool isStop)
         << "], appId: " << appId << ", processGnbId: " << processGnbId << ", offloadGnbId: " << offloadGnbId
         << ", cmpUnits: " << srv.cmpUnits << ", bands: " << srv.bands
         << ", exeTime: " << srv.exeTime << ", maxOffloadTime: " << srv.maxOffloadTime
-        << ", resourceType: " << appInfo_[appId].resourceType << ", service: " << srv.serviceType << endl;
+        << ", resourceType: " << appInfo_[appId].resourceType << ", service: " << srv.serviceType
+        << ", utility: " << srv.utility << endl;
 
     // check if the processing server is the local server
     Ipv4Address processGnbAddr = rsuStatus_[processGnbId].rsuAddress;

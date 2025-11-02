@@ -25,16 +25,16 @@ simple UeApp like IApp
         string nodeInfoModulePath = default("^.nodeInfo");
         
         @signal[localProcessCount];
-        @statistic[localProcessCount](title="number of locally processed jobs"; source="localProcessCount"; record=timeavg,sum);
+        @statistic[localProcessCount](title="number of locally processed jobs"; source="localProcessCount"; record=sum);
         
         @signal[offloadCount];
-        @statistic[offloadCount](title="number of offloaded jobs"; source="offloadCount"; record=timeavg,sum);
+        @statistic[offloadCount](title="number of offloaded jobs"; source="offloadCount"; record=sum);
 
-        @signal[vehSavedEnergy];
-        @statistic[vehSavedEnergy](title="energy saved for vehicles"; unit="mJ"; source="vehSavedEnergy"; record=timeavg,sum);
+        // @signal[vehSavedEnergy];
+        // @statistic[vehSavedEnergy](title="energy saved for vehicles"; unit="mJ"; source="vehSavedEnergy"; record=timeavg,sum);
 
-        @signal[vehEnergyConsumedIfLocal];
-        @statistic[vehEnergyConsumedIfLocal](title="energy consumed for vehicles for fully local processing"; source="vehEnergyConsumedIfLocal"; record=timeavg,sum);
+        // @signal[vehEnergyConsumedIfLocal];
+        // @statistic[vehEnergyConsumedIfLocal](title="energy consumed for vehicles for fully local processing"; source="vehEnergyConsumedIfLocal"; record=timeavg,sum);
 
         @display("i=block/source");
     gates:

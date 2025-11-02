@@ -92,68 +92,112 @@ void AccuracyGraphMatch::generateScheduleInstances()
         double period = appInfo_[appId].period.dbl();
         if (period <= 0)
         {
-            EV << NOW << " SchemeFwdBase::generateScheduleInstances - invalid period for application " << appId << ", skip" << endl;
+            EV << "\t invalid period for application " << appId << ", skip" << endl;
             continue;
         }
 
         MacNodeId vehId = appInfo_[appId].vehId;
         if (vehAccessRsu_.find(vehId) != vehAccessRsu_.end())     // if there exists RSU in access
-        {
+        {   
             for(MacNodeId offRsuId : vehAccessRsu_[vehId])   // enumerate the RSUs in access
             {
                 if (rsuStatus_.find(offRsuId) == rsuStatus_.end())
                     continue;  // if not found, skip
-                
-                // find the accessible RSU from the offload RSU
-                map<MacNodeId, int> accessibleProRsus = reachableRsus_[offRsuId]; // {procRsuId: hopCount}
+
                 int offRsuIndex = rsuId2Index_[offRsuId];  // get the index of the RSU in the rsuIds vector
                 int maxRB = floor(rsuRBs_[offRsuIndex] * fairFactor_);  // maximum resource blocks for the offload RSU
-                for (int resBlocks = maxRB; resBlocks > 0; resBlocks -= rbStep_)   // enumerate the resource blocks, counting down
+                // find the accessible RSU from the offload RSU, {procRsuId: hopCount}, the accessible processing RSUs from the offload RSU
+                map<MacNodeId, int> accessibleProRsus = reachableRsus_[offRsuId];
+                for (auto& pair : accessibleProRsus)
                 {
-                    double offloadDelay = computeOffloadDelay(vehId, offRsuId, resBlocks, appInfo_[appId].inputSize);
-
-                    if (offloadDelay + offloadOverhead_ > period)
-                        break;  // if the offload delay is too long, break
-
-                    for (auto& pair : accessibleProRsus)
+                    int hopCount = pair.second;
+                    double fwdDelay = computeForwardingDelay(hopCount, appInfo_[appId].inputSize);
+                    
+                    int procRsuId = pair.first;
+                    int procRsuIndex = rsuId2Index_[procRsuId];  // get the index of the processing RSU
+                    int maxCU = floor(rsuCUs_[procRsuIndex] * fairFactor_);  // maximum computing units for the processing RSU
+                    // if maxRB/rbStep_ is smaller than maxCU/cuStep_, enumerate RB
+                    if (maxRB / rbStep_ < maxCU / cuStep_)
                     {
-                        MacNodeId procRsuId = pair.first;
-                        int hopCount = pair.second;
-
-                        double fwdDelay = computeForwardingDelay(hopCount, appInfo_[appId].inputSize);
-                        if (fwdDelay + offloadDelay + offloadOverhead_ > period)
-                            continue;  // if the forwarding delay is too long, skip
-
-                        int procRsuIndex = rsuId2Index_[procRsuId];  // get the index of the processing RSU
-                        // enumerate the computation units, counting down
-                        int maxCU = floor(rsuCUs_[procRsuIndex] * fairFactor_);  // maximum computing units for the processing RSU
-                        for (int cmpUnits = maxCU; cmpUnits > 0; cmpUnits -= cuStep_)
+                        for (int resBlocks = maxRB; resBlocks > 0; resBlocks -= rbStep_)
                         {
-                            double exeDelay = computeExeDelay(appId, procRsuId, cmpUnits);
-                            double totalDelay = offloadDelay + fwdDelay + exeDelay + offloadOverhead_;
-                            if (totalDelay > period)
-                                break;  // if the total delay is too long, break
+                            double offloadDelay = computeOffloadDelay(vehId, offRsuId, resBlocks, appInfo_[appId].inputSize);
+                            if (fwdDelay + offloadDelay + offloadOverhead_ >= period)
+                                break;  // if the forwarding delay is too long, break
 
-                            double utility = computeUtility(appId, offloadDelay, exeDelay, period);
-                            if (utility <= 0)   // if the saved energy is less than 0, skip
-                                continue;
+                            double exeDelayThreshold = period - offloadDelay - fwdDelay - offloadOverhead_;
+                            // enumerate all possible service types for the application
+                            set<string> serviceTypes = db_->getGnbServiceTypes();
+                            for (const string& serviceType : serviceTypes)
+                            {
+                                int minCU = computeMinRequiredCUs(procRsuId, exeDelayThreshold, serviceType);
+                                if (minCU > maxCU)
+                                    continue;  // if the minimum computing units required is larger than the maximum computing units available, skip
 
-                            // AppInstance instance = {appIndex, offRsuIndex, procRsuIndex, resBlocks, cmpUnits};
-                            instAppIndex_.push_back(appIndex);
-                            instOffRsuIndex_.push_back(offRsuIndex);
-                            instProRsuIndex_.push_back(procRsuIndex);
-                            instRBs_.push_back(resBlocks);
-                            instCUs_.push_back(cmpUnits);
-                            instUtility_.push_back(utility);  // energy savings for the instance
-                            instMaxOffTime_.push_back(period - fwdDelay - exeDelay - offloadOverhead_);  // maximum offloading time for the instance
+                                double exeDelay = computeExeDelay(procRsuId, minCU, serviceType);
+                                double utility = computeUtility(appId, serviceType) / period;   // utility per second
+                                if (utility <= 0)   // if the saved energy is less than 0, skip
+                                    continue;
 
-                            instPerOffRsuIndex_[offRsuIndex].push_back(instCount);  // add the instance index to the offload RSU ID
-                            instPerProRsuIndex_[procRsuIndex].push_back(instCount);  // add the instance index to the processing RSU ID
-                            instPerAppIndex_[appIndex].push_back(instCount);  // add the instance index to the application ID
-                            instCount++;  // increment the instance count
+                                // AppInstance instance = {appIndex, offRsuIndex, procRsuIndex, resBlocks, cmpUnits};
+                                instAppIndex_.push_back(appIndex);
+                                instOffRsuIndex_.push_back(offRsuIndex);
+                                instProRsuIndex_.push_back(procRsuIndex);
+                                instRBs_.push_back(resBlocks);
+                                instCUs_.push_back(minCU);
+                                instUtility_.push_back(utility);  // energy savings for the instance
+                                instMaxOffTime_.push_back(period - fwdDelay - exeDelay - offloadOverhead_);  // maximum offloading time for the instance
+                                instServiceType_.push_back(serviceType);  // selected service type for the instance
+                                instExeDelay_.push_back(exeDelay);  // execution delay for the instance
+
+                                instPerOffRsuIndex_[offRsuIndex].push_back(instCount);  // add the instance index to the offload RSU ID
+                                instPerProRsuIndex_[procRsuIndex].push_back(instCount);  // add the instance index to the processing RSU ID
+                                instPerAppIndex_[appIndex].push_back(instCount);  // add the instance index to the application ID
+                                instCount++;  // increment the instance count
+                            }
                         }
                     }
-                } 
+                    else    // else enumerate CUs
+                    {
+                        // enumerate all possible service types for the application
+                        set<string> serviceTypes = db_->getGnbServiceTypes();
+                        for (const string& serviceType : serviceTypes)
+                        {
+                            for (int cmpUnits = maxCU; cmpUnits > 0; cmpUnits -= cuStep_)
+                            {
+                                double exeDelay = computeExeDelay(procRsuId, cmpUnits, serviceType);
+                                if (exeDelay + fwdDelay + offloadOverhead_ >= period)
+                                    break;  // if the total execution and forwarding time is too long, skip
+
+                                // determine the smallest resource blocks required to meet the deadline
+                                double offloadTimeThreshold = period - exeDelay + fwdDelay + offloadOverhead_;
+                                int minRB = computeMinRequiredRBs(vehId, offRsuId, offloadTimeThreshold, appInfo_[appId].inputSize);
+                                if (minRB > maxRB)
+                                    break;  // if the minimum resource blocks required is larger than the maximum resource blocks available, break
+
+                                double utility = computeUtility(appId, serviceType) / period;   // utility per second
+                                if (utility <= 0)   // if the saved energy is less than 0, skip
+                                    continue;
+
+                                // AppInstance instance = {appIndex, offRsuIndex, procRsuIndex, resBlocks, cmpUnits, serviceType};
+                                instAppIndex_.push_back(appIndex);
+                                instOffRsuIndex_.push_back(offRsuIndex);
+                                instProRsuIndex_.push_back(procRsuIndex);
+                                instRBs_.push_back(minRB);
+                                instCUs_.push_back(cmpUnits);
+                                instUtility_.push_back(utility);  // energy savings for the instance
+                                instMaxOffTime_.push_back(period - fwdDelay - exeDelay - offloadOverhead_);  // maximum offloading time for the instance
+                                instServiceType_.push_back(serviceType);  // selected service type for the instance
+                                instExeDelay_.push_back(exeDelay);  // execution delay for the instance
+
+                                instPerOffRsuIndex_[offRsuIndex].push_back(instCount);  // add the instance index to the offload RSU ID
+                                instPerProRsuIndex_[procRsuIndex].push_back(instCount);  // add the instance index to the processing RSU ID
+                                instPerAppIndex_[appIndex].push_back(instCount);  // add the instance index to the application ID
+                                instCount++;  // increment the instance count
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -485,13 +529,10 @@ void AccuracyGraphMatch::mergeBipartiteGraphs(TripartiteGraph& triGraph, const B
                 // compute the utility for the hyper edge
                 int appIndex = triGraph.appNodeVec[appVecIdx];  // get the application index
                 AppId appId = appIds_[appIndex];  // get the application ID
-                int offRsuIndex = offGraph.rsuNodeVec[offRsuVecIdx][0];  // get the offload RSU index
-                int proRsuIndex = proGraph.rsuNodeVec[proRsuVecIdx][0];  // get the processing RSU index
-                double offloadDelay = computeOffloadDelay(appInfo_[appId].vehId, rsuIds_[offRsuIndex], offGraph.resDemand[offEdgeVecIdx], appInfo_[appId].inputSize);
-                double exeDelay = computeExeDelay(appId, rsuIds_[proRsuIndex], proGraph.resDemand[proEdgeVecIdx]);
                 double period = appInfo_[appId].period.dbl();
-                double utility = computeUtility(appId, offloadDelay, exeDelay, period);
+                double utility = computeUtility(appId, instServiceType_[instIdx]) / period;  // utility per second
                 triGraph.weight.push_back(utility);  // set the utility for the hyper edge
+                triGraph.serviceType.push_back(instServiceType_[instIdx]);  // set the service type for the hyper edge
             }
         }
     }
@@ -752,13 +793,14 @@ vector<srvInstance> AccuracyGraphMatch::fractionalLocalRatioMethod(TripartiteGra
         int proRsuIdx = triGraph.proRsuNodeVec[edge[2]][0];  // get the processing RSU index
         int rbDemand = triGraph.rbDemand[edgeIdx];  // get the resource block demand for the hyper edge
         int cuDemand = triGraph.cuDemand[edgeIdx];  // get the computing unit demand for the hyper edge
+        string serviceType = triGraph.serviceType[edgeIdx];  // get the service type for the hyper edge
 
         if (rbDemand > rsuRBs_[offRsuIdx] || cuDemand > rsuCUs_[proRsuIdx])  // if the resource demand exceeds the RSU capacity, skip
             continue;
 
         // compute the maximum offload delay
         AppId appId = appIds_[appIdx];
-        double processDelay = computeExeDelay(appId, rsuIds_[proRsuIdx], cuDemand);
+        double processDelay = computeExeDelay(rsuIds_[proRsuIdx], cuDemand, serviceType);
         MacNodeId srcId = rsuIds_[offRsuIdx];
         MacNodeId dstId = rsuIds_[proRsuIdx];
         int hopCount = reachableRsus_[srcId][dstId];
@@ -772,6 +814,7 @@ vector<srvInstance> AccuracyGraphMatch::fractionalLocalRatioMethod(TripartiteGra
         appUtility_[appId] = triGraph.weight[edgeIdx];  // set the utility for the application ID
         appMaxOffTime_[appId] = maxOffloadDelay;  // set the maximum offload time for the application ID
         appExeDelay_[appId] = processDelay;  // set the execution delay for the application ID
+        appServiceType_[appId] = serviceType;  // set the service type for the application ID
 
         selectedApps.insert(appIdx);  // add the application ID to the selected application IDs
         rsuRBs_[offRsuIdx] -= rbDemand;  // update the resource blocks for the offload RSU
