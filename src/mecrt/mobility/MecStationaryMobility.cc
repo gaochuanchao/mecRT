@@ -13,6 +13,7 @@
 //
 
 #include "mecrt/mobility/MecStationaryMobility.h"
+#include "mecrt/common/Database.h"
 
 Define_Module(MecStationaryMobility);
 
@@ -69,14 +70,15 @@ void MecStationaryMobility::initializePosition()
 
 void MecStationaryMobility::setInitialPosition()
 {
-    database_ = check_and_cast<Database*>(getSimulation()->getModuleByPath("database"));
-    if (database_ == nullptr)
+    // TODO: get the initial position from nodeInfo module
+    Database* database = check_and_cast<Database*>(getSimulation()->getModuleByPath("database"));
+    if (database == nullptr)
     {
         StationaryMobilityBase::setInitialPosition();
         return;
     }
 
-    auto gnbPos = database_->getGnbPosData(nodeVectorIdx_);
+    auto gnbPos = database->getGnbPosData(nodeVectorIdx_);
     lastPosition.x = gnbPos.first;
     lastPosition.y = gnbPos.second;
 

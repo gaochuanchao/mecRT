@@ -19,6 +19,7 @@
 #include "inet/networklayer/contract/IInterfaceTable.h"
 #include "mecrt/apps/scheduler/Scheduler.h"
 #include "mecrt/routing/MecOspf.h"
+#include "mecrt/common/Database.h"
 
 Define_Module(NodeInfo);
 
@@ -68,7 +69,7 @@ NodeInfo::NodeInfo()
     ifRecoverTime_ = 0; // default 0 seconds, the interface will be up for 0 seconds
     nodeFailTime_ = 0; // default 0 seconds, the node will be down for 0 seconds
     nodeRecoverTime_ = 0; // default 0 seconds, the node will be up for 0 seconds
-    failedIfId_ = -1; // no interface is down by default
+    // failedIfId_ = -1; // no interface is down by default
 }
 
 
@@ -125,41 +126,20 @@ void NodeInfo::initialize(int stage)
         EV_INFO << "NodeInfo:initialize - stage: INITSTAGE_LOCAL\n";        
         // initialize default values
         nodeType_ = par("nodeType").stdstringValue();
-        ifFailTime_ = par("ifFailTime").doubleValue();
-        nodeFailTime_ = par("nodeFailTime").doubleValue();
-        ifRecoverTime_ = par("ifRecoverTime").doubleValue();
-        nodeRecoverTime_ = par("nodeRecoverTime").doubleValue();
+        // ifFailTime_ = par("ifFailTime").doubleValue();
+        // nodeFailTime_ = par("nodeFailTime").doubleValue();
+        // ifRecoverTime_ = par("ifRecoverTime").doubleValue();
+        // nodeRecoverTime_ = par("nodeRecoverTime").doubleValue();
 
         rsuStatusTimer_ = new cMessage("rsuStatusTimer");
 
         // initialize the timers for iterface and node failure
-        if (ifFailTime_ > 0)
-        {
-            ifDownTimer_ = new cMessage("ifDownTimer");
-            scheduleAt(ifFailTime_, ifDownTimer_);
-            EV_INFO << "NodeInfo:initialize - scheduled ifDownTimer at " << simTime() + ifFailTime_ << "\n";
-        }
+        ifDownTimer_ = new cMessage("ifDownTimer");
+        ifUpTimer_ = new cMessage("ifUpTimer");
+        nodeDownTimer_ = new cMessage("nodeDownTimer");
+        nodeUpTimer_ = new cMessage("nodeUpTimer");
 
-        if (ifRecoverTime_ > ifFailTime_)
-        {
-            ifUpTimer_ = new cMessage("ifUpTimer");
-            scheduleAt(ifRecoverTime_, ifUpTimer_);
-            EV_INFO << "NodeInfo:initialize - scheduled ifUpTimer at " << simTime() + ifRecoverTime_ << "\n";
-        }
-
-        if (nodeFailTime_ > 0)
-        {
-            nodeDownTimer_ = new cMessage("nodeDownTimer");
-            scheduleAt(nodeFailTime_, nodeDownTimer_);
-            EV_INFO << "NodeInfo:initialize - scheduled nodeDownTimer at " << simTime() + nodeFailTime_ << "\n";
-        }
-
-        if (nodeRecoverTime_ > nodeFailTime_)
-        {
-            nodeUpTimer_ = new cMessage("nodeUpTimer");
-            scheduleAt(nodeRecoverTime_, nodeUpTimer_);
-            EV_INFO << "NodeInfo:initialize - scheduled nodeUpTimer at " << simTime() + nodeRecoverTime_ << "\n";
-        }
+        linkStateChangedSignal = registerSignal("linkStateChanged");
 
         WATCH(nodeType_);
         WATCH(nodeState_);
@@ -183,10 +163,24 @@ void NodeInfo::initialize(int stage)
         WATCH(ifRecoverTime_);
         WATCH(nodeFailTime_);
         WATCH(nodeRecoverTime_);
-        WATCH(failedIfId_);
+        WATCH_VECTOR(failedIfIds_);
 
         if (enableInitDebug_)
             std::cout << "NodeInfo:initialize - stage: INITSTAGE_LOCAL - ends\n";
+    }
+    else if (stage == inet::INITSTAGE_PHYSICAL_ENVIRONMENT)
+    {
+        if (enableInitDebug_)
+            std::cout << "NodeInfo:initialize - stage: INITSTAGE_PHYSICAL_ENVIRONMENT - begins\n";
+
+        EV_INFO << "NodeInfo:initialize - stage: INITSTAGE_PHYSICAL_ENVIRONMENT\n";
+
+        Database* database = check_and_cast<Database*>(getSimulation()->getModuleByPath("database"));
+        int indexId = getParentModule()->getIndex();
+        database->registerGnbNodeInfo(indexId, this);
+
+        if (enableInitDebug_)
+            std::cout << "NodeInfo:initialize - stage: INITSTAGE_PHYSICAL_ENVIRONMENT - ends\n";
     }
 }
 
@@ -209,8 +203,11 @@ void NodeInfo::handleMessage(omnetpp::cMessage *msg)
                 if (!ifUpTimer_)
                     ifUpTimer_ = new cMessage("ifUpTimer");
                 
-                if (!ifUpTimer_->isScheduled())
-                    scheduleAt(ifRecoverTime_, ifUpTimer_);
+                if (ifUpTimer_->isScheduled())
+                    cancelEvent(ifUpTimer_); // cancel any previous schedule
+                
+                // schedule the ifUpTimer_ to recover the interface
+                scheduleAt(ifRecoverTime_, ifUpTimer_);
                 EV << "NodeInfo:handleMessage - schedule interface recovery at " << ifRecoverTime_ << "\n";
             }
         }
@@ -218,24 +215,33 @@ void NodeInfo::handleMessage(omnetpp::cMessage *msg)
         {
             handleNodeDownTimer();
 
+            emit(linkStateChangedSignal, simTime().dbl());
+
             if (nodeRecoverTime_ > nodeFailTime_)
             {
                 // schedule the nodeUpTimer_
                 if (!nodeUpTimer_)
                     nodeUpTimer_ = new cMessage("nodeUpTimer");
                 
-                if (!nodeUpTimer_->isScheduled())
-                    scheduleAt(nodeRecoverTime_, nodeUpTimer_);
+                if (nodeUpTimer_->isScheduled())
+                    cancelEvent(nodeUpTimer_); // cancel any previous schedule
+                
+                // schedule the nodeUpTimer_ to recover the node
+                scheduleAt(nodeRecoverTime_, nodeUpTimer_);
                 EV << "NodeInfo:handleMessage - schedule node recovery at " << nodeRecoverTime_ << "\n";
             }
         }
         else if (msg == ifUpTimer_)
         {
             handleIfUpTimer();
+
+            emit(linkStateChangedSignal, simTime().dbl());
         }
         else if (msg == nodeUpTimer_)
         {
             handleNodeUpTimer();
+
+            emit(linkStateChangedSignal, simTime().dbl());
         }
         else
         {
@@ -251,6 +257,80 @@ void NodeInfo::handleMessage(omnetpp::cMessage *msg)
         msg = nullptr;
         return;
     }
+}
+
+
+void NodeInfo::injectNodeError(double failTime, double recoverTime)
+{
+    Enter_Method_Silent("NodeInfo::injectNodeError");
+    
+    EV << "NodeInfo:injectNodeError - injecting node error\n";
+
+    // schedule the nodeDownTimer_
+    if (nodeDownTimer_ && nodeDownTimer_->isScheduled())
+        cancelEvent(nodeDownTimer_);
+
+    nodeFailTime_ = failTime;
+    nodeRecoverTime_ = recoverTime;
+
+    scheduleAt(failTime, nodeDownTimer_);
+    EV << "NodeInfo:injectNodeError - scheduled nodeDownTimer at " << simTime() + failTime << "\n";
+}
+
+
+void NodeInfo::injectLinkError(int numFailedLinks, double failedTime, double recoverTime)
+{
+    Enter_Method_Silent("NodeInfo::injectLinkError");
+    
+    EV << "NodeInfo:injectLinkError - injecting link error with " << numFailedLinks << " links to fail\n";
+    // sample the failed links
+    if (numFailedLinks <= 0)
+    {
+        EV << "NodeInfo:injectLinkError - no links to fail, returning\n";
+        return;
+    }
+
+    failedIfIds_.clear(); // clear the previous failed interface ids
+    // collect all the alive wired interfaces
+    int numIfaces = ift_ ? ift_->getNumInterfaces() : 0;
+    set<int> aliveIfIds;
+    for (int i = 0; i < numIfaces; i++)
+    {
+        NetworkInterface *ie = ift_->getInterface(i);
+        if (!ie || ie->isLoopback() || !ie->isUp() || ie->isWireless()) // skip loopback/down/wireless interfaces
+            continue;
+        aliveIfIds.insert(ie->getInterfaceId());
+    }
+
+    if (aliveIfIds.empty())
+    {
+        EV << "NodeInfo:injectLinkError - no alive wired interfaces found, cannot inject link error\n";
+        return;
+    }
+
+    for (int i = 0; i < numFailedLinks; ++i)
+    {
+        if (aliveIfIds.empty())
+        {
+            EV << "NodeInfo:injectLinkError - no more alive interfaces to fail, stopping link error injection\n";
+            break;
+        }
+
+        // randomly select an alive interface to fail
+        auto it = aliveIfIds.begin();
+        std::advance(it, intuniform(0, aliveIfIds.size() - 1));
+        int failedIfId = *it;
+        failedIfIds_.push_back(failedIfId);
+        aliveIfIds.erase(it);
+
+        EV << "NodeInfo:injectLinkError - selected interface id " << failedIfId << " to fail\n";
+    }
+    
+    ifFailTime_ = failedTime;
+    ifRecoverTime_ = recoverTime;
+
+    scheduleAt(failedTime, ifDownTimer_);
+    EV << "NodeInfo:injectLinkError - scheduled ifDownTimer at " << simTime() + failedTime << "\n";
 }
 
 
@@ -294,20 +374,36 @@ void NodeInfo::handleIfUpTimer()
 {
     EV << "NodeInfo:handleIfUpTimer - ifUpTimer is triggered, recover the failed interface\n";
 
-    if (failedIfId_ >= 0 && ift_)
+    // up the interface that is down in failedIfIds_
+
+    if (failedIfIds_.empty())
     {
-        NetworkInterface *ie = ift_->getInterface(failedIfId_);
+        EV << "NodeInfo:handleIfUpTimer - no failed interface ids, nothing to recover\n";
+        return;
+    }
+
+    // recover the failed interfaces
+    bool linkRecovered = false;
+    for (int ifId : failedIfIds_)
+    {
+        NetworkInterface *ie = ift_->getInterfaceById(ifId);
         if (ie)
-        {
+        {            
             cDatarateChannel *dataChannel = check_and_cast_nullable<cDatarateChannel*>(ie->getRxTransmissionChannel());
             if (dataChannel)
-            {
+            {                
                 dataChannel->setDisabled(false); // enable the channel to simulate interface recovery
-                EV << "NodeInfo:handleIfUpTimer - recover link connected to interface " << failedIfId_ << "\n";
+                EV << "NodeInfo:handleIfUpTimer - recover link connected to interface " << ifId << "\n";
+                linkRecovered = true;
             }
         }
+    }
 
-        failedIfId_ = -1; // reset failedIfId_
+    failedIfIds_.clear(); // clear the failed interface ids after recovery
+
+    if (linkRecovered)
+    {
+        emit(linkStateChangedSignal, simTime().dbl());
     }
 }
 
@@ -365,35 +461,32 @@ void NodeInfo::handleIfDownTimer()
         return;
     }
 
-    // when the ifDownTimer_ is triggered, randomly select an active wired interface to fail
-    int numIfaces = ift_->getNumInterfaces();
-    std::vector<int> activeIfIds;
-    for (int i = 0; i < numIfaces; i++)
+    if (failedIfIds_.empty())
     {
-        NetworkInterface *ie = ift_->getInterface(i);
-        if (!ie || ie->isLoopback() || !ie->isUp() || ie->isWireless()) // skip loopback/down/wireless interfaces
-            continue;
-            
-        activeIfIds.push_back(i);
+        EV << "NodeInfo:handleIfDownTimer - no failed interface ids, cannot fail any interface\n";
+        return;
     }
 
-    if (!activeIfIds.empty())
+    // fail the interface in failedIfIds_
+    bool linkFailed = false;
+    for (int ifId : failedIfIds_)
     {
-        failedIfId_ = activeIfIds[rand() % activeIfIds.size()];
-        NetworkInterface *ie = ift_->getInterface(failedIfId_);
+        NetworkInterface *ie = ift_->getInterfaceById(ifId);
         if (ie)
         {
             cDatarateChannel *dataChannel = check_and_cast_nullable<cDatarateChannel*>(ie->getRxTransmissionChannel());
             if (dataChannel)
             {
                 dataChannel->setDisabled(true); // disable the channel to simulate interface failure
-                EV << "NodeInfo:handleIfDownTimer - disable link connected to interface " << failedIfId_ << "\n";
+                EV << "NodeInfo:handleIfDownTimer - disable link connected to interface " << ifId << "\n";
+                linkFailed = true;
             }
         }
     }
-    else
+
+    if (linkFailed)
     {
-        EV << "NodeInfo:handleIfDownTimer - no active interface to fail" << "\n";
+        emit(linkStateChangedSignal, simTime().dbl());
     }
 }
 

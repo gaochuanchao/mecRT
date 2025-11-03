@@ -46,7 +46,7 @@ simple Database
         double linkErrorProb = default(0.0);
         bool serverErrorInjection = default(false);
         double serverErrorProb = default(0.0);
-        double failureRecoveryInterval @unit(s) = default(10s); // time for failure recovery
+        double failureRecoveryInterval @unit(s) = default(30s); // time for failure recovery
 
         @display("i=block/cogwheel");
 }

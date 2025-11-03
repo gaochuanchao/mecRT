@@ -72,11 +72,23 @@ void Database::initialize(int stage)
         loadGnbPosDataFromFile();
 
         errorInjectionTimer_ = new omnetpp::cMessage("errorInjectionTimer");
-        scheduleAt(simTime() + failureRecoveryInterval_, errorInjectionTimer_);
+        errorInjectionTimer_->setSchedulingPriority(1); // set a lower priority
+        scheduleAt(simTime(), errorInjectionTimer_);
 
+
+        WATCH(numLinks_);
+        WATCH(linkErrorInjection_);
+        WATCH(linkErrorProb_);
+        WATCH(serverErrorInjection_);
+        WATCH(serverErrorProb_);
+        WATCH(failureRecoveryInterval_);
         WATCH_MAP(ueExeTime_);
         WATCH_MAP(ueAppAccuracy_);
         WATCH_MAP(gnbServiceAccuracy_);
+        WATCH_MAP(gnbNodeInfo_);
+        WATCH_SET(gnbNodeIdx_);
+        WATCH_MAP(failedLinkPerGnb_);
+        WATCH_SET(failedGnbs_);
 
         if (enableInitDebug_)
             std::cout << "Database::initialize - stage: INITSTAGE_LOCAL - ends" << std::endl;
@@ -88,11 +100,22 @@ void Database::handleMessage(omnetpp::cMessage *msg)
 {
     if (msg->isSelfMessage())
     {
+        if (msg == errorInjectionTimer_)
+        {
+            EV << "Database::handleMessage - handling self message: " << msg->getName() << endl;
+            // inject link error based on the probability
+            injectLinkError();
+            // inject server error based on the probability
+            injectServerError();
 
+            // reschedule the timer for the next error injection
+            scheduleAt(simTime() + failureRecoveryInterval_ * 2, errorInjectionTimer_);
+        }
     }
-    
-    // currently no timer is used
-    delete msg;
+    else
+    {
+        delete msg;
+    }
 }
 
 
@@ -103,10 +126,32 @@ void Database::injectLinkError()
 {
     if (linkErrorInjection_)
     {
-        double randVal = uniform(0, 1);
-        if (randVal < linkErrorProb_)
+        failedLinkPerGnb_.clear();
+        double numFailedLinks = floor(numLinks_ * linkErrorProb_);
+        // sample the failed gnbs
+        for (int i = 0; i < numFailedLinks; ++i)
         {
-            throw cRuntimeError("Database::injectLinkError - Link error injected!");
+            // randomly select a gNB index from gnbNodeIdx_
+            auto it = gnbNodeIdx_.begin();
+            std::advance(it, intuniform(0, gnbNodeIdx_.size() - 1));
+            int gnbIndex = *it;
+            failedLinkPerGnb_[gnbIndex]++;
+        }
+
+        // inject link error to each gNB
+        for (const auto& entry : failedLinkPerGnb_)
+        {            
+            int gnbIndex = entry.first;
+            int numFailedLinks = entry.second;
+
+            NodeInfo* gnbInfo = gnbNodeInfo_[gnbIndex];
+            if (gnbInfo)
+            {
+                EV << "Database::injectLinkError - Injected " << numFailedLinks << " link errors to gNB index: " << gnbIndex << endl;
+                double failedTime = simTime().dbl() + failureRecoveryInterval_;
+                double recoverTime = failedTime + failureRecoveryInterval_;
+                gnbInfo->injectLinkError(numFailedLinks, failedTime, recoverTime);
+            }
         }
     }
 }
@@ -116,12 +161,39 @@ void Database::injectServerError()
 {
     if (serverErrorInjection_)
     {
-        double randVal = uniform(0, 1);
-        if (randVal < serverErrorProb_)
+        // sample the failed gnbs from gnbNodeIdx_
+        failedGnbs_.clear();
+        int numFailedGnbs = ceil(gnbNodeIdx_.size() * serverErrorProb_);
+        for (int i = 0; i < numFailedGnbs; ++i)
         {
-            throw cRuntimeError("Database::injectServerError - Server error injected!");
+            // randomly select a gNB index from gnbNodeIdx_
+            auto it = gnbNodeIdx_.begin();
+            std::advance(it, intuniform(0, gnbNodeIdx_.size() - 1));
+            int gnbIndex = *it;
+            failedGnbs_.insert(gnbIndex);
+        }
+        
+        // inject server error to each gNB
+        for (const auto& gnbIndex : failedGnbs_)
+        {
+            NodeInfo* gnbInfo = gnbNodeInfo_[gnbIndex];
+            if (gnbInfo)
+            {
+                EV << "Database::injectServerError - Injected server error to gNB index: " << gnbIndex << endl;
+                double failedTime = simTime().dbl() + failureRecoveryInterval_;
+                double recoverTime = failedTime + failureRecoveryInterval_;
+                gnbInfo->injectNodeError(failedTime, recoverTime);
+            }
         }
     }
+}
+
+
+void Database::registerGnbNodeInfo(int gnbIndex, NodeInfo* nodeInfo)
+{
+    gnbNodeInfo_[gnbIndex] = nodeInfo;
+    gnbNodeIdx_.insert(gnbIndex);
+    EV << "Database::registerGnbNodeInfo - Registered gNB node info for index: " << gnbIndex << endl;
 }
 
 

@@ -87,7 +87,10 @@ class NodeInfo : public omnetpp::cSimpleModule
         double ifRecoverTime_; // time when the interface is up
         double nodeFailTime_; // time when the node is down
         double nodeRecoverTime_; // time when the node is up
-        int failedIfId_; // the interface id that is down, -1 means no interface is down
+        // int failedIfId_; // the interface id that is down, -1 means no interface is down
+        vector<int> failedIfIds_; // set of interface ids that are down, used for link failure simulation
+
+        omnetpp::simsignal_t linkStateChangedSignal;
 
     protected:
         virtual void initialize(int stage) override;
@@ -162,6 +165,10 @@ class NodeInfo : public omnetpp::cSimpleModule
         void setOspf(MecOspf* ospf) {ospf_ = ospf;}
         void setScheduler(Scheduler* scheduler) {scheduler_ = scheduler;}
         virtual void updateAdjListToScheduler(map<MacNodeId, map<MacNodeId, double>>& adjList);
+
+        // error injection related methods
+        void injectLinkError(int numFailedLinks, double failedTime, double recoverTime);
+        void injectNodeError(double failedTime, double recoverTime);
 };
 
 #endif /* _MECRT_COMMON_NODEINFO_H_ */

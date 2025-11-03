@@ -114,6 +114,7 @@ class Scheduler : public omnetpp::cSimpleModule
     omnetpp::simsignal_t vecUtilitySignal_;
     omnetpp::simsignal_t vecPendingAppCountSignal_;
     omnetpp::simsignal_t vecGrantedAppCountSignal_;
+    omnetpp::simsignal_t globalSchedulerReadySignal_;
 
     bool enableBackhaul_ = true; // whether to enable the backhaul network, default is true
     string optimizeObjective_; // the optimization objective for scheduling scheme, default is "accuracy"

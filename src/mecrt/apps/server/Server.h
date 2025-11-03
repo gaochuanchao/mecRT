@@ -99,6 +99,10 @@ class Server : public omnetpp::cSimpleModule
     std::vector<AppId> srvInInitVector_;  // the service that are still in initializing status
     std::map<AppId, omnetpp::simtime_t> srvInitCompleteTime_;  // the initialization complete time of the service
 
+    omnetpp::cMessage * appDataReceivedTimer_; // timer to process the received app data packets
+    int receivedDataCount_; // the number of received data packets during the timer interval
+    double receivedDataUtility_; // the total utility of received data packets during the timer interval
+
     omnetpp::simsignal_t meetDlPktSignal_;  // the number of packets that meet the deadline
     omnetpp::simsignal_t failedSrvDownSignal_;  // the number of failed packets due to service down
     omnetpp::simsignal_t missDlPktSignal_;  // the number of packets that miss the deadline

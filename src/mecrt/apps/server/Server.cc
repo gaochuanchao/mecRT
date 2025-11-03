@@ -122,6 +122,11 @@ void Server::initialize(int stage)
         srvInitCompleteTime_ = std::map<AppId, simtime_t>();
         appsWaitMacInitFb_ = std::set<AppId>();
 
+        appDataReceivedTimer_ = new cMessage("AppDataReceivedTimer");
+        appDataReceivedTimer_->setSchedulingPriority(1);
+        receivedDataCount_ = 0;
+        receivedDataUtility_ = 0.0;
+
         WATCH(deviceType_);
         WATCH(localPort_);
         WATCH_VECTOR(srvInInitVector_);
@@ -151,6 +156,16 @@ void Server::handleMessage(cMessage *msg)
     {
         if(!strcmp(msg->getName(), "ServiceInitComplete")){
             handleServiceInitComplete();
+        }
+        else if (!strcmp(msg->getName(), "AppDataReceivedTimer"))
+        {
+            EV << "Server::handleMessage - received " << receivedDataCount_ << " app data packets during the interval, total utility: " << receivedDataUtility_ << endl;
+            
+            emit(meetDlPktSignal_, receivedDataCount_);
+            emit(utilitySignal_, receivedDataUtility_);
+
+            receivedDataCount_ = 0;
+            receivedDataUtility_ = 0.0;
         }
 
         return;
@@ -232,9 +247,13 @@ void Server::handleAppData(inet::Packet *pkt)
         else
         {
             EV << "Server::handleMessage - app " << appId << " frame " << frameId << " - application deadline is met" << endl;
-            emit(meetDlPktSignal_, 1);
             double utilityPerJob = grantedService_[appId].utility * grantedService_[appId].deadline.dbl();
-            emit(utilitySignal_, utilityPerJob);
+            receivedDataCount_ += 1;
+            receivedDataUtility_ += utilityPerJob;
+
+            // in case of multiple packets received during the timer interval, only schedule the timer once
+            if (!appDataReceivedTimer_->isScheduled())
+                scheduleAt(simTime(), appDataReceivedTimer_); // reschedule the timer
         }
     }
 }

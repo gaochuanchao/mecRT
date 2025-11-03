@@ -20,6 +20,7 @@
 #include <omnetpp.h>
 #include <inet/common/INETDefs.h>
 #include "common/LteCommon.h"
+#include "mecrt/common/NodeInfo.h"
 
 using namespace omnetpp;
 using namespace std;
@@ -49,6 +50,10 @@ class Database : public omnetpp::cSimpleModule
     map<int, pair<double, double>> gnbPosData_; // store the gNB position data
     vector<string> deviceTypes_; // store the device types
 
+    // store the gNB data
+    map<int, NodeInfo*> gnbNodeInfo_;
+    set<int> gnbNodeIdx_; // store the gNB node ids
+
     // error injection parameters
     bool linkErrorInjection_;
     double linkErrorProb_;
@@ -56,8 +61,8 @@ class Database : public omnetpp::cSimpleModule
     double serverErrorProb_;
     int numLinks_;
     double failureRecoveryInterval_; // time for failure recovery in seconds
-    map<MacNodeId, int> failedLinkPerGnb_; // store the number of failed links per gNB
-    vector<MacNodeId> failedGnbs_; // store the failed gNBs
+    map<int, int> failedLinkPerGnb_; // store the number of failed links per gNB
+    set<int> failedGnbs_; // store the failed gNBs
 
     omnetpp::cMessage* errorInjectionTimer_; // timer for error injection
 
@@ -110,6 +115,9 @@ class Database : public omnetpp::cSimpleModule
     virtual void injectLinkError();
     // inject server error
     virtual void injectServerError();
+
+    // register a gNB node info
+    virtual void registerGnbNodeInfo(int gnbIndex, NodeInfo* nodeInfo);
 };
 
 #endif  // _MEC_DATABASE_H_

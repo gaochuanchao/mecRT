@@ -130,7 +130,7 @@ void UeApp::initialize(int stage)
         accuracy_ = db_->getUeAppAccuracy(appType_);
         inputSize_ = db_->sampleAppDataSize() * 1024;  // in bytes
         inputSize_ = inputSize_ + computeExtraBytes(inputSize_);
-        localExecTime_ = db_->getUeExeTime(appType_) / 1000.0;    // in seconds, as the profiling time is in milliseconds
+        localExecTime_ = db_->getUeExeTime(appType_);    // in seconds, as the profiling time is in milliseconds
         localExecPower_ = db_->getLocalExecPower(appType_);  // in mW
         offloadPower_ = db_->getOffloadPower(); // in mW
         period_ = db_->getAppDeadline(appType_) / dlScale_; // in seconds

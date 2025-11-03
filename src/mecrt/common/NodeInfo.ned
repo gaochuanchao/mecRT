@@ -26,4 +26,7 @@ simple NodeInfo
         double ifRecoverTime = default(0.0); // time when the interface is up
         double nodeFailTime = default(0.0); // time when the node is down
         double nodeRecoverTime = default(0.0); // time when the node is up
+
+        @signal[linkStateChanged](type="double");   // record the time when link state changed
+        @statistic[linkStateChanged](title="link state changed time"; source="linkStateChanged"; record=vector);
 }

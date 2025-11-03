@@ -122,6 +122,7 @@ void Scheduler::initialize(int stage)
         vecUtilitySignal_ = registerSignal("utility");
         vecPendingAppCountSignal_ = registerSignal("pendingAppCount");
         vecGrantedAppCountSignal_ = registerSignal("grantedAppCount");
+        globalSchedulerReadySignal_ = registerSignal("globalSchedulerReady");
         
         WATCH(cuStep_);
         WATCH(rbStep_);
@@ -425,6 +426,8 @@ void Scheduler::globalSchedulerInit()
 
         EV << "Scheduler::globalSchedulerInit - next scheduling time: " << NEXT_SCHEDULING_TIME << std::endl;
     }
+
+    emit(globalSchedulerReadySignal_, simTime().dbl());
 }
 
 

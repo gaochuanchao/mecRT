@@ -16,7 +16,6 @@
 #define __MECRT_STATIONARYMOBILITY_H
 
 #include "inet/mobility/base/StationaryMobilityBase.h"
-#include "mecrt/common/Database.h"
 
 using namespace inet;
 
@@ -30,7 +29,6 @@ class MecStationaryMobility : public StationaryMobilityBase
   protected:
     bool enableInitDebug_ = false; // whether to enable the debug info during initialization
     bool updateFromDisplayString;
-    Database *database_;     // the database module
     int nodeVectorIdx_;    // the index of the node in the vector list
 
   protected:
