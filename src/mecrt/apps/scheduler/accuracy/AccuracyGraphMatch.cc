@@ -44,6 +44,9 @@ AccuracyGraphMatch::AccuracyGraphMatch(Scheduler *scheduler)
     {
         throw cRuntimeError("AccuracyGraphMatch::AccuracyGraphMatch - fairFactor_ must be in the range [0.0, 1.0]");
     }
+
+    if (fairFactor_ == 1.0) // the default value for other schemes
+        fairFactor_ = 0.5;  // set to 0.5 if it is 1.0 to avoid resource over-allocation
     
     EV << NOW << " AccuracyGraphMatch::AccuracyGraphMatch - Initialized" << endl;
 }

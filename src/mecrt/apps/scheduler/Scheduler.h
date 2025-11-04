@@ -222,9 +222,9 @@ class Scheduler : public omnetpp::cSimpleModule
     virtual void sendGrantPacket(ServiceInstance& srv, bool isStart, bool isStop);
 
 	/**
-	 * stop the running service
+	 * stop the running/in-initializing service
 	 */
-	virtual void stopRunningService(AppId appId);
+	virtual void stopService(AppId appId);
 
 
     /***
@@ -239,4 +239,4 @@ class Scheduler : public omnetpp::cSimpleModule
 
 };
 
-#endif
+#endif // _MECRT_SCHEDULER_H_

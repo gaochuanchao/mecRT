@@ -373,10 +373,18 @@ void Server::handleSeviceFeedback(omnetpp::cMessage *msg)
     srvStatus->setProcessGnbCuUpdateTime(simTime());
     pkt->insertAtFront(srvStatus);
 
-    // addHeaders(pkt, schedulerAddr_, schedulerPort_, serverAddr_.toIpv4());
-    // socket.sendTo(pkt, gwAddress_, tunnelPeerPort_);
-    // pkt->addTagIfAbsent<InterfaceReq>()->setInterfaceId(pppIfInterfaceId_);
-    socket.sendTo(pkt, nodeInfo_->getGlobalSchedulerAddr(), MEC_NPC_PORT);
+    if (nodeInfo_->getIsGlobalScheduler())
+    {
+        EV << "Server::handleRsuFeedback - local scheduler is global scheduler, send feedback to local scheduler." << endl;
+        pkt->addTagIfAbsent<SocketInd>()->setSocketId(nodeInfo_->getLocalSchedulerSocketId());
+        send(pkt, "socketOut");
+    }
+    else 
+    {
+        EV << "Server::handleRsuFeedback - local scheduler is not global scheduler, send feedback to global scheduler " 
+        << nodeInfo_->getGlobalSchedulerAddr() << endl;
+        socket.sendTo(pkt, nodeInfo_->getGlobalSchedulerAddr(), MEC_NPC_PORT);
+    }
 }
 
 void Server::sendGrant2OffloadingNic(AppId appId, bool isStop)

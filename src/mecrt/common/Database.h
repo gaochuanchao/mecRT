@@ -68,9 +68,9 @@ class Database : public omnetpp::cSimpleModule
 
     // define a map for application deadline
     const map<string, double> appDeadline = {
-        {"resnet18", 0.07}, // 70ms
-        {"googlenet", 0.08},    // 80ms
-        {"regnet-x-s", 0.1}     // 100ms
+        {"resnet18", 0.06}, // 60ms
+        {"googlenet", 0.07},    // 70ms
+        {"regnet-x-s", 0.08}     // 80ms
     };
 
   public:

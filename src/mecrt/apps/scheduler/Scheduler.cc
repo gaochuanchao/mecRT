@@ -312,7 +312,7 @@ void Scheduler::handleMessage(cMessage *msg)
                 if (simTime() >= appInfo_[appId].stopTime - appInfo_[appId].period)
                 {
                     EV << NOW << " Scheduler::stopExpiredApp - stop the expired application " << appId << endl;
-                    stopRunningService(appId);
+                    stopService(appId);
                 }
             }
             
@@ -320,17 +320,11 @@ void Scheduler::handleMessage(cMessage *msg)
             {
                 // stop the service in initialization status
                 for (AppId appId : appsWaitInitFb_)
-                {
-                    stopRunningService(appId);
-                }
+                    stopService(appId);
 
                 // stop the running service
                 for (AppId appId : allocatedApps_)
-                {
-                    // check if the app is already in the waiting list
-                    if (appsWaitStopFb_.find(appId) == appsWaitStopFb_.end())
-                        stopRunningService(appId);
-                }
+                    stopService(appId);
             }
         }
     }
@@ -831,6 +825,8 @@ void Scheduler::scheduleRequest()
 
 void Scheduler::removeOutdatedInfo()
 {
+    EV << NOW << " Scheduler::removeOutdatedInfo - remove any expired request and outdated UE-GNB connection info" << endl;
+    
     // ======== remove the expired request ============
     // check the unscheduled request, if the vehicle left the simulation or the stop time is reached, remove the request
     set<AppId> toRemove = set<AppId>();
@@ -998,11 +994,32 @@ void Scheduler::sendGrantPacket(ServiceInstance& srv, bool isStart, bool isStop)
     socket_.sendTo(pkt, processGnbAddr, MEC_NPC_PORT);
 }
 
-void Scheduler::stopRunningService(AppId appId)
+void Scheduler::stopService(AppId appId)
 {
-    EV << NOW << " Scheduler::stopRunningService - stop the service for application " << appId << endl;
-    sendGrantPacket(runningService_[appId], false, true);
+    EV << NOW << " Scheduler::stopService - stop the service for application " << appId << endl;
 
+    if (appsWaitStopFb_.find(appId) != appsWaitStopFb_.end())
+    {
+        EV << NOW << " Scheduler::stopService - application " << appId 
+            << " is already in the waiting stop feedback list, ignore the stop request!" << endl;
+        return;
+    }
+
+    if (allocatedApps_.find(appId) != allocatedApps_.end())
+    {
+        sendGrantPacket(runningService_[appId], false, true);
+    }
+    else if (appsWaitInitFb_.find(appId) != appsWaitInitFb_.end())
+    {
+        sendGrantPacket(srvInInitiating_[appId], false, true);
+    }
+    else
+    {
+        EV << NOW << " Scheduler::stopService - application " << appId 
+            << " is neither in allocatedApps_ nor in appsWaitInitFb_, cannot stop the service!" << endl;
+        return;
+    }
+    
     appsWaitStopFb_.insert(appId);
 }
 

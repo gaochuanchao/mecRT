@@ -28,16 +28,16 @@ simple Server like IApp
         string nodeInfoModulePath = default("^.nodeInfo");
         
         @signal[meetDlPkt](type="int");
-        @statistic[meetDlPkt](title="number of jobs meeting deadline"; source="meetDlPkt"; record=sum);
+        @statistic[meetDlPkt](title="number of jobs meeting deadline"; source="meetDlPkt"; record=vector, sum);
 
         @signal[failedSrvDownPkt](type="int");
         @statistic[failedSrvDownPkt](title="number of jobs failed due to server down"; source="failedSrvDownPkt"; record=sum);
 
         @signal[missDlPkt](type="int");
-        @statistic[missDlPkt](title="number of jobs missing deadline"; source="missDlPkt"; record=sum);
+        @statistic[missDlPkt](title="number of jobs missing deadline"; source="missDlPkt"; record=vector, sum);
 
         @signal[utility](type="double");
-        @statistic[utility](title="utility gain"; source="utility"; record=vector, mean, sum);
+        @statistic[utility](title="utility gain"; source="utility"; record=vector, sum);
 
         @display("i=block/app2");
     gates:
