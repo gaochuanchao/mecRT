@@ -54,6 +54,7 @@ OBJS = \
     $O/mecrt/coreNetwork/MecGtpUser.o \
     $O/mecrt/coreNetwork/NodePacketController.o \
     $O/mecrt/feedback/MecDlFeedbackGenerator.o \
+    $O/mecrt/ipv4/MecIpv4.o \
     $O/mecrt/mobility/MecMobility.o \
     $O/mecrt/mobility/MecStationaryMobility.o \
     $O/mecrt/nic/ip2nic/MecIP2Nic.o \

@@ -29,6 +29,7 @@ import mecRT.mecrt.mobility.MecStationaryMobility;
 import mecRT.mecrt.nic.GnbNic;
 import mecRT.mecrt.routing.MecOspf;
 import mecRT.mecrt.udp.MecUdp;
+import mecRT.mecrt.ipv4.MecIpv4;
 import ned.IdealChannel;
 import simu5g.common.cellInfo.CellInfo;
 import simu5g.corenetwork.gtp.GtpUserX2;
@@ -174,6 +175,7 @@ module gNodeB
         ipv4: Ipv4NetworkLayer if hasIpv4 {
             parameters:
                 @display("p=494.54,372.88;q=queue");
+                ip.typename = "MecIpv4";
         }
         ipv6: Ipv6NetworkLayer if hasIpv6 {     // like INetworkLayer 
             parameters:
