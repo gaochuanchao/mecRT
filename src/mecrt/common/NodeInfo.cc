@@ -175,10 +175,13 @@ void NodeInfo::initialize(int stage)
 
         EV_INFO << "NodeInfo:initialize - stage: INITSTAGE_PHYSICAL_ENVIRONMENT\n";
 
-        Database* database = check_and_cast<Database*>(getSimulation()->getModuleByPath("database"));
-        int indexId = getParentModule()->getIndex();
-        database->registerGnbNodeInfo(indexId, this);
-
+        if (nodeType_ == "GNODEB")
+        {
+            Database* database = check_and_cast<Database*>(getSimulation()->getModuleByPath("database"));
+            int indexId = getParentModule()->getIndex();
+            database->registerGnbNodeInfo(indexId, this);
+        }
+        
         if (enableInitDebug_)
             std::cout << "NodeInfo:initialize - stage: INITSTAGE_PHYSICAL_ENVIRONMENT - ends\n";
     }

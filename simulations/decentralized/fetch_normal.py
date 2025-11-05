@@ -126,10 +126,7 @@ if __name__ == "__main__":
         print(">>> Starting extracting expected utility...")
         extract_expected_utility(appCount)
 
-        print(">>> Starting extracting vehSavedEnergy...")
-        extract_veh_saved_energy(appCount)
-
-        print(">>> Starting extracting offload energy...")
-        extract_offload_energy(appCount)
+        print(">>> Starting extracting actual improved utility...")
+        extract_improved_utility(appCount)
 
     print(">>> All tasks completed successfully.")
