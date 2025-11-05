@@ -6,3 +6,5 @@ src/libmecrt.so
 simulations/vec/results/
 simulations/decentralized/results/
 out/
+simulations/decentralized/result-analysis
+    
