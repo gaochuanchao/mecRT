@@ -119,7 +119,7 @@ void Scheduler::initialize(int stage)
         vecSchedulingTimeSignal_ = registerSignal("schedulingTime");
         vecSchemeTimeSignal_ = registerSignal("schemeTime");
         vecInsGenerateTimeSignal_ = registerSignal("instanceGenerateTime");
-        vecUtilitySignal_ = registerSignal("utility");
+        vecUtilitySignal_ = registerSignal("schemeUtility");    // total utility per second of the results
         vecPendingAppCountSignal_ = registerSignal("pendingAppCount");
         vecGrantedAppCountSignal_ = registerSignal("grantedAppCount");
         globalSchedulerReadySignal_ = registerSignal("globalSchedulerReady");
