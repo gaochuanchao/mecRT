@@ -7,7 +7,7 @@ echo "============================================="
 
 ${OMNETPP_ROOT}/bin/opp_run \
   -r 0 \
-  -m -u Cmdenv \
+  -m -u Qtenv \
   -c LinkFailure \
   -n "../../src:..:../../../simu5g/emulation:../../../simu5g/simulations:../../../simu5g/src:../../../inet4.5/examples:../../../inet4.5/showcases:../../../inet4.5/src:../../../inet4.5/tests/validation:../../../inet4.5/tests/networks:../../../inet4.5/tutorials" \
   --image-path "../../images:../../../inet4.5/images:../../../simu5g/images" \

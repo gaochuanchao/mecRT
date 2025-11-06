@@ -123,14 +123,27 @@ def extract_improved_utility():
     print(f"\t improved utility extraction complete.\n\t saved to: {output_csv}")
 
 
+def check_results():
+    filepath = os.path.join(INPUT_DIR, "FastSA-interval-10-appCount-3.vec")
+    with open(filepath, 'r') as f:
+        for line in f:
+            if re.match(r'^\d+\s+\d+', line):  # numeric line
+                parts = line.strip().split()
+                vec_id = int(parts[0])
+                if vec_id == 0:
+                    print(line.strip())
+
+
 if __name__ == "__main__":
-    print(f"\n==============================================================")
-    print(f">>> Starting extraction...\n")
+    # print(f"\n==============================================================")
+    # print(f">>> Starting extraction...\n")
 
-    print(">>> Starting extracting expected utility...")
-    extract_expected_utility()
+    # print(">>> Starting extracting expected utility...")
+    # extract_expected_utility()
 
-    print(">>> Starting extracting actual improved utility...")
-    extract_improved_utility()
+    # print(">>> Starting extracting actual improved utility...")
+    # extract_improved_utility()
 
-    print(">>> All tasks completed successfully.")
+    # print(">>> All tasks completed successfully.")
+
+    check_results()
