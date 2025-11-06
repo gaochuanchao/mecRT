@@ -42,6 +42,7 @@ class NodePacketController : public omnetpp::cSimpleModule
 
     // =========== UE application related ===========
     map<AppId, Ptr<VecRequest>> srvReqsBuffer_; // service requests buffer for global scheduler recovery
+    map<AppId, set<int>> broadcastedSrvReqs_; // set of AppIds that have been broadcasted to other nodes
 
   protected:
 

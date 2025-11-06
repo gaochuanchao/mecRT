@@ -88,6 +88,7 @@ void NodePacketController::initialize(int stage)
         WATCH_PTR(nodeInfo_);
         WATCH(localPort_);
         WATCH(socketId_);
+        WATCH_MAP(srvReqsBuffer_);
 
         if (enableInitDebug_)
             std::cout << "NodePacketController::initialize - INITSTAGE_APPLICATION_LAYER end" << endl;
@@ -202,8 +203,17 @@ void NodePacketController::handleServiceRequest(Packet *pkt)
     AppId appId = srvReq->getAppId();
     EV << NOW << " NodePacketController::handleServiceRequest - Received a service request packet for app " << appId << endl;
 
+    // check if the service request for this app has been buffered
+    if (srvReqsBuffer_.find(appId) != srvReqsBuffer_.end())
+    {
+        EV << NOW << " NodePacketController::handleServiceRequest - Service request for app " << appId 
+            << " has been buffered, ignore the new request." << endl;
+        return;
+    }
+
     Ptr<VecRequest> srvReqCopy = makeShared<VecRequest>(*srvReq);
-    if (srvReq->getUeIpAddress() == 0)
+    int ueAddr = srvReq->getUeIpAddress();
+    if (ueAddr == 0)
     {
         EV << NOW << " NodePacketController::handleServiceRequest - fill in the UE IP address in the service request packet." << endl;
         // get ipv4 address of the ue from the VecRequest packet tag
@@ -221,14 +231,61 @@ void NodePacketController::handleServiceRequest(Packet *pkt)
     packetToLocal->addTagIfAbsent<SocketInd>()->setSocketId(nodeInfo_->getLocalSchedulerSocketId());
     send(packetToLocal, "socketOut");
 
-    // send a copy to the global scheduler (if it exists)
-    if (!nodeInfo_->getIsGlobalScheduler() && !nodeInfo_->getGlobalSchedulerAddr().isUnspecified())
+    // broadcast the service request to all neighbors
+    if (!nodeInfo_->getNeighborAddrs().empty())
     {
-        EV << NOW << " NodePacketController::handleServiceRequest - send a copy of the service request packet to the global scheduler." << endl;
-        Packet* packetToGlobal = new Packet("SrvReq");
-        packetToGlobal->insertAtBack(srvReqsBuffer_[appId]);
-        socket_.sendTo(packetToGlobal, nodeInfo_->getGlobalSchedulerAddr(), MEC_NPC_PORT);
+        EV << NOW << " NodePacketController::handleServiceRequest - broadcast a copy of the service request packet to all neighbor nodes." << endl;
+        if (ueAddr == 0)    // this is received from UE, broadcast to all neighbors
+        {
+            for (const auto& pair : nodeInfo_->getNeighborAddrs())
+            {   
+                // check if the interface is active
+                NetworkInterface* ni = pair.second;
+                if (!ni || !ni->isUp() || ni->isWireless())
+                    continue;
+                
+                Packet* packetToNeighbor = new Packet("SrvReq");
+                packetToNeighbor->insertAtBack(srvReqsBuffer_[appId]);
+                socket_.sendTo(packetToNeighbor, Ipv4Address(pair.first), MEC_NPC_PORT);
+                broadcastedSrvReqs_[appId].insert(pair.first);
+            }
+        }
+        else
+        {
+            // this is received from other gNB, only broadcast to neighbors that have not received it yet
+            int na = pkt->getTag<L3AddressInd>()->getSrcAddress().toIpv4().getInt();
+            for (const auto& pair : nodeInfo_->getNeighborAddrs())
+            {
+                if (na == pair.first)
+                {
+                    broadcastedSrvReqs_[appId].insert(pair.first);
+                    continue; // do not send back to the sender
+                }
+
+                if (broadcastedSrvReqs_[appId].find(pair.first) != broadcastedSrvReqs_[appId].end())
+                    continue; // already broadcasted to this neighbor
+
+                // check if the neighbor address is reachable
+                NetworkInterface* ni = pair.second;
+                if (!ni || !ni->isUp() || ni->isWireless())
+                    continue;
+
+                Packet* packetToNeighbor = new Packet("SrvReq");
+                packetToNeighbor->insertAtBack(srvReqsBuffer_[appId]);
+                socket_.sendTo(packetToNeighbor, Ipv4Address(pair.first), MEC_NPC_PORT);
+                broadcastedSrvReqs_[appId].insert(pair.first);
+            }
+        }
     }
+
+    // send a copy to the global scheduler (if it exists)
+    // if (!nodeInfo_->getIsGlobalScheduler() && !nodeInfo_->getGlobalSchedulerAddr().isUnspecified())
+    // {
+    //     EV << NOW << " NodePacketController::handleServiceRequest - send a copy of the service request packet to the global scheduler." << endl;
+    //     Packet* packetToGlobal = new Packet("SrvReq");
+    //     packetToGlobal->insertAtBack(srvReqsBuffer_[appId]);
+    //     socket_.sendTo(packetToGlobal, nodeInfo_->getGlobalSchedulerAddr(), MEC_NPC_PORT);
+    // }
 }
 
 
@@ -312,11 +369,11 @@ void NodePacketController::recoverServiceRequests()
     Enter_Method("recoverServiceRequests");
 
     // resend all buffered service request packets to the global scheduler
-    if (nodeInfo_->getIsGlobalScheduler())
-        return;
+    // if (nodeInfo_->getIsGlobalScheduler())
+    //     return;
 
-    if (nodeInfo_->getGlobalSchedulerAddr().isUnspecified())
-        return;
+    // if (nodeInfo_->getGlobalSchedulerAddr().isUnspecified())
+    //     return;
 
     if (srvReqsBuffer_.empty())
     {
@@ -324,25 +381,39 @@ void NodePacketController::recoverServiceRequests()
         return;
     }
 
-    EV << NOW << " NodePacketController::recoverServiceRequests - resend all buffered service request packets to the global scheduler." << endl;
+    EV << NOW << " NodePacketController::recoverServiceRequests - check if we need to broadcast any service requests." << endl;
     vector<AppId> toRemove; // remove terminated requests
-    for (auto it = srvReqsBuffer_.begin(); it != srvReqsBuffer_.end(); ++it)
+    for (const auto& pair : nodeInfo_->getNeighborAddrs())
     {
-        AppId appId = it->first;
-        Ptr<VecRequest> srvReq = it->second;
-        if (srvReq->getStopTime() <= simTime())
-        {
-            toRemove.push_back(appId);
+        // check if the neighbor address is reachable
+        NetworkInterface* ni = pair.second;
+        if (!ni || !ni->isUp() || ni->isWireless())
             continue;
-        }
-        Packet* packetToGlobal = new Packet("SrvReq");
-        packetToGlobal->insertAtBack(srvReq);
-        socket_.sendTo(packetToGlobal, nodeInfo_->getGlobalSchedulerAddr(), MEC_NPC_PORT);
-    }
 
-    for (auto appId : toRemove)
-    {
-        srvReqsBuffer_.erase(appId);
+        for (auto it = srvReqsBuffer_.begin(); it != srvReqsBuffer_.end(); ++it)
+        {
+            AppId appId = it->first;
+            Ptr<VecRequest> srvReq = it->second;
+            if (srvReq->getStopTime() <= simTime())
+            {
+                toRemove.push_back(appId);
+                continue;
+            }
+            if (broadcastedSrvReqs_[appId].find(pair.first) != broadcastedSrvReqs_[appId].end())
+                continue; // already broadcasted to this neighbor
+
+            Packet* packetToNeighbor = new Packet("SrvReq");
+            packetToNeighbor->insertAtBack(srvReqsBuffer_[appId]);
+            socket_.sendTo(packetToNeighbor, Ipv4Address(pair.first), MEC_NPC_PORT);
+            broadcastedSrvReqs_[appId].insert(pair.first);
+        }
+
+        for (auto appId : toRemove)
+        {
+            srvReqsBuffer_.erase(appId);
+            broadcastedSrvReqs_.erase(appId);
+        }
+        toRemove.clear();
     }
 }
 

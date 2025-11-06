@@ -925,6 +925,11 @@ void MecOspf::recomputeIndirectRouting()
     globalSchedulerReady_ = true;
     if (nodeInfo_)
     {
+        map<int, NetworkInterface*> neighborAddrs;
+        for (const auto& kv : neighbors_) {
+            neighborAddrs.insert({kv.second.destIp.getInt(), kv.second.outInterface});
+        }
+        nodeInfo_->updateNeighborAddrs(neighborAddrs);
         nodeInfo_->setGlobalSchedulerAddr(schedulerAddr_);
         updateAdjListToScheduler();
     }

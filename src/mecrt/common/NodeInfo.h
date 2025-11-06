@@ -46,6 +46,7 @@ class NodeInfo : public omnetpp::cSimpleModule
         inet::Ipv4Address nodeAddr_; // [MecOspf, UeMac] IPv4 address of the ipv4 module in this node
         // bool rtState_; // [MecOspf] whether the routing table has been set up by the routing protocol (e.g., OSPF)
         int npcSocketId_; // [NodePacketController] the socket id used by the NodePacketController module
+        map<int, NetworkInterface*> neighborAddrs_; // [MecOspf] map of neighbor IPv4 addresses to their network interfaces, used for app information broadcasting
 
         // =========== Wireless NIC module related ===========
         MacNodeId nodeId_;    // [GnbMac, UeMac] macNodeId of the wireless NIC
@@ -118,6 +119,8 @@ class NodeInfo : public omnetpp::cSimpleModule
         // methods to set/get routing related information
         void setNodeAddr(inet::Ipv4Address addr) {nodeAddr_ = addr;}
         inet::Ipv4Address getNodeAddr() {return nodeAddr_;}
+        void updateNeighborAddrs(map<int, NetworkInterface*>& neighborAddrs) {neighborAddrs_ = neighborAddrs;}
+        map<int, NetworkInterface*> getNeighborAddrs() {return neighborAddrs_;}
         // void setRtState(bool state) {rtState_ = state;}
         // bool getRtState() {return rtState_;}
         // bool isRtReady() {return rtState_;}
