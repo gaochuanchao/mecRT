@@ -46,6 +46,8 @@ simple MecOspf like IApp
         double lsaWaitInterval @unit(s) = default(0.002s); // LSA synchronization wait time after hello
         double routeComputationDelay @unit(s) = default(0.005s); // wait before recomputing routes
 
+        bool routeUpdate = default(true); // whether to update route when an interface goes up/down
+
         @display("i=block/network2");                  // icon for visualization    
     
     gates:

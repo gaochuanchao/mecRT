@@ -90,10 +90,13 @@ void UeApp::initialize(int stage)
         initRequest_ = new cMessage("initRequest");
 
         // register signals
-        localProcessSignal_ = registerSignal("localProcessCount");
-        offloadSignal_ = registerSignal("offloadCount");
+        // localProcessSignal_ = registerSignal("localProcessCount");
+        // offloadSignal_ = registerSignal("offloadCount");
         // savedEnergySignal_ = registerSignal("vehSavedEnergy");
         // energyConsumedIfLocalSignal_ = registerSignal("vehEnergyConsumedIfLocal");
+        jobGeneratedSinceGrantedSignal_ = registerSignal("jobGeneratedSinceGranted");
+        jobGeneratedSignal_ = registerSignal("jobGenerated");
+
         dlScale_ = par("dlScale");
 
         if (enableInitDebug_)
@@ -173,6 +176,11 @@ void UeApp::handleMessage(cMessage *msg)
         {
             // EV << "UeApp::handleMessage - now[" << simTime() << "] <= finish[" << finishTime_ <<"]" <<endl;
             sendJobPacket();
+
+            emit(jobGeneratedSignal_, 1);
+            if (processGnbAddr_ != inet::Ipv4Address::UNSPECIFIED_ADDRESS)
+                emit(jobGeneratedSinceGrantedSignal_, 1);
+
             scheduleAt(simTime() + period_, selfSender_);
         }
         else if(!strcmp(msg->getName(), "initRequest"))
@@ -269,15 +277,15 @@ void UeApp::sendJobPacket()
         }
         socket.sendTo(packet, processGnbAddr_, processGnbPort_);
 
-        emit(offloadSignal_, 1);
-        emit(localProcessSignal_, 0);
+        // emit(offloadSignal_, 1);
+        // emit(localProcessSignal_, 0);
         // emit(savedEnergySignal_, localConsumedEnergy_);
     }
     else
     {
         EV << "UeApp::sendJobPacket - service for app " << appId_ << " is not granted, processed locally!" <<endl;
-        emit(offloadSignal_, 0);
-        emit(localProcessSignal_, 1);
+        // emit(offloadSignal_, 0);
+        // emit(localProcessSignal_, 1);
         // emit(savedEnergySignal_, 0);
     }
 

@@ -1372,6 +1372,27 @@ void GnbMac::mecHandleGrantFromRsu(omnetpp::cPacket* pktAux)
     if(grant->getGrantStop())
     {
         EV << "GnbMac::handleGrantFromRsu - received stop grant for app " << appId << endl;
+        // check if the app grant info exists
+        // in case of a srvFD being lost, and server sends a stop grant again
+        if(!rbManagerUl_->hasAppGrantInfo(appId))   
+        {
+            Packet* packet = new Packet("SrvFD");
+            auto srvStatus = makeShared<ServiceStatus>();
+            srvStatus->setAppId(appId);
+            srvStatus->setOffloadGnbId(nodeId_);
+            srvStatus->setProcessGnbId(grant->getProcessGnbId());
+            srvStatus->setProcessGnbPort(grant->getProcessGnbPort());
+            srvStatus->setSuccess(false);
+            srvStatus->setAvailBand(rbManagerUl_->getAvailableBands());
+            srvStatus->setOffloadGnbRbUpdateTime(simTime());
+            srvStatus->setUsedBand(0);
+            srvStatus->addTag<CreationTimeTag>()->setCreationTime(simTime());
+            packet->insertAtFront(srvStatus);
+
+            mecSendDataToServer(packet, grant->getProcessGnbPort(), Ipv4Address(grant->getProcessGnbAddr()));
+            return;
+        }
+
         terminateService(appId);
         return;
     }

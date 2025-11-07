@@ -219,70 +219,8 @@ void Scheduler::handleMessage(cMessage *msg)
     {
         if (!strcmp(msg->getName(), "ScheduleStart"))
         {
-            /***
-             * TODO: consider how to synchronize multiple global schedulers
-             * currently this does not work, as the scheduling time may be updated by other global scheduler
-             * this scheduler might never been executed if the scheduling time is always updated to a future time
-             *
-             * check if the NEXT_SCHEDULING_TIME has been updated by other global scheduler
-             * if so, then reschedule the scheduling start time
-             */
-            // if (simTime() < NEXT_SCHEDULING_TIME)
-            // {
-            //     scheduleAt(NEXT_SCHEDULING_TIME, schedStarter_);
-            //     EV << NOW << " Scheduler::handleMessage - the NEXT_SCHEDULING_TIME has been updated by other global scheduler!\n"
-            //         << "\t the scheduled time is not reached, re-schedule at " << NEXT_SCHEDULING_TIME << endl;
-            //     return;
-            // }
-            
-            /***
-             * if a service stop command is sent, need to wait for the service stop feedback to update the RSU status
-             * only perform the next scheduling when all the service stop feedback is received
-             * if the feedback is not received, reset the wait list and resend the stop command
-             */
-            if (appsWaitStopFb_.size() == 0)
-            {
-                // reset the time
-                insGenerateTime_ = SimTime(0, SIMTIME_US);
-                schemeExecTime_ = SimTime(0, SIMTIME_US);
-                schedulingTime_ = SimTime(0, SIMTIME_US);
-                
-                removeOutdatedInfo();
-                // record the real execution time of the scheduling scheme
-                auto start = chrono::steady_clock::now();
-                scheduleRequest();
-                auto end = chrono::steady_clock::now();
-                schedulingTime_ = SimTime(chrono::duration_cast<chrono::microseconds>(end - start).count(), SIMTIME_US);
-                emit(vecSchedulingTimeSignal_, schedulingTime_.dbl());
-
-                schemeExecTime_ = schedulingTime_ - insGenerateTime_;
-                emit(vecSchemeTimeSignal_, schemeExecTime_.dbl());
-                if (schemeExecTime_ < schedulingInterval_ - appStopInterval_)
-                {
-                    if (countExeTime_)
-                        scheduleAt(simTime()+schemeExecTime_, schedComplete_);
-                    else
-                        scheduleAt(simTime(), schedComplete_);
-                }
-                else
-                    vecSchedule_.clear();  // clear the schedule if the execution time is too long
-            }
-            else
-            {
-                appsWaitStopFb_.clear();
-            }
-
-            if (periodicScheduling_)
-            {
-                // make sure the NEXT_SCHEDULING_TIME has not been updated by other global scheduler
-                // add 1 second margin to avoid starvation
-                if (NOW + 1 > NEXT_SCHEDULING_TIME) 
-                    NEXT_SCHEDULING_TIME = NEXT_SCHEDULING_TIME + schedulingInterval_.dbl();
-
-                scheduleAt(NEXT_SCHEDULING_TIME, schedStarter_);
-                scheduleAt(NEXT_SCHEDULING_TIME - appStopInterval_.dbl(), preSchedCheck_);
-                EV << NOW << " Scheduler::handleMessage - next scheduling time: " << NEXT_SCHEDULING_TIME << endl;
-            }
+            EV << NOW << " Scheduler::handleMessage - start scheduling\n";
+            handleSchedulingStart();
         }
         else if (!strcmp(msg->getName(), "ScheduleComplete"))
         {
@@ -291,50 +229,8 @@ void Scheduler::handleMessage(cMessage *msg)
         }
         else if (!strcmp(msg->getName(), "PreScheduleCheck"))   // do necessary service check before next scheduling
         {
-            /***
-             * The NEXT_SCHEDULING_TIME may be updated by other global scheduler when the whole topology is divided
-             * into several parts due to some links or nodes failure. In this case, we need to check if we have reached
-             * the latest NEXT_SCHEDULING_TIME - appStopInterval_.
-             */
-            // commenting out the following code to avoid starvation issue
-            // if (simTime() < NEXT_SCHEDULING_TIME - appStopInterval_)
-            // {
-            //     scheduleAt(NEXT_SCHEDULING_TIME - appStopInterval_, preSchedCheck_);
-            //     EV << NOW << " Scheduler::handleMessage - the NEXT_SCHEDULING_TIME has been updated by other global scheduler!\n"
-            //         << "\t the updated pre-scheduling check time is not reached, re-schedule at " 
-            //         << NEXT_SCHEDULING_TIME - appStopInterval_ << endl;
-                
-            //     // also reset the schedule start timer
-            //     if (schedStarter_->isScheduled())
-            //     {
-            //         cancelEvent(schedStarter_);
-            //         scheduleAt(NEXT_SCHEDULING_TIME, schedStarter_);
-            //         EV << NOW << " Scheduler::handleMessage - re-schedule the scheduling start time at " 
-            //             << NEXT_SCHEDULING_TIME << endl;
-            //     }
-            //     return;
-            // }
-            
-            // check if the stop time is reached for the allocated applications
-            for (AppId appId : allocatedApps_)
-            {
-                if (simTime() >= appInfo_[appId].stopTime - appInfo_[appId].period)
-                {
-                    EV << NOW << " Scheduler::stopExpiredApp - stop the expired application " << appId << endl;
-                    stopService(appId);
-                }
-            }
-            
-            if (rescheduleAll_)
-            {
-                // stop the service in initialization status
-                for (AppId appId : appsWaitInitFb_)
-                    stopService(appId);
-
-                // stop the running service
-                for (AppId appId : allocatedApps_)
-                    stopService(appId);
-            }
+            EV << NOW << " Scheduler::handleMessage - pre-scheduling check\n";
+            handlePreSchedulingCheck();
         }
     }
     else if (!strcmp(msg->getName(), "SrvReq"))    // request from vehicle
@@ -357,6 +253,123 @@ void Scheduler::handleMessage(cMessage *msg)
         updateRsuSrvStatusFeedback(msg);
         delete msg;
         msg = nullptr;
+    }
+}
+
+
+void Scheduler::handlePreSchedulingCheck()
+{
+    /***
+     * The NEXT_SCHEDULING_TIME may be updated by other global scheduler when the whole topology is divided
+     * into several parts due to some links or nodes failure. In this case, we need to check if we have reached
+     * the latest NEXT_SCHEDULING_TIME - appStopInterval_.
+     */
+    // commenting out the following code to avoid starvation issue
+    // if (simTime() < NEXT_SCHEDULING_TIME - appStopInterval_)
+    // {
+    //     scheduleAt(NEXT_SCHEDULING_TIME - appStopInterval_, preSchedCheck_);
+    //     EV << NOW << " Scheduler::handleMessage - the NEXT_SCHEDULING_TIME has been updated by other global scheduler!\n"
+    //         << "\t the updated pre-scheduling check time is not reached, re-schedule at " 
+    //         << NEXT_SCHEDULING_TIME - appStopInterval_ << endl;
+        
+    //     // also reset the schedule start timer
+    //     if (schedStarter_->isScheduled())
+    //     {
+    //         cancelEvent(schedStarter_);
+    //         scheduleAt(NEXT_SCHEDULING_TIME, schedStarter_);
+    //         EV << NOW << " Scheduler::handleMessage - re-schedule the scheduling start time at " 
+    //             << NEXT_SCHEDULING_TIME << endl;
+    //     }
+    //     return;
+    // }
+    
+    // check if the stop time is reached for the allocated applications
+    for (AppId appId : allocatedApps_)
+    {
+        if (simTime() >= appInfo_[appId].stopTime - appInfo_[appId].period)
+        {
+            EV << NOW << " Scheduler::stopExpiredApp - stop the expired application " << appId << endl;
+            stopService(appId);
+        }
+    }
+    
+    if (rescheduleAll_)
+    {
+        // stop the service in initialization status
+        for (AppId appId : appsWaitInitFb_)
+            stopService(appId);
+
+        // stop the running service
+        for (AppId appId : allocatedApps_)
+            stopService(appId);
+    }
+
+}
+
+
+void Scheduler::handleSchedulingStart()
+{
+    /***
+     * TODO: consider how to synchronize multiple global schedulers
+     * currently this does not work, as the scheduling time may be updated by other global scheduler
+     * this scheduler might never been executed if the scheduling time is always updated to a future time
+     *
+     * check if the NEXT_SCHEDULING_TIME has been updated by other global scheduler
+     * if so, then reschedule the scheduling start time
+     */
+    // if (simTime() < NEXT_SCHEDULING_TIME)
+    // {
+    //     scheduleAt(NEXT_SCHEDULING_TIME, schedStarter_);
+    //     EV << NOW << " Scheduler::handleMessage - the NEXT_SCHEDULING_TIME has been updated by other global scheduler!\n"
+    //         << "\t the scheduled time is not reached, re-schedule at " << NEXT_SCHEDULING_TIME << endl;
+    //     return;
+    // }
+    
+    /***
+     * if a service stop command is sent, need to wait for the service stop feedback to update the RSU status
+     * only perform the next scheduling when all the service stop feedback is received
+     * if the feedback is not received, reset the wait list and resend the stop command
+     */
+    if (appsWaitStopFb_.size() > 0)
+        appsWaitStopFb_.clear();    // make sure to resend the stop command when next scheduling starts
+
+    // reset the time
+    insGenerateTime_ = SimTime(0, SIMTIME_US);
+    schemeExecTime_ = SimTime(0, SIMTIME_US);
+    schedulingTime_ = SimTime(0, SIMTIME_US);
+    
+    removeOutdatedInfo();
+    // record the real execution time of the scheduling scheme
+    auto start = chrono::steady_clock::now();
+    scheduleRequest();
+    auto end = chrono::steady_clock::now();
+    schedulingTime_ = SimTime(chrono::duration_cast<chrono::microseconds>(end - start).count(), SIMTIME_US);
+    emit(vecSchedulingTimeSignal_, schedulingTime_.dbl());
+
+    schemeExecTime_ = schedulingTime_ - insGenerateTime_;
+    emit(vecSchemeTimeSignal_, schemeExecTime_.dbl());
+    if (schemeExecTime_ < schedulingInterval_ - appStopInterval_)
+    {
+        if (countExeTime_)
+            scheduleAt(simTime()+schemeExecTime_, schedComplete_);
+        else
+            scheduleAt(simTime(), schedComplete_);
+    }
+    else
+    {
+        vecSchedule_.clear();  // clear the schedule if the execution time is too long
+    }
+        
+    if (periodicScheduling_)
+    {
+        // make sure the NEXT_SCHEDULING_TIME has not been updated by other global scheduler
+        // add 1 second margin to avoid starvation
+        if (NOW + 1 > NEXT_SCHEDULING_TIME) 
+            NEXT_SCHEDULING_TIME = NEXT_SCHEDULING_TIME + schedulingInterval_.dbl();
+
+        scheduleAt(NEXT_SCHEDULING_TIME, schedStarter_);
+        scheduleAt(NEXT_SCHEDULING_TIME - appStopInterval_.dbl(), preSchedCheck_);
+        EV << NOW << " Scheduler::handleMessage - next scheduling time: " << NEXT_SCHEDULING_TIME << endl;
     }
 }
 

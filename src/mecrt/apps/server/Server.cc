@@ -189,9 +189,17 @@ void Server::handleMessage(cMessage *msg)
             AppId appId = pktGrant->getAppId();
 
             if (pktGrant->getStart() && (grantedService_.find(appId) == grantedService_.end()))
+            {
                 initializeService(pktGrant);
+            }
             else if (pktGrant->getStop() && (grantedService_.find(appId) != grantedService_.end()))
+            {
                 stopService(appId);
+            }
+            else if (pktGrant->getStop() && (grantedService_.find(appId) == grantedService_.end()) && (pktGrant->getProcessGnbId() == gnbId_))
+            {
+                handleLostServiceFeedback(pkt);
+            }
             
             delete msg;
             msg = nullptr;
@@ -216,6 +224,42 @@ void Server::handleMessage(cMessage *msg)
             msg = nullptr;
             return;
         }
+    }
+}
+
+
+void Server::handleLostServiceFeedback(inet::Packet *pkt)
+{
+    auto pktGrant = pkt->popAtFront<Grant2Rsu>();
+    AppId appId = pktGrant->getAppId();
+    
+    // the previous service feedback for service stop is lost
+    Packet* packet = new Packet("SrvFD");
+    auto srvStatus = makeShared<ServiceStatus>();
+    srvStatus->setAppId(appId);
+    srvStatus->setOffloadGnbId(pktGrant->getOffloadGnbId());
+    srvStatus->setProcessGnbId(pktGrant->getProcessGnbId());
+    srvStatus->setProcessGnbPort(localPort_);
+    srvStatus->setSuccess(false);
+    srvStatus->setAvailBand(0);
+    srvStatus->setOffloadGnbRbUpdateTime(simTime());
+    srvStatus->setUsedBand(0);
+    srvStatus->addTag<CreationTimeTag>()->setCreationTime(simTime());
+    srvStatus->setAvailCmpUnit(cmpUnitFree_);
+    srvStatus->setProcessGnbCuUpdateTime(simTime());
+    packet->insertAtFront(srvStatus);
+
+    if (nodeInfo_->getIsGlobalScheduler())
+    {
+        EV << "Server::handleRsuFeedback - local scheduler is global scheduler, send feedback to local scheduler." << endl;
+        pkt->addTagIfAbsent<SocketInd>()->setSocketId(nodeInfo_->getLocalSchedulerSocketId());
+        send(pkt, "socketOut");
+    }
+    else 
+    {
+        EV << "Server::handleRsuFeedback - local scheduler is not global scheduler, send feedback to global scheduler " 
+        << nodeInfo_->getGlobalSchedulerAddr() << endl;
+        socket.sendTo(pkt, nodeInfo_->getGlobalSchedulerAddr(), MEC_NPC_PORT);
     }
 }
 

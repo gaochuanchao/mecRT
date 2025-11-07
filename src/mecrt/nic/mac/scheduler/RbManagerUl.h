@@ -162,7 +162,8 @@ class RbManagerUl
     void setAppGrantInfo(AppId appId, AppGrantInfo appGrantInfo) { appGrantInfos_[appId] = appGrantInfo; }
     AppGrantInfo& getAppGrantInfo(AppId appId) { return appGrantInfos_[appId]; }
     void removeAppGrantInfo(AppId appId) { appGrantInfos_.erase(appId); }
-    
+    bool hasAppGrantInfo(AppId appId) { return appGrantInfos_.find(appId) != appGrantInfos_.end(); }
+
     int getAvailableBands() { return flexibleBands_.size(); }
     int getAppAllocatedBands(AppId appId) { return appGrantInfos_[appId].grantedBandSet.size() + appGrantInfos_[appId].tempBands.size(); }
 

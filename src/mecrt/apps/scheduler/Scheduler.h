@@ -188,6 +188,8 @@ class Scheduler : public omnetpp::cSimpleModule
      * Handle the messages
      */
     virtual void handleMessage(omnetpp::cMessage *msg) override;
+    virtual void handleSchedulingStart();
+    virtual void handlePreSchedulingCheck();
 
     virtual void finish() override;
 

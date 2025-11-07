@@ -104,6 +104,8 @@ class UeApp : public omnetpp::cSimpleModule
     omnetpp::simsignal_t offloadSignal_;  // the offloading signal
     omnetpp::simsignal_t savedEnergySignal_;   // energy consumed by processing each job
     omnetpp::simsignal_t energyConsumedIfLocalSignal_; // energy consumed by processing each job fully locally
+    omnetpp::simsignal_t jobGeneratedSinceGrantedSignal_; // number of jobs generated since service granted is received
+    omnetpp::simsignal_t jobGeneratedSignal_; // number of jobs generated
 
   public:
     ~UeApp();

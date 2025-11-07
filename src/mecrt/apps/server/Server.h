@@ -130,6 +130,8 @@ class Server : public omnetpp::cSimpleModule
 
     virtual void handleMessage(omnetpp::cMessage *msg) override;
 
+    virtual void handleLostServiceFeedback(inet::Packet *pkt);
+
     virtual void handleServiceInitComplete();
 
     virtual void handleAppData(inet::Packet *pkt);

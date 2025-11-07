@@ -100,6 +100,7 @@ void MecOspf::initialize(int stage)
         EV_INFO << "MecOspf::initialize - stage: INITSTAGE_LOCAL - begins\n";
         // registerMecOspfProtocol(); // ensure protocol is registered before simulation starts
 
+        globalSchedulerReady_ = false;
         neighborChanged_ = false;
         // create timers
         helloTimer_ = new cMessage("helloTimer");
@@ -113,6 +114,7 @@ void MecOspf::initialize(int stage)
         helloInterval_ = par("helloInterval").doubleValue();
         neighborTimeout_ = 2 * helloInterval_; // set dead interval as 2*helloInterval
         routeComputationDelay_ = par("routeComputationDelay").doubleValue();
+        routeUpdate_ = par("routeUpdate").boolValue();
 
         simtime_t startupTime = par("startupTime");
         scheduleAfter(startupTime, helloTimer_);
@@ -303,6 +305,12 @@ void MecOspf::handleSelfTimer(cMessage *msg)
 {
     if (msg == helloTimer_)
     {
+        if (!routeUpdate_ && globalSchedulerReady_)
+        {
+            EV_INFO << "MecOspf::handleSelfTimer - route update disabled, skip Hello sending\n";
+            return;
+        }
+        
         EV_INFO << "MecOspf::handleSelfTimer - Hello timer fired at " << simTime() << "\n";
 
         // reschedule next Hello, continuous monitor neighbor accessibility
@@ -991,7 +999,7 @@ void MecOspf::updateAdjListToScheduler()
 
 void MecOspf::resetGlobalScheduler()
 {
-    if (globalSchedulerReady_)
+    if (globalSchedulerReady_  && routeUpdate_)
     {
         EV_INFO << "MecOspf:resetGlobalScheduler - resetting global scheduler\n";
 
@@ -1024,7 +1032,9 @@ void MecOspf::handleNodeFailure()
     neighborChanged_ = true;
     topology_[routerIdKey_].clear();
 
-    globalSchedulerReady_ = false;
+    if (routeUpdate_)
+        globalSchedulerReady_ = false;
+
     schedulerAddr_ = Ipv4Address::UNSPECIFIED_ADDRESS;
 }
 

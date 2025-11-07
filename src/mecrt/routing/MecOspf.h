@@ -87,6 +87,8 @@ class MecOspf : public omnetpp::cSimpleModule
 
 	bool enableInitDebug_ = false;
 
+    bool routeUpdate_ = true;
+
     int localPort_;
     inet::UdpSocket socket_;
     int socketId_ = -1;
