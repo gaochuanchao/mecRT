@@ -164,7 +164,10 @@ void Database::injectServerError()
         // sample the failed gnbs from gnbNodeIdx_
         failedGnbs_.clear();
         int numFailedGnbs = ceil(gnbNodeIdx_.size() * serverErrorProb_);
-        for (int i = 0; i < numFailedGnbs; ++i)
+        if (numFailedGnbs > gnbNodeIdx_.size())
+            throw omnetpp::cRuntimeError("Database::injectServerError - number of failed gNBs exceeds total gNBs!");
+
+        while (failedGnbs_.size() < numFailedGnbs)
         {
             // randomly select a gNB index from gnbNodeIdx_
             auto it = gnbNodeIdx_.begin();

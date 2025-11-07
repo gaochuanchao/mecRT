@@ -502,13 +502,15 @@ void NodeInfo::handleNodeStatusTimer()
     {
         // check if the time is too early (the NEXT_SCHEDULING_TIME might be updated by other global scheduler)
         double nextUpdateTime = NEXT_SCHEDULING_TIME - appStopInterval_;
-        if (simTime() < nextUpdateTime)
-        {
-            EV << "NodeInfo:handleNodeStatusTimer - the time is too early to send RSU status update, reschedule rsuStatusTimer at "
-                << nextUpdateTime << "\n";
-            scheduleAt(nextUpdateTime, rsuStatusTimer_);
-            return;
-        }
+
+        // TODO: adjust multiple global schedulers synchronization mechanism to avoid this check
+        // if (simTime() < nextUpdateTime)
+        // {
+        //     EV << "NodeInfo:handleNodeStatusTimer - the time is too early to send RSU status update, reschedule rsuStatusTimer at "
+        //         << nextUpdateTime << "\n";
+        //     scheduleAt(nextUpdateTime, rsuStatusTimer_);
+        //     return;
+        // }
 
         if (gnbMac_)
             gnbMac_->mecRecoverRsuStatus();

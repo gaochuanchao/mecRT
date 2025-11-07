@@ -220,16 +220,20 @@ void Scheduler::handleMessage(cMessage *msg)
         if (!strcmp(msg->getName(), "ScheduleStart"))
         {
             /***
+             * TODO: consider how to synchronize multiple global schedulers
+             * currently this does not work, as the scheduling time may be updated by other global scheduler
+             * this scheduler might never been executed if the scheduling time is always updated to a future time
+             *
              * check if the NEXT_SCHEDULING_TIME has been updated by other global scheduler
              * if so, then reschedule the scheduling start time
              */
-            if (simTime() < NEXT_SCHEDULING_TIME)
-            {
-                scheduleAt(NEXT_SCHEDULING_TIME, schedStarter_);
-                EV << NOW << " Scheduler::handleMessage - the NEXT_SCHEDULING_TIME has been updated by other global scheduler!\n"
-                    << "\t the scheduled time is not reached, re-schedule at " << NEXT_SCHEDULING_TIME << endl;
-                return;
-            }
+            // if (simTime() < NEXT_SCHEDULING_TIME)
+            // {
+            //     scheduleAt(NEXT_SCHEDULING_TIME, schedStarter_);
+            //     EV << NOW << " Scheduler::handleMessage - the NEXT_SCHEDULING_TIME has been updated by other global scheduler!\n"
+            //         << "\t the scheduled time is not reached, re-schedule at " << NEXT_SCHEDULING_TIME << endl;
+            //     return;
+            // }
             
             /***
              * if a service stop command is sent, need to wait for the service stop feedback to update the RSU status
@@ -270,7 +274,11 @@ void Scheduler::handleMessage(cMessage *msg)
 
             if (periodicScheduling_)
             {
-                NEXT_SCHEDULING_TIME = NEXT_SCHEDULING_TIME + schedulingInterval_.dbl();
+                // make sure the NEXT_SCHEDULING_TIME has not been updated by other global scheduler
+                // add 1 second margin to avoid starvation
+                if (NOW + 1 > NEXT_SCHEDULING_TIME) 
+                    NEXT_SCHEDULING_TIME = NEXT_SCHEDULING_TIME + schedulingInterval_.dbl();
+
                 scheduleAt(NEXT_SCHEDULING_TIME, schedStarter_);
                 scheduleAt(NEXT_SCHEDULING_TIME - appStopInterval_.dbl(), preSchedCheck_);
                 EV << NOW << " Scheduler::handleMessage - next scheduling time: " << NEXT_SCHEDULING_TIME << endl;
@@ -288,23 +296,24 @@ void Scheduler::handleMessage(cMessage *msg)
              * into several parts due to some links or nodes failure. In this case, we need to check if we have reached
              * the latest NEXT_SCHEDULING_TIME - appStopInterval_.
              */
-            if (simTime() < NEXT_SCHEDULING_TIME - appStopInterval_)
-            {
-                scheduleAt(NEXT_SCHEDULING_TIME - appStopInterval_, preSchedCheck_);
-                EV << NOW << " Scheduler::handleMessage - the NEXT_SCHEDULING_TIME has been updated by other global scheduler!\n"
-                    << "\t the updated pre-scheduling check time is not reached, re-schedule at " 
-                    << NEXT_SCHEDULING_TIME - appStopInterval_ << endl;
+            // commenting out the following code to avoid starvation issue
+            // if (simTime() < NEXT_SCHEDULING_TIME - appStopInterval_)
+            // {
+            //     scheduleAt(NEXT_SCHEDULING_TIME - appStopInterval_, preSchedCheck_);
+            //     EV << NOW << " Scheduler::handleMessage - the NEXT_SCHEDULING_TIME has been updated by other global scheduler!\n"
+            //         << "\t the updated pre-scheduling check time is not reached, re-schedule at " 
+            //         << NEXT_SCHEDULING_TIME - appStopInterval_ << endl;
                 
-                // also reset the schedule start timer
-                if (schedStarter_->isScheduled())
-                {
-                    cancelEvent(schedStarter_);
-                    scheduleAt(NEXT_SCHEDULING_TIME, schedStarter_);
-                    EV << NOW << " Scheduler::handleMessage - re-schedule the scheduling start time at " 
-                        << NEXT_SCHEDULING_TIME << endl;
-                }
-                return;
-            }
+            //     // also reset the schedule start timer
+            //     if (schedStarter_->isScheduled())
+            //     {
+            //         cancelEvent(schedStarter_);
+            //         scheduleAt(NEXT_SCHEDULING_TIME, schedStarter_);
+            //         EV << NOW << " Scheduler::handleMessage - re-schedule the scheduling start time at " 
+            //             << NEXT_SCHEDULING_TIME << endl;
+            //     }
+            //     return;
+            // }
             
             // check if the stop time is reached for the allocated applications
             for (AppId appId : allocatedApps_)
