@@ -130,8 +130,6 @@ class Server : public omnetpp::cSimpleModule
 
     virtual void handleMessage(omnetpp::cMessage *msg) override;
 
-    virtual void handleLostServiceFeedback(inet::Packet *pkt);
-
     virtual void handleServiceInitComplete();
 
     virtual void handleAppData(inet::Packet *pkt);
@@ -140,7 +138,7 @@ class Server : public omnetpp::cSimpleModule
 
     virtual void handleRsuFeedback(inet::Packet *pkt);
 
-    virtual void handleSeviceFeedback(omnetpp::cMessage *msg);
+    virtual void handleServiceFeedback(omnetpp::cMessage *msg);
 
     virtual void sendGrant2OffloadingNic(AppId appId, bool isStop);
 

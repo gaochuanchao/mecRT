@@ -47,6 +47,7 @@ simple Database
         bool serverErrorInjection = default(false);
         double serverErrorProb = default(0.0);
         double failureRecoveryInterval @unit(s) = default(30s); // time for failure recovery
+        bool routeUpdate = default(true); // whether to update routes after failures
 
         @display("i=block/cogwheel");
 }

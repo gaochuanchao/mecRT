@@ -156,7 +156,7 @@ class MecOspf : public omnetpp::cSimpleModule
     virtual void processHello(Packet *packet); // handle incoming Hello
 
 	// ====== LSA protocol (not used now) ======
-    virtual void handleLsaTimer();                                 // handle LSA timer firing
+    virtual void handleSelfLsaTimer();                                 // handle LSA timer firing
 	virtual void updateLsaToNetwork();                             // update our own LSA to the whole network
 	virtual void handleReceivedLsa(Packet *packet);                        // handle incoming LSA packets
     virtual void sendLsa(inet::Ptr<const OspfLsa> lsa, uint32_t neighborKey); // send LSA to a specific neighbor
@@ -182,6 +182,9 @@ class MecOspf : public omnetpp::cSimpleModule
     ~MecOspf();
 
     virtual void handleNodeFailure(); // actions in case of node failure
+    virtual void recoverFromErrors(); // actions to recover from errors
+    bool getRouteUpdate() { return routeUpdate_; }
+    void setRouteUpdate(bool val) { routeUpdate_ = val; }
 };
 
 #endif

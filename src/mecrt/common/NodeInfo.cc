@@ -180,6 +180,9 @@ void NodeInfo::initialize(int stage)
             Database* database = check_and_cast<Database*>(getSimulation()->getModuleByPath("database"));
             int indexId = getParentModule()->getIndex();
             database->registerGnbNodeInfo(indexId, this);
+            routeUpdate_ = database->getRouteUpdate();
+
+            WATCH(routeUpdate_);
         }
         
         if (enableInitDebug_)
@@ -216,6 +219,14 @@ void NodeInfo::handleMessage(omnetpp::cMessage *msg)
         }
         else if (msg == nodeDownTimer_)
         {
+            
+            if (!routeUpdate_ && isGlobalScheduler_)
+            {
+                EV << "NodeInfo:handleMessage - nodeDownTimer is triggered!\n";
+                EV << "\trouteUpdate is false and this node is the global scheduler, skip node failure\n";
+                return;
+            }
+
             handleNodeDownTimer();
 
             emit(linkStateChangedSignal, simTime().dbl());
@@ -260,6 +271,14 @@ void NodeInfo::handleMessage(omnetpp::cMessage *msg)
         msg = nullptr;
         return;
     }
+}
+
+
+void NodeInfo::recoverFromErrors()
+{
+    Enter_Method_Silent("NodeInfo::recoverFromErrors");
+    if (ospf_)
+        ospf_->recoverFromErrors();
 }
 
 

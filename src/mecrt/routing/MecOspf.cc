@@ -114,7 +114,6 @@ void MecOspf::initialize(int stage)
         helloInterval_ = par("helloInterval").doubleValue();
         neighborTimeout_ = 2 * helloInterval_; // set dead interval as 2*helloInterval
         routeComputationDelay_ = par("routeComputationDelay").doubleValue();
-        routeUpdate_ = par("routeUpdate").boolValue();
 
         simtime_t startupTime = par("startupTime");
         scheduleAfter(startupTime, helloTimer_);
@@ -123,6 +122,7 @@ void MecOspf::initialize(int stage)
         WATCH(helloInterval_);
         WATCH(neighborTimeout_);
         WATCH(routeComputationDelay_);
+        WATCH(globalSchedulerReady_);
 
         if (enableInitDebug_)
             cout << "MecOspf:initialize - stage: INITSTAGE_LOCAL - done\n";
@@ -132,12 +132,17 @@ void MecOspf::initialize(int stage)
         if (enableInitDebug_)
             cout << "MecOspf:initialize - stage: INITSTAGE_PHYSICAL_LAYER - begins\n";
         
+        routeUpdate_ = true; // default true
+
         try {
             nodeInfo_ = getModuleFromPar<NodeInfo>(par("nodeInfoModulePath"), this);
+            routeUpdate_ = nodeInfo_->getRouteUpdate();
         } catch (cException &e) {
             cerr << "MecOspf:initialize - cannot find nodeInfo module\n";
             nodeInfo_ = nullptr;
         }
+
+        WATCH(routeUpdate_);
 
         if (enableInitDebug_)
             cout << "MecOspf:initialize - stage: INITSTAGE_PHYSICAL_LAYER - nodeInfo_ found: " 
@@ -304,17 +309,12 @@ void MecOspf::handleMessage(cMessage *msg)
 void MecOspf::handleSelfTimer(cMessage *msg)
 {
     if (msg == helloTimer_)
-    {
-        if (!routeUpdate_ && globalSchedulerReady_)
-        {
-            EV_INFO << "MecOspf::handleSelfTimer - route update disabled, skip Hello sending\n";
-            return;
-        }
-        
+    {        
         EV_INFO << "MecOspf::handleSelfTimer - Hello timer fired at " << simTime() << "\n";
 
         // reschedule next Hello, continuous monitor neighbor accessibility
-        scheduleAt(simTime() + helloInterval_, helloTimer_);
+        if (routeUpdate_)
+            scheduleAt(simTime() + helloInterval_, helloTimer_);
 
         if (nodeInfo_ && !nodeInfo_->isNodeActive())    // node has become inactive, skip sending Hello
             return;
@@ -337,7 +337,7 @@ void MecOspf::handleSelfTimer(cMessage *msg)
         checkNeighborTimeouts();
 
         // update LSA if needed
-        handleLsaTimer();
+        handleSelfLsaTimer();
     }
     else if (msg == routeComputationTimer_)
     {
@@ -353,15 +353,15 @@ void MecOspf::handleSelfTimer(cMessage *msg)
 }
 
 
-void MecOspf::handleLsaTimer()
+void MecOspf::handleSelfLsaTimer()
 {
     // if neighbor change happened, send LSA to neighbors
     if (!neighborChanged_) {
-        EV << "MecOspf:handleSelfTimer - no neighbor change detected, skip LSA update\n";
+        EV << "MecOspf:handleSelfLsaTimer - no neighbor change detected, skip LSA update\n";
         return;
     }
 
-    EV << "MecOspf:handleSelfTimer - neighbor change detected, updating LSA and sending to network\n";
+    EV << "MecOspf:handleSelfLsaTimer - neighbor change detected, updating LSA and sending to network\n";
 
     seqNum_++;
 
@@ -392,7 +392,7 @@ void MecOspf::handleLsaTimer()
         scheduleAt(installTime + routeComputationDelay_, routeComputationTimer_);
         largestLsaTime_ = installTime;
 
-        EV << "MecOspf:handleSelfTimer - scheduled route recomputation at " << (installTime + routeComputationDelay_) << "\n";
+        EV << "MecOspf:handleSelfLsaTimer - scheduled route recomputation at " << (installTime + routeComputationDelay_) << "\n";
     }
     else if (routeComputationTimer_->isScheduled() && largestLsaTime_ < installTime)
     {
@@ -400,7 +400,7 @@ void MecOspf::handleLsaTimer()
         cancelEvent(routeComputationTimer_);
         scheduleAt(installTime + routeComputationDelay_, routeComputationTimer_);
 
-        EV << "MecOspf:handleSelfTimer - rescheduled route recomputation at " << (installTime + routeComputationDelay_) << "\n";
+        EV << "MecOspf:handleSelfLsaTimer - rescheduled route recomputation at " << (installTime + routeComputationDelay_) << "\n";
     }
 }
 
@@ -997,9 +997,30 @@ void MecOspf::updateAdjListToScheduler()
 }
 
 
+void MecOspf::recoverFromErrors()
+{
+    // when the route update is disabled, the routers will not be recovered automatically in the routingTable module
+    // so we need to re-enable the backhaul synchronization once for each time the system recovers from errors
+    Enter_Method_Silent("recoverFromErrors");
+
+    if (!routeUpdate_)  // need to manually re-enable once
+    {
+        EV_INFO << "MecOspf:recoverFromErrors - route update disabled, re-enabling backhaul synchronization once!\n";
+        handleNodeFailure(); // clean up state
+
+        if (nodeInfo_)
+            nodeInfo_->setGlobalSchedulerAddr(Ipv4Address::UNSPECIFIED_ADDRESS);
+
+        // trigger Hello sending to re-discover neighbors and re-synchronize
+        if (!helloTimer_->isScheduled())
+            scheduleAt(simTime(), helloTimer_);
+    }
+}
+
+
 void MecOspf::resetGlobalScheduler()
 {
-    if (globalSchedulerReady_  && routeUpdate_)
+    if (globalSchedulerReady_)
     {
         EV_INFO << "MecOspf:resetGlobalScheduler - resetting global scheduler\n";
 
@@ -1031,10 +1052,7 @@ void MecOspf::handleNodeFailure()
     neighbors_.clear();
     neighborChanged_ = true;
     topology_[routerIdKey_].clear();
-
-    if (routeUpdate_)
-        globalSchedulerReady_ = false;
-
+    globalSchedulerReady_ = false;
     schedulerAddr_ = Ipv4Address::UNSPECIFIED_ADDRESS;
 }
 

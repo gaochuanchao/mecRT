@@ -1374,26 +1374,16 @@ void GnbMac::mecHandleGrantFromRsu(omnetpp::cPacket* pktAux)
         EV << "GnbMac::handleGrantFromRsu - received stop grant for app " << appId << endl;
         // check if the app grant info exists
         // in case of a srvFD being lost, and server sends a stop grant again
-        if(!rbManagerUl_->hasAppGrantInfo(appId))   
-        {
-            Packet* packet = new Packet("SrvFD");
-            auto srvStatus = makeShared<ServiceStatus>();
-            srvStatus->setAppId(appId);
-            srvStatus->setOffloadGnbId(nodeId_);
-            srvStatus->setProcessGnbId(grant->getProcessGnbId());
-            srvStatus->setProcessGnbPort(grant->getProcessGnbPort());
-            srvStatus->setSuccess(false);
-            srvStatus->setAvailBand(rbManagerUl_->getAvailableBands());
-            srvStatus->setOffloadGnbRbUpdateTime(simTime());
-            srvStatus->setUsedBand(0);
-            srvStatus->addTag<CreationTimeTag>()->setCreationTime(simTime());
-            packet->insertAtFront(srvStatus);
+        if(rbManagerUl_->hasAppGrantInfo(appId))   
+            terminateService(appId);
 
-            mecSendDataToServer(packet, grant->getProcessGnbPort(), Ipv4Address(grant->getProcessGnbAddr()));
-            return;
-        }
+        return;
+    }
 
-        terminateService(appId);
+    // check if the global scheduler is valid
+    if (nodeInfo_->getGlobalSchedulerAddr() == Ipv4Address::UNSPECIFIED_ADDRESS)
+    {
+        EV << "GnbMac::handleGrantFromRsu - global scheduler address is unspecified, ignore the grant for app " << appId << endl;
         return;
     }
 

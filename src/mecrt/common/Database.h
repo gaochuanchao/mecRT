@@ -65,6 +65,9 @@ class Database : public omnetpp::cSimpleModule
     set<int> failedGnbs_; // store the failed gNBs
 
     omnetpp::cMessage* errorInjectionTimer_; // timer for error injection
+    double errorRecoverTime_; // record time for error recovery
+    omnetpp::cMessage* bnResyncTimer_; // timer for backhaul network resynchronization
+    bool routeUpdate_; // whether to update routes after failures
 
     // define a map for application deadline
     const map<string, double> appDeadline = {
@@ -115,6 +118,10 @@ class Database : public omnetpp::cSimpleModule
     virtual void injectLinkError();
     // inject server error
     virtual void injectServerError();
+    // recover from errors
+    virtual void recoverFromErrors();
+
+    bool getRouteUpdate() const { return routeUpdate_; }
 
     // register a gNB node info
     virtual void registerGnbNodeInfo(int gnbIndex, NodeInfo* nodeInfo);

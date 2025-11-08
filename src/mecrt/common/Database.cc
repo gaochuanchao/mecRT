@@ -57,6 +57,7 @@ void Database::initialize(int stage)
         serverErrorProb_ = par("serverErrorProb");
         numLinks_ = par("numLinks");
         failureRecoveryInterval_ = par("failureRecoveryInterval").doubleValue();
+        routeUpdate_ = par("routeUpdate").boolValue();
 
         appDataSize_.clear();
         ueExeTime_.clear();
@@ -75,6 +76,8 @@ void Database::initialize(int stage)
         errorInjectionTimer_->setSchedulingPriority(1); // set a lower priority
         scheduleAt(simTime(), errorInjectionTimer_);
 
+        bnResyncTimer_ = new omnetpp::cMessage("bnResyncTimer");
+        bnResyncTimer_->setSchedulingPriority(1); // set a lower priority
 
         WATCH(numLinks_);
         WATCH(linkErrorInjection_);
@@ -89,6 +92,7 @@ void Database::initialize(int stage)
         WATCH_SET(gnbNodeIdx_);
         WATCH_MAP(failedLinkPerGnb_);
         WATCH_SET(failedGnbs_);
+        WATCH(routeUpdate_);
 
         if (enableInitDebug_)
             std::cout << "Database::initialize - stage: INITSTAGE_LOCAL - ends" << std::endl;
@@ -110,11 +114,38 @@ void Database::handleMessage(omnetpp::cMessage *msg)
 
             // reschedule the timer for the next error injection
             scheduleAt(simTime() + failureRecoveryInterval_ * 2, errorInjectionTimer_);
+
+            if (!routeUpdate_ && !bnResyncTimer_->isScheduled())
+                scheduleAt(errorRecoverTime_, bnResyncTimer_);
+        }
+        else if (msg == bnResyncTimer_)
+        {
+            EV << "Database::handleMessage - handling self message: " << msg->getName() << endl;
+            // recover from errors
+            recoverFromErrors();
+            
+            if (simTime() < errorRecoverTime_ && !bnResyncTimer_->isScheduled())
+                scheduleAt(errorRecoverTime_, bnResyncTimer_);
         }
     }
     else
     {
         delete msg;
+    }
+}
+
+
+void Database::recoverFromErrors()
+{
+    for (const auto& entry : gnbNodeInfo_)
+    {
+        int gnbIndex = entry.first;
+        NodeInfo* gnbInfo = entry.second;
+        if (gnbInfo)
+        {
+            EV << "Database::recoverFromErrors - Recovering from errors for gNB index: " << gnbIndex << endl;
+            gnbInfo->recoverFromErrors();
+        }
     }
 }
 
@@ -151,6 +182,8 @@ void Database::injectLinkError()
                 double failedTime = simTime().dbl() + failureRecoveryInterval_;
                 double recoverTime = failedTime + failureRecoveryInterval_;
                 gnbInfo->injectLinkError(numFailedLinks, failedTime, recoverTime);
+
+                errorRecoverTime_ = recoverTime;
             }
         }
     }
@@ -186,6 +219,8 @@ void Database::injectServerError()
                 double failedTime = simTime().dbl() + failureRecoveryInterval_;
                 double recoverTime = failedTime + failureRecoveryInterval_;
                 gnbInfo->injectNodeError(failedTime, recoverTime);
+
+                errorRecoverTime_ = recoverTime;
             }
         }
     }

@@ -204,6 +204,7 @@ void Scheduler::initialize(int stage)
         WATCH_SET(appsWaitInitFb_);
         WATCH(localPort_);
         WATCH(socketId_);
+        WATCH_SET(appsWaitStopFb_);
 
         if (enableInitDebug_)
             std::cout << "Scheduler::initialize - stage: INITSTAGE_LAST - ends" << std::endl;
@@ -898,7 +899,7 @@ void Scheduler::removeOutdatedInfo()
     }
 
     // ======== remove the RSU that is outdated ============
-    set<MacNodeId> rsuToRemove = set<MacNodeId>();
+    // set<MacNodeId> rsuToRemove = set<MacNodeId>();
     for (auto &res : rsuStatus_)
     {        
         MacNodeId rsuId = res.first;
@@ -911,17 +912,17 @@ void Scheduler::removeOutdatedInfo()
         if (simTime() - lastCmpUpdateTime > 2 * appStopInterval_)
             res.second.cmpUnits = 0;  // the computing unit may be turned off, so set the cmpUnits to 0
 
-        if ((simTime() - lastBandUpdateTime > 2 * appStopInterval_) && (simTime() - lastCmpUpdateTime > 2 * appStopInterval_))
-        {
-            EV << NOW << " Scheduler::removeOutdatedInfo - RSU[nodeId=" << rsuId << "] status expired, remove the RSU info" << endl;
-            rsuToRemove.insert(rsuId);
-        }
+        // if ((simTime() - lastBandUpdateTime > 2 * appStopInterval_) && (simTime() - lastCmpUpdateTime > 2 * appStopInterval_))
+        // {
+        //     EV << NOW << " Scheduler::removeOutdatedInfo - RSU[nodeId=" << rsuId << "] status expired, remove the RSU info" << endl;
+        //     rsuToRemove.insert(rsuId);
+        // }
     }
 
-    for (MacNodeId rsuId : rsuToRemove)
-    {
-        rsuStatus_.erase(rsuId);
-    }
+    // for (MacNodeId rsuId : rsuToRemove)
+    // {
+    //     rsuStatus_.erase(rsuId);
+    // }
 }
 
 

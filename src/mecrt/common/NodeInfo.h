@@ -90,6 +90,7 @@ class NodeInfo : public omnetpp::cSimpleModule
         double nodeRecoverTime_; // time when the node is up
         // int failedIfId_; // the interface id that is down, -1 means no interface is down
         vector<int> failedIfIds_; // set of interface ids that are down, used for link failure simulation
+        bool routeUpdate_ = true; // whether the routing protocol should update routes upon topology changes
 
         omnetpp::simsignal_t linkStateChangedSignal;
 
@@ -170,8 +171,10 @@ class NodeInfo : public omnetpp::cSimpleModule
         virtual void updateAdjListToScheduler(map<MacNodeId, map<MacNodeId, double>>& adjList);
 
         // error injection related methods
-        void injectLinkError(int numFailedLinks, double failedTime, double recoverTime);
-        void injectNodeError(double failedTime, double recoverTime);
+        virtual void injectLinkError(int numFailedLinks, double failedTime, double recoverTime);
+        virtual void injectNodeError(double failedTime, double recoverTime);
+        virtual void recoverFromErrors();
+        bool getRouteUpdate() const { return routeUpdate_; }
 };
 
 #endif /* _MECRT_COMMON_NODEINFO_H_ */
@@ -187,6 +190,9 @@ class NodeInfo : public omnetpp::cSimpleModule
  *      - get: GnbMac, INITSTAGE_LAST
  * int npcSocketId_;
  *      - set: NodePacketController, INITSTAGE_APPLICATION_LAYER
+ * bool routeUpdate_;
+ *     - set: read from Database module, INITSTAGE_PHYSICAL_ENVIRONMENT
+ *     - get: MecOspf, INITSTAGE_PHYSICAL_LAYER
  *
  * // =========== Wireless NIC module related ===========
  * MacNodeId nodeId_;

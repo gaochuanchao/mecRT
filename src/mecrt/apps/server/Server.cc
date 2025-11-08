@@ -190,15 +190,12 @@ void Server::handleMessage(cMessage *msg)
 
             if (pktGrant->getStart() && (grantedService_.find(appId) == grantedService_.end()))
             {
-                initializeService(pktGrant);
+                if (nodeInfo_->getGlobalSchedulerAddr() != Ipv4Address::UNSPECIFIED_ADDRESS)
+                    initializeService(pktGrant);
             }
             else if (pktGrant->getStop() && (grantedService_.find(appId) != grantedService_.end()))
             {
                 stopService(appId);
-            }
-            else if (pktGrant->getStop() && (grantedService_.find(appId) == grantedService_.end()) && (pktGrant->getProcessGnbId() == gnbId_))
-            {
-                handleLostServiceFeedback(pkt);
             }
             
             delete msg;
@@ -206,7 +203,15 @@ void Server::handleMessage(cMessage *msg)
             return;
         }
         else if(!strcmp(msg->getName(), "SrvFD")){
-            handleSeviceFeedback(msg);
+            if (nodeInfo_->getGlobalSchedulerAddr() == Ipv4Address::UNSPECIFIED_ADDRESS)
+            {
+                EV << "Server::handleMessage - global scheduler address is unspecified, ignore the service feedback\n";
+                delete msg;
+                msg = nullptr;
+                return;
+            }
+
+            handleServiceFeedback(msg);
         }
         else if (!strcmp(msg->getName(), "AppData"))
         {
@@ -224,42 +229,6 @@ void Server::handleMessage(cMessage *msg)
             msg = nullptr;
             return;
         }
-    }
-}
-
-
-void Server::handleLostServiceFeedback(inet::Packet *pkt)
-{
-    auto pktGrant = pkt->popAtFront<Grant2Rsu>();
-    AppId appId = pktGrant->getAppId();
-    
-    // the previous service feedback for service stop is lost
-    Packet* packet = new Packet("SrvFD");
-    auto srvStatus = makeShared<ServiceStatus>();
-    srvStatus->setAppId(appId);
-    srvStatus->setOffloadGnbId(pktGrant->getOffloadGnbId());
-    srvStatus->setProcessGnbId(pktGrant->getProcessGnbId());
-    srvStatus->setProcessGnbPort(localPort_);
-    srvStatus->setSuccess(false);
-    srvStatus->setAvailBand(0);
-    srvStatus->setOffloadGnbRbUpdateTime(simTime());
-    srvStatus->setUsedBand(0);
-    srvStatus->addTag<CreationTimeTag>()->setCreationTime(simTime());
-    srvStatus->setAvailCmpUnit(cmpUnitFree_);
-    srvStatus->setProcessGnbCuUpdateTime(simTime());
-    packet->insertAtFront(srvStatus);
-
-    if (nodeInfo_->getIsGlobalScheduler())
-    {
-        EV << "Server::handleRsuFeedback - local scheduler is global scheduler, send feedback to local scheduler." << endl;
-        pkt->addTagIfAbsent<SocketInd>()->setSocketId(nodeInfo_->getLocalSchedulerSocketId());
-        send(pkt, "socketOut");
-    }
-    else 
-    {
-        EV << "Server::handleRsuFeedback - local scheduler is not global scheduler, send feedback to global scheduler " 
-        << nodeInfo_->getGlobalSchedulerAddr() << endl;
-        socket.sendTo(pkt, nodeInfo_->getGlobalSchedulerAddr(), MEC_NPC_PORT);
     }
 }
 
@@ -377,7 +346,7 @@ void Server::handleRsuFeedback(inet::Packet *pkt)
     }
 }
 
-void Server::handleSeviceFeedback(omnetpp::cMessage *msg)
+void Server::handleServiceFeedback(omnetpp::cMessage *msg)
 {
     auto pkt = check_and_cast<Packet *>(msg);
     pkt->trim();
