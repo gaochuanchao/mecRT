@@ -123,6 +123,8 @@ void Scheduler::initialize(int stage)
         vecPendingAppCountSignal_ = registerSignal("pendingAppCount");
         vecGrantedAppCountSignal_ = registerSignal("grantedAppCount");
         globalSchedulerReadySignal_ = registerSignal("globalSchedulerReady");
+        // the expected number of jobs to be offloaded per second at each scheduling period
+        expectedJobsToBeOffloadedSignal_ = registerSignal("expectedJobsToBeOffloaded"); 
         
         WATCH(cuStep_);
         WATCH(rbStep_);
@@ -781,6 +783,7 @@ void Scheduler::scheduleRequest()
 
     vecSchedule_.clear();
     double totalUtility = 0;
+    double totalOffloadCount = 0;
 
     // record the time for generating the schedule instances
     auto start = chrono::steady_clock::now();
@@ -828,6 +831,8 @@ void Scheduler::scheduleRequest()
         
         vecSchedule_.push_back(srv);
         totalUtility += srv.utility;
+        if (appInfo_[appId].period > 0)
+            totalOffloadCount += 1.0 / appInfo_[appId].period.dbl();
     }
 
     int grantedAppCount = vecSchedule_.size();
@@ -843,6 +848,7 @@ void Scheduler::scheduleRequest()
     
     emit(vecGrantedAppCountSignal_, grantedAppCount);
     emit(vecUtilitySignal_, totalUtility);
+    emit(expectedJobsToBeOffloadedSignal_, totalOffloadCount);
 }
 
 

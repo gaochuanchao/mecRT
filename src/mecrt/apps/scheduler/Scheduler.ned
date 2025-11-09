@@ -42,6 +42,7 @@ simple Scheduler like IApp
         @signal[pendingAppCount](type="int");
         @signal[grantedAppCount](type="int");
         @signal[globalSchedulerReady](type="double");   // record the time when the global scheduler is ready
+        @signal[expectedJobsToBeOffloaded](type="double"); // record the expected number of jobs to be offloaded at each scheduling period
         @statistic[schedulingTime](title="scheduling time"; source="schedulingTime"; record=vector, mean, sum);
         @statistic[schemeTime](title="scheme execution time"; source="schemeTime"; record=vector, mean, sum);
         @statistic[instanceGenerateTime](title="schedule instance generating time"; source="instanceGenerateTime"; record=vector, mean, sum);
@@ -49,6 +50,7 @@ simple Scheduler like IApp
         @statistic[pendingAppCount](title="number of apps pending to schedule"; source="pendingAppCount"; record=vector, mean, sum);
         @statistic[grantedAppCount](title="number of granted apps"; source="grantedAppCount"; record=vector, mean, sum);
         @statistic[globalSchedulerReady](title="global scheduler ready time"; source="globalSchedulerReady"; record=vector);
+        @statistic[expectedJobsToBeOffloaded](title="expected jobs to be offloaded"; source="expectedJobsToBeOffloaded"; record=vector, mean, sum);
 
     gates:
         output socketOut;

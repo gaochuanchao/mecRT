@@ -67,13 +67,53 @@ def extract_expected_utility():
     print(f"\t expected energy extraction complete.\n\t saved to: {output_csv}")
 
 
+def extract_expected_job_count():
+    scalar_name = "expectedJobsToBeOffloaded:mean"
+    output_csv = os.path.join(OUTPUT_DIR, f"expected_job_count_mean.csv")
+
+    with open(output_csv, mode='w', newline='') as csvfile:
+        csv_writer = csv.writer(csvfile)
+        csv_writer.writerow(["algorithm", "interval", "job_count"])
+
+        # Loop through .sca files in INPUT_DIR
+        for filename in os.listdir(INPUT_DIR):
+            if not filename.endswith(".sca"):
+                continue
+
+            # Parse filename parameters
+            file_match = match_pattern.search(filename)
+
+            if not file_match:
+                continue
+
+            algorithm = file_match.group(1)
+            interval = file_match.group(2)
+
+            # Read the file and extract scalar value line
+            filepath = os.path.join(INPUT_DIR, filename)
+            value = None
+            with open(filepath, 'r') as f:
+                for line in f:
+                    # line format: scalar <module> <name> <value>
+                    # e.g., scalar DeMEC.gnb[6].scheduler schemeUtility:mean 45.070333333333
+                    if line.startswith("scalar") and scalar_name in line:
+                        parts = line.strip().split()
+                        if len(parts) >= 4 and parts[2] == scalar_name and parts[3] != "-nan":
+                            value = parts[3]
+                            break  # stop after first match
+
+            csv_writer.writerow([algorithm, interval, value])
+
+    print(f"\t expected energy extraction complete.\n\t saved to: {output_csv}")
+
+
 def extract_improved_utility():
-    params_list = ["utility:sum", "meetDlPkt:sum"]
+    params_list = ["utility:sum", "meetDlPkt:sum", "jobGeneratedSinceGranted:sum"]
     output_csv = os.path.join(OUTPUT_DIR, f"improved_utility_mean.csv")
 
     with open(output_csv, mode='w', newline='') as csvfile:
         csv_writer = csv.writer(csvfile)
-        csv_writer.writerow(["algorithm", "interval", "utility:mean", "meetDlPkt:mean"])
+        csv_writer.writerow(["algorithm", "interval", "utility:mean", "meetDlPkt:mean", "jobGeneratedSinceGranted:mean"])
 
         # Loop through .vec files in INPUT_DIR
         for filename in os.listdir(INPUT_DIR):
@@ -135,15 +175,18 @@ def check_results():
 
 
 if __name__ == "__main__":
-    # print(f"\n==============================================================")
-    # print(f">>> Starting extraction...\n")
+    print(f"\n==============================================================")
+    print(f">>> Starting extraction...\n")
 
-    # print(">>> Starting extracting expected utility...")
-    # extract_expected_utility()
+    print(">>> Starting extracting expected utility...")
+    extract_expected_utility()
 
-    # print(">>> Starting extracting actual improved utility...")
-    # extract_improved_utility()
+    print(">>> Starting extracting expected job count...")
+    extract_expected_job_count()
 
-    # print(">>> All tasks completed successfully.")
+    print(">>> Starting extracting actual improved utility...")
+    extract_improved_utility()
 
-    check_results()
+    print(">>> All tasks completed successfully.")
+
+    # check_results()
