@@ -1,7 +1,7 @@
 #!/bin/bash
 cd ${MEC_WORKSPACE}/mecRT/simulations/decentralized
 
-for i in {0..3}; do  # 4 configurations
+for i in {0..0}; do  # 8 configurations
   echo "============================================="
   echo "Running configuration $i for LinkFailure"
   echo "============================================="
@@ -15,14 +15,14 @@ for i in {0..3}; do  # 4 configurations
     -l "../../src/mecrt" \
     -l "../../../simu5g/src/simu5g" \
     -l "../../../inet4.5/src/INET" \
-    omnetpp.ini \
+    omnetpp-fault.ini \
     --sim-time-limit=900s
 
   echo "Finished run $i for LinkFailure"
 done
 
 
-for i in {0..3}; do  # 4 configurations
+for i in {0..3}; do  # 8 configurations
   echo "============================================="
   echo "Running configuration $i for NodeFailure"
   echo "============================================="
@@ -36,7 +36,7 @@ for i in {0..3}; do  # 4 configurations
     -l "../../src/mecrt" \
     -l "../../../simu5g/src/simu5g" \
     -l "../../../inet4.5/src/INET" \
-    omnetpp.ini \
+    omnetpp-fault.ini \
     --sim-time-limit=900s
 
   echo "Finished run $i for NodeFailure"

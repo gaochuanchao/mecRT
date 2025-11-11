@@ -182,7 +182,7 @@ void AccuracyGraphMatch::generateScheduleInstances()
                                     break;  // if the total execution and forwarding time is too long, skip
 
                                 // determine the smallest resource blocks required to meet the deadline
-                                double offloadTimeThreshold = period - exeDelay + fwdDelay + offloadOverhead_;
+                                double offloadTimeThreshold = period - exeDelay - fwdDelay - offloadOverhead_;
                                 int minRB = computeMinRequiredRBs(vehId, offRsuId, offloadTimeThreshold, appInfo_[appId].inputSize);
                                 if (minRB > maxRB)
                                     break;  // if the minimum resource blocks required is larger than the maximum resource blocks available, break
@@ -198,7 +198,7 @@ void AccuracyGraphMatch::generateScheduleInstances()
                                 instRBs_.push_back(minRB);
                                 instCUs_.push_back(cmpUnits);
                                 instUtility_.push_back(utility);  // energy savings for the instance
-                                instMaxOffTime_.push_back(period - fwdDelay - exeDelay - offloadOverhead_);  // maximum offloading time for the instance
+                                instMaxOffTime_.push_back(offloadTimeThreshold);  // maximum offloading time for the instance
                                 instServiceType_.push_back(serviceType);  // selected service type for the instance
                                 instExeDelay_.push_back(exeDelay);  // execution delay for the instance
 

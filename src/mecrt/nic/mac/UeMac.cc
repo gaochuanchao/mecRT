@@ -47,6 +47,7 @@ UeMac::UeMac()
     ttiTick_ = nullptr; 
     enableInitDebug_ = false;
     nodeInfo_ = nullptr;
+    dupCountTimer_ = nullptr;
 }
 
 UeMac::~UeMac()
@@ -58,6 +59,12 @@ UeMac::~UeMac()
     {
         cancelAndDelete(ttiTick_);
         ttiTick_ = nullptr;
+    }
+
+    if (dupCountTimer_)
+    {
+        cancelAndDelete(dupCountTimer_);
+        dupCountTimer_ = nullptr;
     }
     
     if (enableInitDebug_)
@@ -169,6 +176,11 @@ void UeMac::initialize(int stage)
             throw cRuntimeError("UeMac::initialize - %s module found, must be LtePdcpRrcUeD2D or NRPdcpRrcUe. Aborting", pdcpType.c_str());
 
         rcvdD2DModeSwitchNotification_ = registerSignal("rcvdD2DModeSwitchNotification");
+
+        dupCount_ = 0;
+        dupCountSignal_ = registerSignal("dupCount");
+        dupCountTimer_ = new cMessage("dupCountTimer");
+        dupCountTimer_->setSchedulingPriority(1); // set a low priority
 
         if (enableInitDebug_)
             std::cout << "UeMac::initialize - stage: INITSTAGE_LOCAL - ends" << std::endl;
@@ -428,6 +440,14 @@ void UeMac::handleMessage(cMessage* msg)
             return;
         }
 
+        if (msg == dupCountTimer_)
+        {
+            EV << "UeMac::handleMessage - selfMessage: dupCountTimer_" << endl;
+            emit(dupCountSignal_, dupCount_);
+            dupCount_ = 0;
+            return;
+        }
+
         // ========== LteMacBase ==========
         // if (resAllocateMode_)
         //     vecHandleSelfMessage();
@@ -656,6 +676,11 @@ void UeMac::vecHandleVehicularGrant(cPacket* pktAux)
             {
                 EV << "\t existing grant offload gNB ID: " << existingGrant->getOffloadGnbId()
                    << ", new grant offload gNB ID: " << grant->getOffloadGnbId() << endl;
+
+                dupCount_++;
+                if (!dupCountTimer_->isScheduled())
+                    scheduleAt(simTime(), dupCountTimer_);
+
                 // delete the new grant packet
                 delete pkt;
                 pkt = nullptr;
@@ -708,6 +733,11 @@ void UeMac::vecHandleVehicularGrant(cPacket* pktAux)
             {
                 EV << "\t existing grant offload gNB ID: " << existingGrant->getOffloadGnbId()
                    << ", new grant offload gNB ID: " << grant->getOffloadGnbId() << endl;
+                
+                dupCount_++;
+                if (!dupCountTimer_->isScheduled())
+                    scheduleAt(simTime(), dupCountTimer_);
+                
                 // delete the new grant packet
                 delete pkt;
                 pkt = nullptr;

@@ -43,6 +43,10 @@ simple UeMac like LteMac
         bool usePreconfiguredTxParams = default(false);
         int d2dCqi = default(7);
         
+
+        @signal[dupCount](type="int");
+        @statistic[dupCount](title="Number of duplicated grants received"; source="dupCount"; record=vector, mean, sum);
+
         //#
         //# Statistics recording
         //#

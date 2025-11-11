@@ -28,6 +28,7 @@
 #include "mecrt/apps/scheduler/energy/SchemeGreedy.h"
 #include "mecrt/apps/scheduler/accuracy/AccuracyGreedy.h"
 #include "mecrt/apps/scheduler/accuracy/AccuracyFastSA.h"
+#include "mecrt/apps/scheduler/accuracy/AccuracyFastSANF.h"
 #include "mecrt/apps/scheduler/accuracy/AccuracyGameTheory.h"
 #include "mecrt/apps/scheduler/accuracy/AccuracyGraphMatch.h"
 
@@ -413,6 +414,8 @@ void Scheduler::initializeSchedulingScheme()
             scheme_ = new AccuracyGreedy(this);
         else if (schemeName_ == "FastSA")
             scheme_ = new AccuracyFastSA(this);
+        else if (schemeName_ == "FastSANF")
+            scheme_ = new AccuracyFastSANF(this);
         else if (schemeName_ == "GameTheory")
             scheme_ = new AccuracyGameTheory(this);
         else if (schemeName_ == "GraphMatch")

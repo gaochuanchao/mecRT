@@ -47,6 +47,10 @@ class UeMac : public NRMacUe
     virtual ~UeMac();
 
   protected:
+    // to collect the duplicated grants information
+    int dupCount_ = 0;
+    omnetpp::cMessage *dupCountTimer_;   /// start the scheduling
+    omnetpp::simsignal_t dupCountSignal_;
 
     NodeInfo *nodeInfo_;  // the node information of the vehicle
 

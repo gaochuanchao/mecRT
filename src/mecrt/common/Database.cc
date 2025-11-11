@@ -115,7 +115,7 @@ void Database::handleMessage(omnetpp::cMessage *msg)
             // reschedule the timer for the next error injection
             scheduleAt(simTime() + failureRecoveryInterval_ * 2, errorInjectionTimer_);
 
-            if (!routeUpdate_ && !bnResyncTimer_->isScheduled())
+            if (!routeUpdate_ && !bnResyncTimer_->isScheduled() && (simTime() < errorRecoverTime_))
                 scheduleAt(errorRecoverTime_, bnResyncTimer_);
         }
         else if (msg == bnResyncTimer_)
