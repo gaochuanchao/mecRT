@@ -471,14 +471,14 @@ def collect_node_recovery_time():
 
 
 if __name__ == "__main__":
-    # print("Collecting link failure data...")
-    # collect_link_failure_measured()
-    # print("Collecting node failure data...")
-    # collect_node_failure_measured()
-    # print("Collecting link recovery time data...")
-    # collect_link_recovery_time()
-    # print("Collecting node recovery time data...")
-    # collect_node_recovery_time()
+    print("Collecting link failure data...")
+    collect_link_failure_measured()
+    print("Collecting node failure data...")
+    collect_node_failure_measured()
+    print("Collecting link recovery time data...")
+    collect_link_recovery_time()
+    print("Collecting node recovery time data...")
+    collect_node_recovery_time()
     print("Collecting link failure predicted data...")
     collect_link_failure_predicted()
     print("Collecting node failure predicted data...")

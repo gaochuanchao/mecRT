@@ -42,6 +42,7 @@ class SchemeBase
     double srvTimeScale_ = 1.0; // the scale for app execution time on servers with full resource, default is 1.0
     int maxHops_ = 1; // the maximum number of hops for task forwarding in the backhaul network, default is 1
     map<MacNodeId, map<MacNodeId, int>> reachableRsus_; // {srcRsu: {reachableRsu: hops}}, the reachable RSUs within maxHops_
+    map<MacNodeId, vector<MacNodeId>> sortedReachableRsus_; // {srcRsu: [reachableRsu1, reachableRsu2, ...]}, the reachable RSUs sorted by hop counts
 
     /***
      * Protected members for scheduling

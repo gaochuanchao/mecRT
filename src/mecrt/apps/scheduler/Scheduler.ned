@@ -31,7 +31,7 @@ simple Scheduler like IApp
         // the maximum number of hops for task forwarding in the backhaul network
         // default is 1, which means the task can only be forwarded to neighboring RSUs after being offloaded
         int maxHops = default(3);
-        double virtualLinkRate = default(50000000); // the rate of the virtual link in the backhaul network, default is 50MBps
+        double virtualLinkRate = default(100000000); // the rate of the virtual link in the backhaul network, default is 100MBps
         double fairFactor = default(1.0); // the fairness factor for scheduling scheme with forwarding, default is 1.0
         string nodeInfoModulePath = default("^.nodeInfo"); // path to the NodeInfo module
 

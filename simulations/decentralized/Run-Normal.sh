@@ -1,7 +1,7 @@
 #!/bin/bash
 cd ${MEC_WORKSPACE}/mecRT/simulations/decentralized
 
-for i in {0..23}; do  # 24 configurations
+for i in {0..5}; do  # 24 configurations
   echo "=============================="
   echo "Running configuration $i"
   echo "=============================="

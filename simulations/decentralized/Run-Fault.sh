@@ -1,7 +1,7 @@
 #!/bin/bash
 cd ${MEC_WORKSPACE}/mecRT/simulations/decentralized
 
-for i in {0..0}; do  # 8 configurations
+for i in {0..7}; do  # 8 configurations
   echo "============================================="
   echo "Running configuration $i for LinkFailure"
   echo "============================================="
@@ -22,7 +22,7 @@ for i in {0..0}; do  # 8 configurations
 done
 
 
-for i in {0..3}; do  # 8 configurations
+for i in {0..7}; do  # 8 configurations
   echo "============================================="
   echo "Running configuration $i for NodeFailure"
   echo "============================================="

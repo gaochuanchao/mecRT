@@ -56,6 +56,8 @@ void SchemeBase::updateReachableRsus(const map<MacNodeId, map<MacNodeId, double>
         map<MacNodeId, int> visited; // map to store the hop count for each RSU
         q.push(src);
         visited[src] = 0; // src is reachable from itself with 0 hops
+        vector<MacNodeId> sortedRsus; // vector to store the reachable RSUs sorted by hop counts
+        sortedRsus.push_back(src);
         while (!q.empty())
         {
             MacNodeId currentRsu = q.front();
@@ -72,12 +74,14 @@ void SchemeBase::updateReachableRsus(const map<MacNodeId, map<MacNodeId, double>
                 if (visited.find(neighbor) == visited.end())
                 {
                     visited[neighbor] = currentHopCount + 1; // increment the hop count
+                    sortedRsus.push_back(neighbor);
                     q.push(neighbor);
                 }
             }
         }
         // Store the hop reachability information for the current RSU
         reachableRsus_[src] = visited;
+        sortedReachableRsus_[src] = sortedRsus;
     }
 
     // print the reachable RSUs for each RSU

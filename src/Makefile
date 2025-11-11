@@ -32,6 +32,7 @@ OBJS = \
     $O/mecrt/apps/scheduler/Scheduler.o \
     $O/mecrt/apps/scheduler/SchemeBase.o \
     $O/mecrt/apps/scheduler/accuracy/AccuracyFastSA.o \
+    $O/mecrt/apps/scheduler/accuracy/AccuracyFastSANF.o \
     $O/mecrt/apps/scheduler/accuracy/AccuracyGameTheory.o \
     $O/mecrt/apps/scheduler/accuracy/AccuracyGraphMatch.o \
     $O/mecrt/apps/scheduler/accuracy/AccuracyGreedy.o \
