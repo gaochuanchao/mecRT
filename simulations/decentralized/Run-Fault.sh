@@ -1,7 +1,27 @@
 #!/bin/bash
 cd ${MEC_WORKSPACE}/mecRT/simulations/decentralized
 
-for i in {0..7}; do  # 8 configurations
+
+echo "============================================="
+echo "Running for FailureBase"
+echo "============================================="
+
+${OMNETPP_ROOT}/bin/opp_run \
+  -r 0 \
+  -m -u Cmdenv \
+  -c FailureBase \
+  -n "../../src:..:../../../simu5g/emulation:../../../simu5g/simulations:../../../simu5g/src:../../../inet4.5/examples:../../../inet4.5/showcases:../../../inet4.5/src:../../../inet4.5/tests/validation:../../../inet4.5/tests/networks:../../../inet4.5/tutorials" \
+  --image-path "../../images:../../../inet4.5/images:../../../simu5g/images" \
+  -l "../../src/mecrt" \
+  -l "../../../simu5g/src/simu5g" \
+  -l "../../../inet4.5/src/INET" \
+  omnetpp-fault.ini \
+  --sim-time-limit=900s
+
+echo "Finished run for FailureBase"
+
+
+for i in {0..5}; do  # 6 configurations
   echo "============================================="
   echo "Running configuration $i for LinkFailure"
   echo "============================================="
@@ -22,7 +42,7 @@ for i in {0..7}; do  # 8 configurations
 done
 
 
-for i in {0..7}; do  # 8 configurations
+for i in {0..5}; do  # 6 configurations
   echo "============================================="
   echo "Running configuration $i for NodeFailure"
   echo "============================================="

@@ -114,18 +114,18 @@ void AccuracyGraphMatch::generateScheduleInstances()
                 int maxRB = floor(rsuRBs_[offRsuIndex] * fairFactor_);  // maximum resource blocks for the offload RSU
                 // find the accessible RSU from the offload RSU, {procRsuId: hopCount}, the accessible processing RSUs from the offload RSU
                 map<MacNodeId, int> accessibleProRsus = reachableRsus_[offRsuId];
-                vector<MacNodeId> sortedProRsus = sortedReachableRsus_[offRsuId];
-                for (auto procRsuId : sortedProRsus)
+                for (auto& pair : accessibleProRsus)
                 {
-                    if (rsuStatus_.find(procRsuId) == rsuStatus_.end())
+                    if (rsuStatus_.find(pair.first) == rsuStatus_.end())
                         continue;  // if not found, skip
                     
+                    int procRsuId = pair.first;
                     int procRsuIndex = rsuId2Index_[procRsuId];  // get the index of the processing RSU
                     if (rsuCUs_[procRsuIndex] <= 0)
                         continue;  // if there is no computing units available, skip
                     int maxCU = floor(rsuCUs_[procRsuIndex] * fairFactor_);  // maximum computing units for the processing RSU
                     
-                    int hopCount = accessibleProRsus[procRsuId];
+                    int hopCount = pair.second;
                     double fwdDelay = computeForwardingDelay(hopCount, appInfo_[appId].inputSize);
 
                     // if maxRB/rbStep_ is smaller than maxCU/cuStep_, enumerate RB

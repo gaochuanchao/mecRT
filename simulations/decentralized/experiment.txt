@@ -1,0 +1,30 @@
+==============================
+====== Fault Experiment ======
+==============================
+default:
+    - model DeMECFault
+    - link rate 50
+    - hop 4
+    - dlScale = 1
+
+change1:
+    - model DeMECFault
+    - link rate 100
+    - hop 4
+    - dlScale = 1.5
+
+change2:
+    - model DeMECFault
+    - link rate 100
+    - hop 1
+    - dlScale = 1.5
+
+
+default:
+    - model DeMECFault
+    - link rate 50
+    - hop 4
+    - dlScale = 1
+    - no sort for neighbor in hops
+
+==============================
