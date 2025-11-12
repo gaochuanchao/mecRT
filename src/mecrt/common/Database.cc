@@ -27,8 +27,23 @@ Database::~Database()
     if (enableInitDebug_)
         std::cout << "Database::~Database - destroying Database module\n";
 
-    // vehExeData_.clear();
-    // rsuExeTime_.clear();
+    if (errorInjectionTimer_)
+    {
+        cancelAndDelete(errorInjectionTimer_);
+        errorInjectionTimer_ = nullptr;
+    }
+
+    if (bnResyncTimer_)
+    {
+        cancelAndDelete(bnResyncTimer_);
+        bnResyncTimer_ = nullptr;
+    }
+
+    if (collectGrantedAppInfoTimer_)
+    {
+        cancelAndDelete(collectGrantedAppInfoTimer_);
+        collectGrantedAppInfoTimer_ = nullptr;
+    }
 
     if (enableInitDebug_)
         std::cout << "Database::~Database - destroying Database module done!\n";
@@ -79,6 +94,11 @@ void Database::initialize(int stage)
         bnResyncTimer_ = new omnetpp::cMessage("bnResyncTimer");
         bnResyncTimer_->setSchedulingPriority(1); // set a lower priority
 
+        collectGrantedAppInfoTimer_ = new omnetpp::cMessage("collectGrantedAppInfoTimer");
+        grantedAppUtilitySignal_ = registerSignal("databaseGrantedAppUtility");
+        grantedAppCountSignal_ = registerSignal("databaseGrantedAppCount");
+        grantedAppUtility_.clear();
+
         WATCH(numLinks_);
         WATCH(linkErrorInjection_);
         WATCH(linkErrorProb_);
@@ -93,6 +113,7 @@ void Database::initialize(int stage)
         WATCH_MAP(failedLinkPerGnb_);
         WATCH_SET(failedGnbs_);
         WATCH(routeUpdate_);
+        WATCH_MAP(grantedAppUtility_);
 
         if (enableInitDebug_)
             std::cout << "Database::initialize - stage: INITSTAGE_LOCAL - ends" << std::endl;
@@ -127,10 +148,43 @@ void Database::handleMessage(omnetpp::cMessage *msg)
             if (simTime() < errorRecoverTime_ && !bnResyncTimer_->isScheduled())
                 scheduleAt(errorRecoverTime_, bnResyncTimer_);
         }
+        else if (msg == collectGrantedAppInfoTimer_)
+        {
+            EV << "Database::handleMessage - handling self message: " << msg->getName() << endl;
+            // collect granted application information
+            double totalUtility = 0.0;
+            for (const auto& entry : grantedAppUtility_)
+            {
+                totalUtility += entry.second;
+            }
+            emit(grantedAppUtilitySignal_, totalUtility);
+            emit(grantedAppCountSignal_, grantedAppUtility_.size());
+
+            // clear the granted application utility map for the next scheduling cycle
+            grantedAppUtility_.clear();
+        }
     }
     else
     {
         delete msg;
+    }
+}
+
+
+void Database::addGrantedAppInfo(map<AppId, double>& newGrantedAppUtility)
+{
+    Enter_Method_Silent("Database::addGrantedAppInfo");
+
+    for (const auto& entry : newGrantedAppUtility)
+    {
+        grantedAppUtility_[entry.first] = entry.second;
+    }
+
+    if (!collectGrantedAppInfoTimer_->isScheduled())
+    {
+        // schedule the timer to collect granted application information after 20ms
+        // which is enough for multiple schedulers to send their granted info
+        scheduleAt(simTime() + 0.02, collectGrantedAppInfoTimer_);
     }
 }
 

@@ -40,8 +40,8 @@ vector<srvInstance> AccuracyFastSA::scheduleRequests()
     double utilityOne, utilityTwo;
 
     defineInstanceCategory();  // define the instance categories based on resource utilization
-    candidateGenerateForType({"LL", "HL", "HH"}, instIndicesOne, utilityOne);  // generate candidates for the specified type
-    candidateGenerateForType({"LH"}, instIndicesTwo, utilityTwo);  // generate candidates for the specified type
+    candidateGenerateForType({"LL", "LH", "HH"}, instIndicesOne, utilityOne);  // generate candidates for the specified type
+    candidateGenerateForType({"HL"}, instIndicesTwo, utilityTwo);  // generate candidates for the specified type
 
     // compare the two solutions and choose the one with higher utility
     if (utilityOne >= utilityTwo) 

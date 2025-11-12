@@ -69,6 +69,13 @@ class Database : public omnetpp::cSimpleModule
     omnetpp::cMessage* bnResyncTimer_; // timer for backhaul network resynchronization
     bool routeUpdate_; // whether to update routes after failures
 
+    // collect granted application information (when multiple schedulers exist, 
+    // remove the duplicates for more accurate statistics)
+    map<AppId, double> grantedAppUtility_;
+    omnetpp::cMessage* collectGrantedAppInfoTimer_;
+    omnetpp::simsignal_t grantedAppUtilitySignal_;
+    omnetpp::simsignal_t grantedAppCountSignal_;
+
     // define a map for application deadline
     const map<string, double> appDeadline = {
         {"resnet18", 0.06}, // 60ms
@@ -125,6 +132,9 @@ class Database : public omnetpp::cSimpleModule
 
     // register a gNB node info
     virtual void registerGnbNodeInfo(int gnbIndex, NodeInfo* nodeInfo);
+
+    // collect granted application information
+    void addGrantedAppInfo(map<AppId, double>& newGrantedAppUtility);
 };
 
 #endif  // _MEC_DATABASE_H_

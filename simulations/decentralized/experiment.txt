@@ -1,25 +1,9 @@
 ==============================
 ====== Fault Experiment ======
 ==============================
-default:
-    - model DeMECFault
-    - link rate 50
-    - hop 4
-    - dlScale = 1
-
-change1:
-    - model DeMECFault
-    - link rate 100
-    - hop 4
-    - dlScale = 1.5
-
-change2:
-    - model DeMECFault
-    - link rate 100
-    - hop 1
-    - dlScale = 1.5
 
 
+==========Test 1=============
 default:
     - model DeMECFault
     - link rate 50
@@ -27,4 +11,92 @@ default:
     - dlScale = 1
     - no sort for neighbor in hops
 
-==============================
+Result:
+    === Link Failure Predicted Summary ===
+    Average value for 0.1: 0.999
+    Average value for 0.2: 1.008
+    Average value for 0.25: 1.018
+    === Node Failure Predicted Summary ===
+    Average value for 0.1: 0.868
+    Average value for 0.2: 0.814
+    Average value for 0.25: 0.762
+
+==========Test 2=============
+change:
+    - set the default hop as 0
+
+Result:
+    === Link Failure Predicted Summary ===
+    Average value for 0.1: 0.926
+    Average value for 0.2: 0.935
+    Average value for 0.25: 0.943
+    === Node Failure Predicted Summary ===
+    Average value for 0.1: 0.805
+    Average value for 0.2: 0.754
+    Average value for 0.25: 0.706
+
+==========Test 3============= [looks like a good one]
+change:
+    - set the default hop as 0
+    - generate schedule instance in accending resource demand order
+
+result:
+    === Failure Performance Measured Summary ===
+    Average value for Link Failure with ratio 0.1: 0.942
+    Average value for Link Failure with ratio 0.2: 0.930
+    Average value for Link Failure with ratio 0.25: 0.951
+
+    Average value for Node Failure with ratio 0.1: 0.887
+    Average value for Node Failure with ratio 0.2: 0.854
+    Average value for Node Failure with ratio 0.25: 0.820
+
+    === Link Failure Predicted Summary ===
+    Average value for 0.1: 0.927
+    Average value for 0.2: 0.915
+    Average value for 0.25: 0.941
+    === Node Failure Predicted Summary ===
+    Average value for 0.1: 0.804
+    Average value for 0.2: 0.770
+    Average value for 0.25: 0.725
+
+
+==========Test 3=============[Most explainable]
+change:
+    - set the default hop as 0
+    - generate schedule instance in accending resource demand order
+    - exchange HL, LH
+
+results:    
+    === Failure Performance Measured Summary ===
+    Average value for Link Failure with ratio 0.1: 0.937
+    Average value for Link Failure with ratio 0.2: 0.921
+    Average value for Link Failure with ratio 0.25: 0.904
+
+    Average value for Node Failure with ratio 0.1: 0.869
+    Average value for Node Failure with ratio 0.2: 0.838
+    Average value for Node Failure with ratio 0.25: 0.788
+
+    === Link Failure Predicted Summary ===
+    Average value for 0.1: 0.923
+    Average value for 0.2: 0.929
+    Average value for 0.25: 0.945
+    === Node Failure Predicted Summary ===
+    Average value for 0.1: 0.820
+    Average value for 0.2: 0.762
+    Average value for 0.25: 0.702
+
+================ Time 2025/11/12 13:29pm =================
+new update to code:
+    - model DeMECFault
+    - link rate 50
+    - hop 4
+    - dlScale = 1
+    - no sort for neighbor in hops
+    - set the default hop as 0
+    - generate schedule instance in accending resource demand order
+    - exchange HL, LH
+    - add data collection at database
+
+
+
+

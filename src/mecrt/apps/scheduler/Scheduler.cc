@@ -774,10 +774,11 @@ void Scheduler::checkLostGrant()
 
 void Scheduler::scheduleRequest()
 {
+    map<AppId, double> appUtilityMap = map<AppId, double>();
     if (unscheduledApps_.size() == 0)
     {
         EV << NOW << " Scheduler::scheduleRequest - no request to schedule" << endl;
-
+        db_->addGrantedAppInfo(appUtilityMap);
         emit(vecPendingAppCountSignal_, 0);
         return;
     }
@@ -833,13 +834,14 @@ void Scheduler::scheduleRequest()
         }
         
         vecSchedule_.push_back(srv);
+        appUtilityMap[appId] = srv.utility;
         totalUtility += srv.utility;
-        if (appInfo_[appId].period > 0)
-            totalOffloadCount += 1.0 / appInfo_[appId].period.dbl();
+        totalOffloadCount += 1.0 / appInfo_[appId].period.dbl();
     }
 
-    int grantedAppCount = vecSchedule_.size();
+    db_->addGrantedAppInfo(appUtilityMap);
 
+    int grantedAppCount = vecSchedule_.size();
     if (!rescheduleAll_)
     {
         grantedAppCount += allocatedApps_.size();
@@ -869,9 +871,16 @@ void Scheduler::removeOutdatedInfo()
         {
             EV << NOW << " Scheduler::scheduleRequest - vehicle[nodeId=" << vehId << "] left the simulation, remove the request" << endl;
             toRemove.insert(appId);
+            continue;
         }
         simtime_t stopTime = appInfo_[appId].stopTime;
         simtime_t period = appInfo_[appId].period;
+        if (period <= 0)
+        {
+            toRemove.insert(appId);
+            EV << NOW << " Scheduler::scheduleRequest - application " << appId << " has non-positive period, remove the request" << endl;
+            continue;
+        }
         simtime_t gap = max(period, schedulingInterval_);
         if (simTime() >= (stopTime - gap))  // if the stop time is reached
         {

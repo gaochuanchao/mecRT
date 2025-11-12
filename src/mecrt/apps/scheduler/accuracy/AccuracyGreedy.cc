@@ -133,7 +133,7 @@ void AccuracyGreedy::generateScheduleInstances()
                     // if maxRB/rbStep_ is smaller than maxCU/cuStep_, enumerate RB
                     if (maxRB / rbStep_ < maxCU / cuStep_)
                     {
-                        for (int resBlocks = maxRB; resBlocks > 0; resBlocks -= rbStep_)
+                        for (int resBlocks = 1; resBlocks <= maxRB; resBlocks += rbStep_)
                         {
                             double offloadDelay = computeOffloadDelay(vehId, offRsuId, resBlocks, appInfo_[appId].inputSize);
                             if (debugMode)
@@ -142,7 +142,7 @@ void AccuracyGreedy::generateScheduleInstances()
                             }
                                 
                             if (fwdDelay + offloadDelay + offloadOverhead_ >= period)
-                                break;  // if the forwarding delay is too long, break
+                                continue;  // if the forwarding delay is too long, break
 
                             double exeDelayThreshold = period - offloadDelay - fwdDelay - offloadOverhead_;
                             // enumerate all possible service types for the application
@@ -183,17 +183,17 @@ void AccuracyGreedy::generateScheduleInstances()
                         set<string> serviceTypes = db_->getGnbServiceTypes();
                         for (const string& serviceType : serviceTypes)
                         {
-                            for (int cmpUnits = maxCU; cmpUnits > 0; cmpUnits -= cuStep_)
+                            for (int cmpUnits = 1; cmpUnits <= maxCU; cmpUnits += cuStep_)
                             {
                                 double exeDelay = computeExeDelay(procRsuId, cmpUnits, serviceType);
                                 if (exeDelay + fwdDelay + offloadOverhead_ >= period)
-                                    break;  // if the total execution and forwarding time is too long, skip
+                                    continue;  // if the total execution and forwarding time is too long, skip
 
                                 // determine the smallest resource blocks required to meet the deadline
                                 double offloadTimeThreshold = period - exeDelay - fwdDelay - offloadOverhead_;
                                 int minRB = computeMinRequiredRBs(vehId, offRsuId, offloadTimeThreshold, appInfo_[appId].inputSize);
                                 if (minRB > maxRB)
-                                    break;  // if the minimum resource blocks required is larger than the maximum resource blocks available, break
+                                    continue;  // if the minimum resource blocks required is larger than the maximum resource blocks available, continue
 
                                 double utility = computeUtility(appId, serviceType) / period;   // utility per second
                                 if (utility <= 0)   // if the saved energy is less than 0, skip
