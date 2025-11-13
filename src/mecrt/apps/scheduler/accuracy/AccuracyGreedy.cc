@@ -15,6 +15,7 @@
 //
 
 #include "mecrt/apps/scheduler/accuracy/AccuracyGreedy.h"
+#include <unordered_map>
 
 AccuracyGreedy::AccuracyGreedy(Scheduler *scheduler)
     : SchemeBase(scheduler)
@@ -230,16 +231,17 @@ vector<srvInstance> AccuracyGreedy::scheduleRequests()
         return {};  // return an empty vector if no applications are available
     }
 
-    map<int, double> instEfficiency;  // map to store the efficiency of each instance
+    // map<int, double> instEfficiency;  // map to store the efficiency of each instance
     int totalCount = instAppIndex_.size();  // total number of service instances
-    vector<int> sortedInst(totalCount, 0);  // vector to store the sorted instance indices
+    unordered_map<int, double> instEfficiency;  // map to store the efficiency of each instance
+    vector<int> sortedInst;  // vector to store the sorted instance indices
     for (int instIdx = 0; instIdx < totalCount; instIdx++)   // enumerate the service instances
     {
         double rb = instRBs_[instIdx];
         double cu = instCUs_[instIdx];
         double availableRB = rsuRBs_[instOffRsuIndex_[instIdx]];
         double availableCU = rsuCUs_[instProRsuIndex_[instIdx]];
-        sortedInst[instIdx] = instIdx;  // fill sortedInstIdx with indices from 0 to size-1
+        sortedInst.push_back(instIdx);  // initialize the sorted instance indices
         if (availableRB <= 0 || availableCU <= 0)   // if the available resources are not enough, skip
         {
             instEfficiency[instIdx] = 0;  // set efficiency to 0 if resources are not enough
