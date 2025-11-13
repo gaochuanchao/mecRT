@@ -85,18 +85,32 @@ results:
     Average value for 0.2: 0.762
     Average value for 0.25: 0.702
 
+
+
+==========================================================
 ================ Time 2025/11/12 13:29pm =================
-new update to code:
+new update to code: [Most explainable]
     - model DeMECFault
     - link rate 50
     - hop 4
     - dlScale = 1
     - no sort for neighbor in hops
     - set the default hop as 0
-    - generate schedule instance in accending resource demand order
-    - exchange HL, LH
+    - *generate schedule instance in accending resource demand order
+    - *exchange HL, LH
     - add data collection at database
 
 
-
+==========================================================
+================ Time 2025/11/12 17:56 =================
+fault-free setting
+    - model DeMECFault
+    - link rate 50
+    - hop 4
+    - dlScale = 1
+    - no sort for neighbor in hops
+    - set the default hop as 0
+    - *generate schedule instance in accending resource demand order
+    - *exchange HL, LH
+    - add data collection at database
 

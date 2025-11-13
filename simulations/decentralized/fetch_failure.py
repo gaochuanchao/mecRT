@@ -30,7 +30,7 @@ match_pattern = re.compile(r'routeUpdate-([a-zA-Z]+)-errorProb-([0-9.]+)')
 
 def collect_link_failure_predicted():
     output_csv = os.path.join(OUTPUT_DIR, f"link_failure_predicted_data.csv")
-    params_list = ["schemeUtility:vector"]
+    params_list = ["databaseGrantedAppUtility:vector"]
 
     with open(output_csv, mode='w', newline='') as csvfile:
         csv_writer = csv.writer(csvfile)
@@ -107,7 +107,7 @@ def collect_link_failure_predicted():
 
 def collect_node_failure_predicted():
     output_csv = os.path.join(OUTPUT_DIR, f"node_failure_predicted_data.csv")
-    params_list = ["schemeUtility:vector"]
+    params_list = ["databaseGrantedAppUtility:vector"]
 
     with open(output_csv, mode='w', newline='') as csvfile:
         csv_writer = csv.writer(csvfile)
@@ -338,7 +338,7 @@ def collect_node_failure_measured():
 
 def collect_failure_base_predicted():
     output_csv = os.path.join(OUTPUT_DIR, f"failure_base_predicted_data.csv")
-    params_list = ["schemeUtility:vector"]
+    params_list = ["databaseGrantedAppUtility:vector"]
 
     with open(output_csv, mode='w', newline='') as csvfile:
         csv_writer = csv.writer(csvfile)
