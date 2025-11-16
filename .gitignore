@@ -6,5 +6,6 @@ src/libmecrt.so
 simulations/vec/results/
 simulations/decentralized/results/
 out/
-simulations/decentralized/result-analysis
+simulations/decentralized/result-analysis/failure
+simulations/decentralized/result-analysis/normal
     
