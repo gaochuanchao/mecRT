@@ -561,6 +561,9 @@ void NodeInfo::setGlobalSchedulerAddr(inet::Ipv4Address addr)
             isGlobalScheduler_ = false;
             if (scheduler_)
                 scheduler_->globalSchedulerReset();
+            
+            if (hasGUI())
+                resetGlobalSchedulerIcon();
         }
 
         globalSchedulerAddr_ = addr;
@@ -585,6 +588,9 @@ void NodeInfo::setGlobalSchedulerAddr(inet::Ipv4Address addr)
         isGlobalScheduler_ = true;
         if (scheduler_)
             scheduler_->globalSchedulerInit();
+
+        if (hasGUI())
+            enableGlobalSchedulerIcon();
     }
 
     if (gnbMac_)
@@ -615,3 +621,21 @@ void NodeInfo::updateAdjListToScheduler(map<MacNodeId, map<MacNodeId, double>>& 
 }
 
 
+void NodeInfo::enableGlobalSchedulerIcon()
+{
+    /**
+     *  t[0]-text Additionaltexttodisplay
+     *  t[1]-textposition Positionofthetext.Values: left(l),right(r),top(t).Default: t
+     *  t[2]-textcolor Color of the displayed text (color name, #RRGGBBor@HHSSBB).Default:blue
+     */
+    auto& ds = getParentModule()->getDisplayString();
+    ds.setTagArg("t", 0, "GLOBAL\nSCHEDULER");
+    ds.setTagArg("t", 2, "blue");
+}
+
+
+void NodeInfo::resetGlobalSchedulerIcon()
+{
+    auto& ds = getParentModule()->getDisplayString();
+    ds.setTagArg("t", 0, "");
+}

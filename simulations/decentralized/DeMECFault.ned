@@ -43,7 +43,7 @@ network DeMECFault
         // int npcPort = default(29); // port used by the node packet controller of the gNodeB
         double scheduleInterval @unit(s) = default(1s); // in TTI, if the scheduler run periodically, specify the interval
 
-        @display("i=block/network2;bgb=1319.256,1118.4559;bgi=background/pisa");
+        @display("i=block/network2;bgb=1319.256,1118.4559;bgi=map");
     submodules:
         channelControl: LteChannelControl {
             @display("p=1211.76,22.44;is=s");

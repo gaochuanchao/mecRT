@@ -175,6 +175,10 @@ class NodeInfo : public omnetpp::cSimpleModule
         virtual void injectNodeError(double failedTime, double recoverTime);
         virtual void recoverFromErrors();
         bool getRouteUpdate() const { return routeUpdate_; }
+
+        // icon
+        virtual void enableGlobalSchedulerIcon();
+        virtual void resetGlobalSchedulerIcon();
 };
 
 #endif /* _MECRT_COMMON_NODEINFO_H_ */
