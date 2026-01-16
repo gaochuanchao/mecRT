@@ -5,3 +5,4 @@ src/libmecrt_dbg.so
 src/libmecrt.so
 simulations/vec/results/
 out/
+simulations/vec/result-analysis/

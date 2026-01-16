@@ -80,10 +80,12 @@ If using WSL2 on windows 10/11, consider additional [GUI setting](./doc/WSL2_Set
 
 ## ⚡ Quick Start
 
-**Coming Soon...**
-
 1. Run an example simulation:
-2. Modify the provided `.ini` configs to set:
+    ```bash
+    cd mecRT/simulations/vec/
+    ./run_example.sh
+    ```
+2. Modify the provided `VEComnetpp.ini` configs to set:
    - Number of UEs and ESs
    - Task periods, deadlines, and data sizes
    - Scheduling policies

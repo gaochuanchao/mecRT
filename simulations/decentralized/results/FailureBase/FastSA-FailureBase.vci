@@ -1,0 +1,1202 @@
+file 2949283 1763366879                                         
+version 3
+run FailureBase-0-20251117-16:00:11-57295
+attr configname FailureBase
+attr datetime 20251117-16:00:11
+attr datetimef 20251117-160011
+attr experiment FailureBase
+attr inifile omnetpp-fault.ini
+attr iterationvars ""
+attr iterationvarsd ""
+attr iterationvarsf ""
+attr measurement ""
+attr network mecRT.simulations.decentralized.DeMECFault
+attr processid 57295
+attr repetition 0
+attr replication #0
+attr resultdir results
+attr runnumber 0
+attr seedset 2025
+config image-path ../../images:../../../inet4.5/images:../../../simu5g/images
+config sim-time-limit 900s
+config extends Uploading
+config sim-time-limit 900s
+config seed-set 2025
+config *.ue[*].numApps 4
+config **.scheduleScheme "\"FastSA\""
+config **.scheduleInterval 10s
+config **.pilotMode "\"MAX_CQI\""
+config *.gnb[*].ospf.helloInterval 0.1s
+config output-scalar-file results/FailureBase/FastSA-FailureBase.sca
+config output-vector-file results/FailureBase/FastSA-FailureBase.vec
+config *.enableInitDebug false
+config sim-time-limit 100s
+config **.rescheduleAll true
+config *.numUe 80
+config **.srsDistanceCheck true
+config **.countExeTime true
+config **.scheduleInterval 10s
+config **.scheduleScheme "\"FastSA\""
+config **.offloadOverhead 0.001s
+config *.ue[*].macCellId 0
+config *.ue[*].masterId 0
+config *.ue[*].nrMacCellId 1
+config *.ue[*].nrMasterId 1
+config *.ue[*].ipv4.configurator.config "xmldoc(\"./demo.xml\")"
+config *.ue[*].numApps 1
+config *.ue[*].app[*].localPort "4000 + ancestorIndex(1) * 10 + index"
+config *.ue[*].udp.mtu 409600B
+config *.ue[*].app[*].dlScale 1
+config *.gnb[*].server.localPort "2000 + ancestorIndex(1) * 2"
+config *.gnb[*].scheduler.localPort "2000 + ancestorIndex(1) * 2 + 1"
+config *.gnb[*].server.cmpUnitTotal 20
+config *.gnb[*].udp.mtu 409600B
+config **.pilotMode "\"MEDIAN_CQI\""
+config *.gnb[*].ospf.helloInterval 1s
+config output-scalar-file-append false
+config network mecRT.simulations.decentralized.DeMECFault
+config warmup-period 0s
+config seed-set 12345
+config **.routingRecorder.enabled false
+config **.amcType "\"NRAmc\""
+config **.targetBler 0.01
+config **.blerShift 5
+config **.mobility.constraintAreaMaxX 1500m
+config **.mobility.constraintAreaMaxY 1500m
+config **.mobility.constraintAreaMinX 0m
+config **.mobility.constraintAreaMinY 0m
+config **.mobility.constraintAreaMinZ 0m
+config **.mobility.constraintAreaMaxZ 0m
+config **.mobility.initFromDisplayString false
+config **.lo.mtu 409600B
+config **.ip2nic.mtu 409600B
+config **.ppp.mtu 409600B
+config **.downlink_interference true
+config **.uplink_interference true
+config **.ueTxPower 50
+config **.eNodeBTxPower 1000
+config **.fbPeriod 30
+config **.srsDistanceCheck true
+config **.srsDistance 600m
+config *.carrierAggregation.numComponentCarriers 1
+config *.carrierAggregation.componentCarrier[0].carrierFrequency 2GHz
+config *.carrierAggregation.componentCarrier[0].numBands 18
+config *.carrierAggregation.componentCarrier[0].numerologyIndex 0
+config **.numRbPerBand 15
+config *.bandManager.numerologyIndex 0
+config **.collectSinrStatistics false
+config **.dynamicCellAssociation true
+config *.database.ueExeDataPath "\"./profile/jetson_classification.txt\""
+config *.database.gnbExeDataPath "\"./profile/server_classification.txt\""
+config *.database.appDataSizePath "\"./profile/imageNet_size.txt\""
+config *.database.gnbPosDataPath "\"./traffic/RSU15_xy.txt\""
+config *.database.numLinks 25
+config *.configurator.config "xmldoc(\"./demo.xml\")"
+config **.configurator.addStaticRoutes false
+config **.configurator.addDefaultRoutes false
+config **.configurator.addSubnetRoutes false
+config **.configurator.addDirectRoutes false
+config **.configurator.dumpTopology false
+config **.ipv4.routingTable.netmaskRoutes "\"\""
+
+vector 0 DeMECFault.ue[79].app[0] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 1 DeMECFault.ue[75].app[0] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 2 DeMECFault.ue[79].app[3] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 3 DeMECFault.ue[57].app[0] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 4 DeMECFault.gnb[6].scheduler globalSchedulerReady:vector ETV
+attr recordingmode vector
+attr source globalSchedulerReady
+attr title "global scheduler ready time"
+vector 5 DeMECFault.ue[67].app[0] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 6 DeMECFault.ue[50].app[1] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 7 DeMECFault.ue[75].app[2] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 8 DeMECFault.ue[67].app[3] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 9 DeMECFault.ue[79].app[1] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 10 DeMECFault.ue[50].app[0] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 11 DeMECFault.ue[69].app[3] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 12 DeMECFault.ue[23].app[3] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 13 DeMECFault.ue[79].app[2] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 14 DeMECFault.ue[23].app[1] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 15 DeMECFault.ue[57].app[3] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 16 DeMECFault.ue[57].app[2] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 17 DeMECFault.ue[50].app[2] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 18 DeMECFault.ue[75].app[3] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 19 DeMECFault.ue[69].app[2] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 20 DeMECFault.ue[23].app[2] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 21 DeMECFault.ue[67].app[2] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 22 DeMECFault.ue[67].app[1] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 23 DeMECFault.ue[50].app[3] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 24 DeMECFault.ue[69].app[1] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 25 DeMECFault.ue[69].app[0] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 26 DeMECFault.ue[75].app[1] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 27 DeMECFault.ue[57].app[1] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 28 DeMECFault.ue[23].app[0] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 29 DeMECFault.gnb[6].scheduler pendingAppCount:vector ETV
+attr recordingmode vector
+attr source pendingAppCount
+attr title "number of apps pending to schedule"
+vector 30 DeMECFault.gnb[6].scheduler instanceGenerateTime:vector ETV
+attr recordingmode vector
+attr source instanceGenerateTime
+attr title "schedule instance generating time"
+vector 31 DeMECFault.gnb[6].scheduler grantedAppCount:vector ETV
+attr recordingmode vector
+attr source grantedAppCount
+attr title "number of granted apps"
+vector 32 DeMECFault.gnb[6].scheduler schemeUtility:vector ETV
+attr recordingmode vector
+attr source schemeUtility
+attr title "total utility per second"
+vector 33 DeMECFault.gnb[6].scheduler expectedJobsToBeOffloaded:vector ETV
+attr recordingmode vector
+attr source expectedJobsToBeOffloaded
+attr title "expected jobs to be offloaded"
+vector 34 DeMECFault.gnb[6].scheduler schedulingTime:vector ETV
+attr recordingmode vector
+attr source schedulingTime
+attr title "scheduling time"
+vector 35 DeMECFault.gnb[6].scheduler schemeTime:vector ETV
+attr recordingmode vector
+attr source schemeTime
+attr title "scheme execution time"
+vector 36 DeMECFault.database databaseGrantedAppUtility:vector ETV
+attr recordingmode vector
+attr source databaseGrantedAppUtility
+attr title "granted app utility collected by database"
+vector 37 DeMECFault.database databaseGrantedAppCount:vector ETV
+attr recordingmode vector
+attr source databaseGrantedAppCount
+attr title "granted app count collected by database"
+vector 38 DeMECFault.ue[50].app[0] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 39 DeMECFault.ue[57].app[2] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 40 DeMECFault.ue[67].app[2] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 41 DeMECFault.ue[75].app[3] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 42 DeMECFault.ue[69].app[3] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 43 DeMECFault.ue[69].app[2] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 44 DeMECFault.ue[57].app[3] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 45 DeMECFault.ue[50].app[2] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 46 DeMECFault.ue[69].app[0] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 47 DeMECFault.gnb[12].server meetDlPkt:vector ETV
+attr recordingmode vector
+attr source meetDlPkt
+attr title "number of jobs meeting deadline"
+vector 48 DeMECFault.gnb[12].server utility:vector ETV
+attr recordingmode vector
+attr source utility
+attr title "utility gain"
+vector 49 DeMECFault.ue[23].app[2] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 50 DeMECFault.ue[67].app[1] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 51 DeMECFault.ue[57].app[1] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 52 DeMECFault.ue[69].app[1] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 53 DeMECFault.ue[79].app[0] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 54 DeMECFault.gnb[10].server meetDlPkt:vector ETV
+attr recordingmode vector
+attr source meetDlPkt
+attr title "number of jobs meeting deadline"
+vector 55 DeMECFault.gnb[10].server utility:vector ETV
+attr recordingmode vector
+attr source utility
+attr title "utility gain"
+vector 56 DeMECFault.gnb[3].server meetDlPkt:vector ETV
+attr recordingmode vector
+attr source meetDlPkt
+attr title "number of jobs meeting deadline"
+vector 57 DeMECFault.gnb[3].server utility:vector ETV
+attr recordingmode vector
+attr source utility
+attr title "utility gain"
+vector 58 DeMECFault.gnb[14].server meetDlPkt:vector ETV
+attr recordingmode vector
+attr source meetDlPkt
+attr title "number of jobs meeting deadline"
+vector 59 DeMECFault.gnb[14].server utility:vector ETV
+attr recordingmode vector
+attr source utility
+attr title "utility gain"
+vector 60 DeMECFault.ue[75].app[1] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 61 DeMECFault.ue[75].app[0] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 62 DeMECFault.ue[57].app[0] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 63 DeMECFault.ue[23].app[0] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 64 DeMECFault.ue[75].app[2] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 65 DeMECFault.ue[79].app[1] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 66 DeMECFault.gnb[13].server meetDlPkt:vector ETV
+attr recordingmode vector
+attr source meetDlPkt
+attr title "number of jobs meeting deadline"
+vector 67 DeMECFault.gnb[13].server utility:vector ETV
+attr recordingmode vector
+attr source utility
+attr title "utility gain"
+vector 68 DeMECFault.gnb[4].server meetDlPkt:vector ETV
+attr recordingmode vector
+attr source meetDlPkt
+attr title "number of jobs meeting deadline"
+vector 69 DeMECFault.gnb[4].server utility:vector ETV
+attr recordingmode vector
+attr source utility
+attr title "utility gain"
+vector 70 DeMECFault.ue[79].app[2] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 71 DeMECFault.gnb[11].server meetDlPkt:vector ETV
+attr recordingmode vector
+attr source meetDlPkt
+attr title "number of jobs meeting deadline"
+vector 72 DeMECFault.gnb[11].server utility:vector ETV
+attr recordingmode vector
+attr source utility
+attr title "utility gain"
+vector 73 DeMECFault.ue[79].app[3] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 74 DeMECFault.ue[67].app[0] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 75 DeMECFault.gnb[7].server meetDlPkt:vector ETV
+attr recordingmode vector
+attr source meetDlPkt
+attr title "number of jobs meeting deadline"
+vector 76 DeMECFault.gnb[7].server utility:vector ETV
+attr recordingmode vector
+attr source utility
+attr title "utility gain"
+vector 77 DeMECFault.ue[50].app[1] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 78 DeMECFault.gnb[9].server meetDlPkt:vector ETV
+attr recordingmode vector
+attr source meetDlPkt
+attr title "number of jobs meeting deadline"
+vector 79 DeMECFault.gnb[9].server utility:vector ETV
+attr recordingmode vector
+attr source utility
+attr title "utility gain"
+vector 80 DeMECFault.gnb[1].server meetDlPkt:vector ETV
+attr recordingmode vector
+attr source meetDlPkt
+attr title "number of jobs meeting deadline"
+vector 81 DeMECFault.gnb[1].server utility:vector ETV
+attr recordingmode vector
+attr source utility
+attr title "utility gain"
+vector 82 DeMECFault.ue[50].app[3] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 83 DeMECFault.gnb[0].server meetDlPkt:vector ETV
+attr recordingmode vector
+attr source meetDlPkt
+attr title "number of jobs meeting deadline"
+vector 84 DeMECFault.gnb[0].server utility:vector ETV
+attr recordingmode vector
+attr source utility
+attr title "utility gain"
+vector 85 DeMECFault.ue[23].app[3] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 86 DeMECFault.gnb[5].server meetDlPkt:vector ETV
+attr recordingmode vector
+attr source meetDlPkt
+attr title "number of jobs meeting deadline"
+vector 87 DeMECFault.gnb[5].server utility:vector ETV
+attr recordingmode vector
+attr source utility
+attr title "utility gain"
+vector 88 DeMECFault.ue[67].app[3] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 89 DeMECFault.ue[23].app[1] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 90 DeMECFault.gnb[8].server meetDlPkt:vector ETV
+attr recordingmode vector
+attr source meetDlPkt
+attr title "number of jobs meeting deadline"
+vector 91 DeMECFault.gnb[8].server utility:vector ETV
+attr recordingmode vector
+attr source utility
+attr title "utility gain"
+vector 92 DeMECFault.gnb[6].server meetDlPkt:vector ETV
+attr recordingmode vector
+attr source meetDlPkt
+attr title "number of jobs meeting deadline"
+vector 93 DeMECFault.gnb[6].server utility:vector ETV
+attr recordingmode vector
+attr source utility
+attr title "utility gain"
+vector 94 DeMECFault.ue[9].app[3] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 95 DeMECFault.ue[61].app[0] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 96 DeMECFault.ue[35].app[3] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 97 DeMECFault.ue[8].app[0] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 98 DeMECFault.ue[63].app[1] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 99 DeMECFault.ue[63].app[3] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 100 DeMECFault.ue[26].app[1] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 101 DeMECFault.ue[35].app[2] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 102 DeMECFault.ue[35].app[1] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 103 DeMECFault.ue[63].app[0] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 104 DeMECFault.ue[61].app[1] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 105 DeMECFault.ue[26].app[2] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 106 DeMECFault.ue[9].app[2] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 107 DeMECFault.ue[61].app[2] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 108 DeMECFault.ue[9].app[0] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 109 DeMECFault.ue[8].app[3] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 110 DeMECFault.ue[8].app[1] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 111 DeMECFault.ue[22].app[1] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 112 DeMECFault.ue[61].app[3] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 113 DeMECFault.ue[14].app[2] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 114 DeMECFault.ue[59].app[2] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 115 DeMECFault.ue[22].app[0] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 116 DeMECFault.ue[59].app[0] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 117 DeMECFault.ue[22].app[2] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 118 DeMECFault.ue[9].app[1] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 119 DeMECFault.ue[59].app[1] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 120 DeMECFault.ue[14].app[0] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 121 DeMECFault.ue[26].app[3] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 122 DeMECFault.ue[22].app[3] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 123 DeMECFault.ue[14].app[1] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 124 DeMECFault.ue[35].app[0] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 125 DeMECFault.ue[14].app[3] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 126 DeMECFault.ue[8].app[2] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 127 DeMECFault.ue[59].app[3] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 128 DeMECFault.ue[63].app[2] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 129 DeMECFault.ue[26].app[0] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 130 DeMECFault.ue[55].app[2] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 131 DeMECFault.ue[28].app[2] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 132 DeMECFault.ue[28].app[1] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 133 DeMECFault.ue[52].app[3] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 134 DeMECFault.ue[28].app[3] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 135 DeMECFault.ue[52].app[0] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 136 DeMECFault.ue[55].app[3] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 137 DeMECFault.ue[52].app[1] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 138 DeMECFault.ue[47].app[0] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 139 DeMECFault.ue[28].app[0] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 140 DeMECFault.ue[47].app[3] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 141 DeMECFault.ue[55].app[1] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 142 DeMECFault.ue[47].app[2] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 143 DeMECFault.ue[55].app[0] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 144 DeMECFault.ue[52].app[2] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 145 DeMECFault.ue[47].app[1] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 146 DeMECFault.ue[15].app[3] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 147 DeMECFault.ue[51].app[0] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 148 DeMECFault.ue[51].app[3] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 149 DeMECFault.ue[51].app[1] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 150 DeMECFault.ue[15].app[2] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 151 DeMECFault.ue[15].app[0] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 152 DeMECFault.ue[15].app[1] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 153 DeMECFault.ue[51].app[2] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 154 DeMECFault.ue[42].app[1] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 155 DeMECFault.ue[42].app[3] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 156 DeMECFault.ue[12].app[3] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 157 DeMECFault.ue[42].app[0] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 158 DeMECFault.ue[12].app[0] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 159 DeMECFault.ue[12].app[1] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 160 DeMECFault.ue[12].app[2] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 161 DeMECFault.ue[42].app[2] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 162 DeMECFault.ue[8].app[2] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 163 DeMECFault.ue[12].app[0] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 164 DeMECFault.ue[51].app[0] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 165 DeMECFault.ue[51].app[1] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 166 DeMECFault.ue[12].app[1] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 167 DeMECFault.ue[26].app[3] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 168 DeMECFault.ue[12].app[3] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 169 DeMECFault.ue[35].app[3] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 170 DeMECFault.ue[8].app[0] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 171 DeMECFault.ue[63].app[3] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 172 DeMECFault.ue[28].app[0] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 173 DeMECFault.ue[35].app[1] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 174 DeMECFault.ue[26].app[2] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 175 DeMECFault.ue[26].app[0] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 176 DeMECFault.ue[28].app[2] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 177 DeMECFault.ue[28].app[1] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 178 DeMECFault.ue[9].app[2] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 179 DeMECFault.ue[61].app[2] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 180 DeMECFault.ue[51].app[2] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 181 DeMECFault.ue[52].app[0] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 182 DeMECFault.ue[15].app[0] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 183 DeMECFault.ue[9].app[3] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 184 DeMECFault.ue[12].app[2] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 185 DeMECFault.ue[26].app[1] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 186 DeMECFault.ue[15].app[1] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 187 DeMECFault.ue[22].app[0] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 188 DeMECFault.ue[22].app[2] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 189 DeMECFault.ue[42].app[3] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 190 DeMECFault.ue[59].app[1] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 191 DeMECFault.ue[28].app[3] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 192 DeMECFault.ue[42].app[2] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 193 DeMECFault.ue[9].app[0] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 194 DeMECFault.ue[52].app[2] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 195 DeMECFault.ue[22].app[3] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 196 DeMECFault.ue[8].app[3] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 197 DeMECFault.ue[22].app[1] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 198 DeMECFault.ue[14].app[3] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 199 DeMECFault.ue[8].app[1] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 200 DeMECFault.ue[42].app[0] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 201 DeMECFault.ue[14].app[2] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 202 DeMECFault.ue[52].app[1] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 203 DeMECFault.ue[59].app[2] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 204 DeMECFault.ue[59].app[3] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 205 DeMECFault.ue[15].app[3] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 206 DeMECFault.ue[15].app[2] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 207 DeMECFault.ue[55].app[1] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 208 DeMECFault.ue[9].app[1] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 209 DeMECFault.ue[14].app[0] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 210 DeMECFault.ue[14].app[1] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 211 DeMECFault.ue[61].app[0] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+vector 212 DeMECFault.gnb[2].server meetDlPkt:vector ETV
+attr recordingmode vector
+attr source meetDlPkt
+attr title "number of jobs meeting deadline"
+vector 213 DeMECFault.gnb[2].server utility:vector ETV
+attr recordingmode vector
+attr source utility
+attr title "utility gain"
+vector 214 DeMECFault.gnb[7].server missDlPkt:vector ETV
+attr recordingmode vector
+attr source missDlPkt
+attr title "number of jobs missing deadline"
+vector 215 DeMECFault.ue[29].app[2] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 216 DeMECFault.ue[29].app[0] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 217 DeMECFault.ue[29].app[1] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 218 DeMECFault.ue[29].app[3] jobGenerated:vector ETV
+attr recordingmode vector
+attr source jobGenerated
+attr title "number of jobs generated"
+vector 219 DeMECFault.ue[29].app[0] jobGeneratedSinceGranted:vector ETV
+attr recordingmode vector
+attr source jobGeneratedSinceGranted
+attr title "number of jobs generated since service granted"
+0	39859 12179 1140 1697477 0.001 40.381 674 1 1 674 674
+1	52038 12179 7196 1697764 0.006 40.386 674 1 1 674 674
+2	64217 10445 7197 1698104 0.006 40.396 578 1 1 578 578
+3	74662 12179 7200 1697807 0.008 40.388 674 1 1 674 674
+4	86841 19 7267 7267 0.008 0.008 1 0.008 0.008 0.008 6.4e-05
+5	86860 10446 20327 1698183 0.009 40.399 578 1 1 578 578
+6	97306 10446 20336 1699264 0.014 40.404 578 1 1 578 578
+7	107752 12180 20337 1698024 0.014 40.394 674 1 1 674 674
+8	119932 9145 20339 1699775 0.015 40.415 506 1 1 506 506
+9	129077 12180 20340 1698073 0.015 40.395 674 1 1 674 674
+10	141257 11024 20342 1699309 0.016 40.406 578 1 1 578 578
+11	152281 9651 20350 1700025 0.022 40.422 506 1 1 506 506
+12	161932 11024 20353 1699722 0.024 40.414 578 1 1 578 578
+13	172956 12854 20354 1699272 0.024 40.404 674 1 1 674 674
+14	185810 9631 20358 1696404 0.027 40.347 505 1 1 505 505
+15	195441 9631 20359 1696405 0.027 40.347 505 1 1 505 505
+16	205072 12855 20361 1699424 0.028 40.408 674 1 1 674 674
+17	217927 9631 20363 1696436 0.029 40.349 505 1 1 505 505
+18	227558 10376 20365 1699903 0.03 40.42 578 1 1 578 578
+19	237934 11024 20368 1700026 0.032 40.422 578 1 1 578 578
+20	248958 9631 20606 1696685 0.036 40.356 505 1 1 505 505
+21	258589 12855 20607 1699786 0.036 40.416 674 1 1 674 674
+22	271444 9631 20613 1696838 0.039 40.359 505 1 1 505 505
+23	281075 12019 20840 1699919 0.04 40.42 674 1 1 674 674
+24	293094 8985 20841 1696868 0.04 40.36 505 1 1 505 505
+25	302079 11004 21135 1696967 0.041 40.361 577 1 1 577 577
+26	313083 9631 21583 1697106 0.046 40.366 505 1 1 505 505
+27	322714 11004 21587 1697131 0.049 40.369 577 1 1 577 577
+28	333718 9126 21597 1697150 0.05 40.37 505 1 1 505 505
+29	342844 103 21802 1681657 0.058 40.058 5 28 100 424 40000
+30	342947 129 21802 1681657 0.058 40.058 5 0.003488 0.010023 0.040926 0.00036423077
+31	343076 100 21802 1681657 0.058 40.058 5 28 66 291 18077
+32	343176 165 21802 1681657 0.058 40.058 5 56.690476190476 130.17845238095 572.37607142857 69700.735796499
+33	343341 165 21802 1681657 0.058 40.058 5 403.57142857143 969.64285714286 4267.8571428571 3896198.9795918
+34	343506 130 21802 1681657 0.058 40.058 5 0.004163 0.011814 0.048479 0.000510552727
+35	343636 130 21802 1681657 0.058 40.058 5 0.000675 0.001988 0.007553 1.2508515e-05
+36	343766 165 22368 1682821 0.078 40.078 5 56.690476190476 130.17845238095 572.37607142857 69700.735796499
+37	343931 100 22368 1682821 0.078 40.078 5 28 66 291 18077
+38	344031 10929 22667 1699309 0.086 40.406 573 1 1 573 573
+39	354960 12740 22715 1699424 0.088 40.408 668 1 1 668 668
+40	367700 2951 22976 293390 0.096 9.996 166 1 1 166 166
+41	370651 10286 23082 1699903 0.1 40.42 573 1 1 573 573
+42	380937 2204 24174 292557 0.102 9.942 124 1 1 124 124
+43	383141 10929 24182 1700026 0.102 40.422 573 1 1 573 573
+44	394070 2204 24288 292634 0.107 9.947 124 1 1 124 124
+45	396274 2204 24394 292672 0.109 9.949 124 1 1 124 124
+46	398478 10889 24416 1696967 0.111 40.361 571 1 1 571 571
+47	409367 40719 24444 1700053 0.114 40.422 2151 1 2 2188 2262
+48	450086 51460 24444 1700053 0.114 40.422 2151 0.1435 0.3047 316.915 47.5911207
+49	501546 9536 24447 1696685 0.116 40.356 500 1 1 500 500
+50	511082 2204 24465 292828 0.119 9.959 124 1 1 124 124
+51	513286 10909 24473 1697131 0.119 40.369 572 1 1 572 572
+52	524195 2045 24496 292845 0.12 9.96 124 1 1 124 124
+53	526240 2933 24514 292866 0.121 9.961 165 1 1 165 165
+54	529173 49238 24535 1671273 0.121 39.999 2553 1 2 2564 2586
+55	578411 62003 24535 1671273 0.121 39.999 2553 0.1128 0.2871 354.83599999999 49.893974660001
+56	640414 11045 24561 1697494 0.123 40.381 581 1 1 581 581
+57	651459 13950 24561 1697494 0.123 40.381 581 0.1611 0.1612 93.615600000001 15.08413296
+58	665409 39925 24562 1700052 0.123 40.422 2103 1 2 2113 2133
+59	705334 50430 24562 1700052 0.123 40.422 2103 0.1435 0.287 303.2485 43.93274355
+60	755764 2204 24570 292930 0.126 9.966 124 1 1 124 124
+61	757968 2933 24578 292939 0.126 9.966 165 1 1 165 165
+62	760901 12703 24600 1697807 0.128 40.388 666 1 1 666 666
+63	773604 9036 24630 1697150 0.13 40.37 500 1 1 500 500
+64	782640 2933 24675 293081 0.134 9.974 165 1 1 165 165
+65	785573 2933 24700 293103 0.135 9.975 165 1 1 165 165
+66	788506 69414 24736 1700096 0.137 40.424 3631 1 2 3659 3715
+67	857920 87563 24736 1700096 0.137 40.424 3631 0.1128 0.2563 439.95849999999 53.954004430004
+68	945483 13727 24757 1698468 0.142 40.401 728 1 2 729 731
+69	959210 17367 24757 1698468 0.142 40.401 728 0.1185 0.2797 108.3581 16.37501269
+70	976577 2933 24764 293204 0.144 9.984 165 1 1 165 165
+71	979510 57226 24793 1698095 0.144 40.395 3005 1 2 3019 3047
+72	1036736 72251 24793 1698095 0.144 40.395 3005 0.1128 0.2621 408.55849999999 56.381306370001
+73	1108987 10854 24799 1698104 0.146 40.396 569 1 1 569 569
+74	1119841 10893 24834 1698183 0.149 40.399 571 1 1 571 571
+75	1130734 24161 24877 1693761 0.151 40.296 1256 1 2 1302 1394
+76	1154895 30441 24877 1693761 0.151 40.296 1256 0.1128 0.2871 172.9034 24.72900462
+77	1185336 10912 24890 1699264 0.154 40.404 572 1 1 572 572
+78	1196248 50446 24919 1697377 0.154 40.378 2611 1 4 2887 3477
+79	1246694 63495 24919 1697377 0.154 40.378 2611 0.1128 0.5435 382.54549999999 61.742917430001
+80	1310189 17791 24920 1697698 0.154 40.384 925 1 1 925 925
+81	1327980 22416 24920 1697698 0.154 40.384 925 0.1304 0.1611 130.4376 18.49407376
+82	1350396 11878 24994 1699919 0.16 40.42 666 1 1 666 666
+83	1362274 12666 25057 1699591 0.163 40.412 664 1 1 664 664
+84	1374940 15986 25057 1699591 0.163 40.412 664 0.1612 0.1612 107.0368 17.25433216
+85	1390926 10893 25059 1699722 0.164 40.414 571 1 1 571 571
+86	1401819 21359 25085 1700078 0.165 40.423 1107 1 2 1124 1158
+87	1423178 26894 25085 1700078 0.165 40.423 1107 0.1128 0.3047 161.3942 24.23158234
+88	1450072 2187 25175 292449 0.175 9.935 123 1 1 123 123
+89	1452259 9519 25289 1696404 0.187 40.347 499 1 1 499 499
+90	1461778 41664 25525 1695276 0.199 40.309 2166 1 2 2195 2253
+91	1503442 52494 25525 1695276 0.199 40.309 2166 0.1128 0.2871 286.40009999999 38.96061519
+92	1555936 31091 26781 1699422 0.222 40.407 1611 1 2 1615 1623
+93	1587027 39142 26781 1699422 0.222 40.407 1611 0.1128 0.274 207.671 27.25405532
+94	1626169 8795 44056 1696869 1 40.36 493 1 1 493 493
+95	1634964 10153 44057 1699459 1 40.41 564 1 1 564 564
+96	1645117 10786 61835 1699559 1.002 40.412 564 1 1 564 564
+97	1655903 10786 61854 1699650 1.003 40.413 564 1 1 564 564
+98	1666689 12584 61855 1700066 1.003 40.423 658 1 1 658 658
+99	1679273 10786 61856 1699658 1.003 40.413 564 1 1 564 564
+100	1690059 9920 61890 1697078 1.004 40.364 493 1 1 493 493
+101	1699979 9920 61910 1697107 1.006 40.366 493 1 1 493 493
+102	1709899 11350 61921 1699830 1.007 40.417 564 1 1 564 564
+103	1721249 13222 61922 1697120 1.007 40.367 657 1 1 657 657
+104	1734471 9920 61936 1697129 1.009 40.369 493 1 1 493 493
+105	1744391 10718 61961 1699911 1.01 40.42 564 1 1 564 564
+106	1755109 11329 62024 1696688 1.016 40.356 563 1 1 563 563
+107	1766438 11329 62025 1696696 1.016 40.356 563 1 1 563 563
+108	1777767 13222 62029 1697340 1.017 40.377 657 1 1 657 657
+109	1790989 12408 62043 1697421 1.02 40.38 657 1 1 657 657
+110	1803397 13222 62082 1697526 1.022 40.382 657 1 1 657 657
+111	1816619 9920 62083 1697517 1.022 40.382 493 1 1 493 493
+112	1826539 13222 62084 1697534 1.022 40.382 657 1 1 657 657
+113	1839761 9920 62107 1697636 1.023 40.383 493 1 1 493 493
+114	1849681 13222 62126 1697677 1.024 40.384 657 1 1 657 657
+115	1862903 11329 62146 1697098 1.025 40.365 563 1 1 563 563
+116	1874232 9922 62174 1697806 1.028 40.388 493 1 1 493 493
+117	1884154 11329 62237 1697174 1.031 40.371 563 1 1 563 563
+118	1895483 9922 62277 1697965 1.033 40.393 493 1 1 493 493
+119	1905405 11329 62278 1697205 1.033 40.373 563 1 1 563 563
+120	1916734 13222 62299 1698025 1.034 40.394 657 1 1 657 657
+121	1929956 13222 62330 1698074 1.035 40.395 657 1 1 657 657
+122	1943178 10700 62374 1697413 1.04 40.38 563 1 1 563 563
+123	1953878 9923 62382 1698446 1.041 40.401 493 1 1 493 493
+124	1963801 9923 62383 1698454 1.041 40.401 493 1 1 493 493
+125	1973724 11331 62394 1697518 1.042 40.382 563 1 1 563 563
+126	1985055 11332 62436 1697721 1.045 40.385 563 1 1 563 563
+127	1996387 11332 62438 1697756 1.046 40.386 563 1 1 563 563
+128	2007719 9923 62442 1699410 1.047 40.407 493 1 1 493 493
+129	2017642 12566 62498 1699467 1.05 40.41 657 1 1 657 657
+130	2030208 12935 92859 1699432 2.008 40.408 641 1 1 641 641
+131	2043143 12294 92908 1699475 2.01 40.41 641 1 1 641 641
+132	2055437 12935 92931 1699666 2.013 40.413 641 1 1 641 641
+133	2068372 9707 92932 1699649 2.013 40.413 481 1 1 481 481
+134	2078079 11077 92947 1697221 2.014 40.374 549 1 1 549 549
+135	2089156 12935 92974 1699787 2.016 40.416 641 1 1 641 641
+136	2102091 9707 92987 1699829 2.017 40.417 481 1 1 481 481
+137	2111798 11079 93088 1697637 2.023 40.383 549 1 1 549 549
+138	2122877 12937 93101 1700086 2.024 40.424 641 1 1 641 641
+139	2135814 9686 93140 1696406 2.027 40.347 480 1 1 480 480
+140	2145500 12916 93141 1697121 2.027 40.367 640 1 1 640 640
+141	2158416 11080 93209 1697925 2.031 40.391 549 1 1 549 549
+142	2169496 12916 93211 1697203 2.032 40.372 640 1 1 640 640
+143	2182412 9686 93244 1696686 2.036 40.356 480 1 1 480 480
+144	2192098 12916 93280 1697382 2.039 40.379 640 1 1 640 640
+145	2205014 9686 93450 1697130 2.049 40.369 480 1 1 480 480
+146	2214700 12617 120458 1697765 3.006 40.386 624 1 1 624 624
+147	2227317 10818 120627 1698124 3.017 40.397 535 1 1 535 535
+148	2238135 8900 120656 1697412 3.02 40.38 468 1 1 468 468
+149	2247035 10818 120688 1699229 3.023 40.403 535 1 1 535 535
+150	2257853 8995 120809 1697851 3.03 40.39 468 1 1 468 468
+151	2266848 12617 120900 1699838 3.037 40.417 624 1 1 624 624
+152	2279465 12619 121039 1700087 3.044 40.424 624 1 1 624 624
+153	2292084 10797 121047 1696697 3.046 40.356 534 1 1 534 534
+154	2302881 9236 148513 1699446 4.009 40.409 456 1 1 456 456
+155	2312117 12294 148533 1697175 4.011 40.371 607 1 1 607 607
+156	2324411 8689 148618 1699902 4.02 40.42 456 1 1 456 456
+157	2333100 12294 148664 1697535 4.022 40.382 607 1 1 607 607
+158	2345394 12294 148698 1697729 4.025 40.385 607 1 1 607 607
+159	2357688 12294 148856 1698033 4.034 40.394 607 1 1 607 607
+160	2369982 9215 149003 1697033 4.042 40.362 455 1 1 455 455
+161	2379197 10532 149068 1697332 4.047 40.377 520 1 1 520 520
+162	2389729 8836 302220 1697721 10.075 40.385 431 1 1 431 431
+163	2398565 10312 302444 1697729 10.085 40.385 503 1 1 503 503
+164	2408877 8836 302548 1698124 10.087 40.397 431 1 1 431 431
+165	2417713 8836 302994 1699229 10.093 40.403 431 1 1 431 431
+166	2426549 10291 303313 1698033 10.094 40.394 502 1 1 502 502
+167	2436840 10291 303627 1698074 10.095 40.395 502 1 1 502 502
+168	2447131 7276 303735 1699902 10.1 40.42 377 1 1 377 377
+169	2454407 8836 304912 1699559 10.102 40.412 431 1 1 431 431
+170	2463243 8836 304983 1699650 10.103 40.413 431 1 1 431 431
+171	2472079 8836 304991 1699658 10.103 40.413 431 1 1 431 431
+172	2480915 7708 305193 1696406 10.107 40.347 376 1 1 376 376
+173	2488623 8836 305201 1699830 10.107 40.417 431 1 1 431 431
+174	2497459 8352 305692 1699911 10.11 40.42 431 1 1 431 431
+175	2505811 9770 305700 1699467 10.11 40.41 501 1 1 501 501
+176	2515581 9770 305708 1699475 10.11 40.41 501 1 1 501 501
+177	2525351 10271 305799 1699666 10.113 40.413 501 1 1 501 501
+178	2535622 8815 305831 1696688 10.116 40.356 430 1 1 430 430
+179	2544437 8815 305839 1696696 10.116 40.356 430 1 1 430 430
+180	2553252 8836 305847 1696697 10.116 40.356 431 1 1 431 431
+181	2562088 10292 305856 1699787 10.116 40.416 502 1 1 502 502
+182	2572380 10292 305917 1699838 10.117 40.417 502 1 1 502 502
+183	2582672 7226 305968 1696869 10.12 40.36 376 1 1 376 376
+184	2589898 7708 306021 1697033 10.122 40.362 376 1 1 376 376
+185	2597606 7708 306050 1697078 10.124 40.364 376 1 1 376 376
+186	2605314 10293 306059 1700087 10.124 40.424 502 1 1 502 502
+187	2615607 8794 306084 1697098 10.125 40.365 429 1 1 429 429
+188	2624401 8794 306191 1697174 10.131 40.371 429 1 1 429 429
+189	2633195 10251 306199 1697175 10.131 40.371 500 1 1 500 500
+190	2643446 8773 306235 1697205 10.133 40.373 428 1 1 428 428
+191	2652219 8773 306260 1697221 10.134 40.374 428 1 1 428 428
+192	2660992 8795 306315 1697332 10.137 40.377 429 1 1 429 429
+193	2669787 10271 306323 1697340 10.137 40.377 501 1 1 501 501
+194	2680058 10251 306370 1697382 10.139 40.379 500 1 1 500 500
+195	2690309 8316 306398 1697413 10.14 40.38 429 1 1 429 429
+196	2698625 9649 306406 1697421 10.14 40.38 501 1 1 501 501
+197	2708274 7708 306452 1697517 10.142 40.382 376 1 1 376 376
+198	2715982 8775 306460 1697518 10.142 40.382 428 1 1 428 428
+199	2724757 10271 306468 1697526 10.142 40.382 501 1 1 501 501
+200	2735028 10251 306477 1697535 10.142 40.382 500 1 1 500 500
+201	2745279 7708 306549 1697636 10.143 40.383 376 1 1 376 376
+202	2752987 8754 306557 1697637 10.143 40.383 427 1 1 427 427
+203	2761741 10251 306593 1697677 10.144 40.384 500 1 1 500 500
+204	2771992 8754 306681 1697756 10.146 40.386 427 1 1 427 427
+205	2780746 10271 306690 1697765 10.146 40.386 501 1 1 501 501
+206	2791017 7333 306795 1697851 10.15 40.39 376 1 1 376 376
+207	2798350 8816 306823 1697925 10.151 40.391 430 1 1 430 430
+208	2807166 7709 306905 1697965 10.153 40.393 376 1 1 376 376
+209	2814875 10250 306926 1698025 10.154 40.394 500 1 1 500 500
+210	2825125 7709 307128 1698446 10.161 40.401 376 1 1 376 376
+211	2832834 8335 307343 1699459 10.17 40.41 430 1 1 430 430
+212	2841169 32859 307450 1699592 10.172 40.412 1598 1 2 1651 1757
+213	2874028 40849 307450 1699592 10.172 40.412 1598 0.0878 0.2797 213.20769999999 30.05327299
+214	2914877 260 352574 352586 11.165 11.165 13 1 1 13 13
+215	2915137 6811 482272 1699263 14.004 40.404 331 1 1 331 331
+216	2921948 7778 482346 1698132 14.007 40.397 378 1 1 378 378
+217	2929726 6790 483278 1696687 14.036 40.356 330 1 1 330 330
+218	2936516 6790 483507 1696966 14.041 40.361 330 1 1 330 330
+219	2943306 5976 770831 1698132 20.167 40.397 288 1 1 288 288
+

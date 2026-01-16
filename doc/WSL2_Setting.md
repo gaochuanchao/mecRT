@@ -1,44 +1,28 @@
 ## WSL2 Configuration
 
-### 1. Configure all GUI apps using WSLg
+### Setting up GUI apps in WSL2
+By default, WSL2 supports GUI apps using WSLg (Wayland). However, some GUI apps may not work well with WSLg's scaling features. This section provides instructions to configure all GUI apps to use vcXsrv.
 
-Add the following to the **end of your `~/.bashrc`**:
+#### Setting up vcXsrv
+```bash
+WindowMode="MultiWindow" Display="-1" ClientMode="NoClient" Clipboard="True" ClipboardPrimary="True" Wgl="True" DisableAC="True" 
+```
+
+#### Configuring GUI apps setting in .bashrc
 
 ```bash
-# Force WSLg environment
-export DISPLAY=:0
-export WAYLAND_DISPLAY=wayland-0
-export XDG_RUNTIME_DIR=/mnt/wslg/runtime-dir
-export QT_QPA_PLATFORM=wayland
-```
-
-If you also want `sudo` GUI apps to work, add these variables to `sudoers`:
-
-```
-sudo visudo
-```
-
-Add:
-
-```
-Defaults env_keep += "DISPLAY WAYLAND_DISPLAY XDG_RUNTIME_DIR QT_QPA_PLATFORM"
-```
-
-### 2. Configure all GUI apps using X11
-
-Add the following to the **end of your `~/.bashrc`**:
-
-```bash
-# --- Force all GUI apps to X11 + scaling ---
-# GTK apps (Firefox, Gedit, etc.)
+# For GTK apps (Firefox, Gedit, etc.)
 export GDK_BACKEND=x11
-export GDK_SCALE=1
+export GDK_SCALE=2  # for high-DPI displays, set to 1 for normal DPI
 export GDK_DPI_SCALE=1
-# Qt apps (OMNeT++, Sublime, etc.)
+# For Qt apps (OMNeT++, Sublime, etc.)
 export QT_QPA_PLATFORM=xcb
-# export QT_AUTO_SCREEN_SCALE_FACTOR=0
-# export QT_ENABLE_HIGHDPI_SCALING=0
-# export QT_SCALE_FACTOR=1
+
+# --- using VcXsrv ---
+export DISPLAY=$(grep nameserver /etc/resolv.conf | awk '{print $2}'):0.0
+export LIBGL_ALWAYS_INDIRECT=1
+export LIBGL_ALWAYS_SOFTWARE=true
+export QT_WA_DontShowOnScreen=1
 ```
 
 (optional) If you also want `sudo` GUI apps to work, add these variables to `sudoers`:
@@ -50,6 +34,29 @@ sudo visudo
 Add:
 
 ```
-Defaults	env_keep += "QT_QPA_PLATFORM GDK_BACKEND GDK_SCALE GDK_DPI_SCALE DISPLAY XAUTHORITY"
+Defaults env_keep += "DISPLAY LIBGL_ALWAYS_INDIRECT LIBGL_ALWAYS_SOFTWARE QT_WA_DontShowOnScreen GDK_BACKEND GDK_SCALE GDK_DPI_SCALE QT_QPA_PLATFORM XAUTHORITY"
 ```
 
+
+### matplotlib configuration in WSL2
+To use matplotlib in WSL2 with vcXsrv, you need to set the backend to 'Qt5Agg'. 
+
+Add the following lines to your matplotlib configuration file (`~/.config/matplotlib/matplotlibrc`):
+
+```
+backend : Qt5Agg
+```
+
+or in the beginning of your Python script before importing `matplotlib.pyplot`:
+
+```python
+import matplotlib
+matplotlib.use('Qt5Agg')
+```
+
+Make sure you have the necessary Qt5 packages installed in your WSL2 environment:
+
+```bash
+sudo apt-get install python3-pyqt5
+```
+This configuration ensures that matplotlib uses the Qt5 backend, which is compatible with vcXsrv for rendering plots.

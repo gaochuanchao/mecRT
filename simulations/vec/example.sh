@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Set environment variables
-export DISPLAY="${DISPLAY}"
-export LIBGL_ALWAYS_INDIRECT=1
+# export DISPLAY="${DISPLAY}"
+# export LIBGL_ALWAYS_INDIRECT=1
 
 # Change to working directory
 cd ${MEC_WORKSPACE}/mecRT/simulations/vec
