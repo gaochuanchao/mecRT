@@ -7,6 +7,11 @@
 <img src="./doc/assets/architecture.png" alt="architecture" style="zoom:20%;" />
 </center>
 
+
+<center>
+<img src="./doc/assets/demo_compressed.gif" alt="architecture" style="zoom:15%;" />
+</center>
+
 ---
 
 ## 🔍 Why mecRT?  
@@ -84,7 +89,23 @@ If using WSL2 on windows 10/11, consider additional [GUI setting](./doc/WSL2_Set
 **Coming Soon...**
 
 1. Run an example simulation:
-2. Modify the provided `.ini` configs to set:
+
+  1.1 Build mecRT:
+
+    ```bash
+    cd mecRT
+    make cleanall
+    make makefiles
+    make -j8
+    ```
+  1.2 Run the example scenario:
+
+    ```bash
+    cd mecRT/simulations/decentralized/
+    ./examples.sh
+    ```
+
+2. Modify the provided `omnetpp.ini` configs to set:
    - Number of UEs and ESs
    - Task periods, deadlines, and data sizes
    - Scheduling policies
