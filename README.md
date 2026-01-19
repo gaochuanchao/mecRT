@@ -9,7 +9,7 @@
 
 
 <center>
-<img src="./doc/assets/demo_compressed.gif" alt="architecture" style="zoom:15%;" />
+<img src="./doc/assets/demo-gif.gif" alt="architecture" style="zoom:20%;" />
 </center>
 
 ---
