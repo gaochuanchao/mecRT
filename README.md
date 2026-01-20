@@ -7,9 +7,8 @@
 <img src="./doc/assets/architecture.png" alt="architecture" style="zoom:20%;" />
 </center>
 
-
 <div align="center">
-<video src="./doc/assets/demo.mp4" width="400" />
+<video src="https://github.com/user-attachments/assets/474fc487-e690-4b17-913f-b5692f78f4d0" width="400" />
 </div>
 
 ---
@@ -134,4 +133,5 @@ If you use mecRT in your research, please cite:
 ## 🙏 Acknowledgements
 - This project is supported by the [MoE Tier-2 grant MOE-T2EP20221-0006](https://cps-research-group.github.io/cloud/) (Singapore) under the [NTU Cyber-Physical Systems Research Group](https://cps-research-group.github.io/).
 - Built on [**OMNeT++**](https://github.com/omnetpp/omnetpp), [**INET**](https://github.com/inet-framework/inet), and [**Simu5G**](https://github.com/Unipisa/Simu5G).
+
 
