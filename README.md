@@ -8,9 +8,9 @@
 </center>
 
 
-<center>
-<img src="./doc/assets/demo-gif.gif" alt="architecture" style="zoom:20%;" />
-</center>
+<div align="center">
+<video src="./doc/assets/demo.mp4" width="400" />
+</div>
 
 ---
 
@@ -93,16 +93,16 @@ If using WSL2 on windows 10/11, consider additional [GUI setting](./doc/WSL2_Set
   1.1 Build mecRT:
 
     ```bash
-    cd mecRT
-    make cleanall
-    make makefiles
-    make -j8
+    $ cd mecRT
+    $ make cleanall
+    $ make makefiles
+    $ make -j8
     ```
   1.2 Run the example scenario:
 
     ```bash
-    cd mecRT/simulations/decentralized/
-    ./examples.sh
+    $ cd mecRT/simulations/decentralized/
+    $ ./examples.sh
     ```
 
 2. Modify the provided `omnetpp.ini` configs to set:
