@@ -8,4 +8,6 @@ simulations/decentralized/results/
 out/
 simulations/decentralized/result-analysis/failure
 simulations/decentralized/result-analysis/normal
+simulations/decentralized/result-analysis/ablation-fwd
+simulations/decentralized/result-analysis/ablation-nd
 simulations/vec/result-analysis/

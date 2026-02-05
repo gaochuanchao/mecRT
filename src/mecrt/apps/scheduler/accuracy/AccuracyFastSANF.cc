@@ -64,7 +64,7 @@ void AccuracyFastSANF::generateScheduleInstances()
                 // if maxRB/rbStep_ is smaller than maxCU/cuStep_, enumerate RB
                 if (maxRB / rbStep_ < maxCU / cuStep_)
                 {
-                    for (int resBlocks = maxRB; resBlocks > 0; resBlocks -= rbStep_)
+                    for (int resBlocks = 1; resBlocks <= maxRB; resBlocks += rbStep_)
                     {
                         double offloadDelay = computeOffloadDelay(vehId, offRsuId, resBlocks, appInfo_[appId].inputSize);
                         if (debugMode)
@@ -114,7 +114,7 @@ void AccuracyFastSANF::generateScheduleInstances()
                     set<string> serviceTypes = db_->getGnbServiceTypes();
                     for (const string& serviceType : serviceTypes)
                     {
-                        for (int cmpUnits = maxCU; cmpUnits > 0; cmpUnits -= cuStep_)
+                        for (int cmpUnits = 1; cmpUnits <= maxCU; cmpUnits += cuStep_)
                         {
                             double exeDelay = computeExeDelay(offRsuId, cmpUnits, serviceType);
                             if (exeDelay + fwdDelay + offloadOverhead_ >= period)
@@ -163,8 +163,8 @@ vector<srvInstance> AccuracyFastSANF::scheduleRequests()
     double utilityOne, utilityTwo;
 
     defineInstanceCategory();  // define the instance categories based on resource utilization
-    candidateGenerateForType({"LL", "HL", "HH"}, instIndicesOne, utilityOne);  // generate candidates for the specified type
-    candidateGenerateForType({"LH"}, instIndicesTwo, utilityTwo);  // generate candidates for the specified type
+    candidateGenerateForType({"LL", "LH", "HH"}, instIndicesOne, utilityOne);  // generate candidates for the specified type
+    candidateGenerateForType({"HL"}, instIndicesTwo, utilityTwo);  // generate candidates for the specified type
 
     // compare the two solutions and choose the one with higher utility
     if (utilityOne >= utilityTwo) 
