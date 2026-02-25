@@ -195,19 +195,19 @@ $ make -j8
 
 In the following NED files, comment out the `@statistic` blocks to disable unnecessary data statistics collection:
 
-> ========== SIMU5G ==========
-simu5g.stack.phy.ChannelModel.LteChannelModel.ned
-simu5g.stack.pdcp_rrc.LtePdcpRrc.ned;
-simu5g.stack.rlc.LteRlc.ned;
+========== SIMU5G ==========
+- simu5g.stack.phy.ChannelModel.LteChannelModel.ned
+- simu5g.stack.pdcp_rrc.LtePdcpRrc.ned;
+- simu5g.stack.rlc.LteRlc.ned;
 
-> ========== INET ============
-inet.linklayer.ppp.Ppp.ned;
-inet.linklayer.loopback.Loopback.ned;
-inet.linklayer.ethernet.basic.EthernetEncapsulation.ned;
-inet.networklayer.common.NetworkInterface.ned;
-inet.networklayer.ipv4.Ipv4.ned;
-inet.networklayer.arp.ipv4.Arp.ned;
-inet.queueing.queue.CompoundPacketQueueBase.ned;
-inet.queueing.queue.PacketQueue.ned;
-inet.transportlayer.udp.Udp.ned;
+========== INET ============
+- inet.linklayer.ppp.Ppp.ned;
+- inet.linklayer.loopback.Loopback.ned;
+- inet.linklayer.ethernet.basic.EthernetEncapsulation.ned;
+- inet.networklayer.common.NetworkInterface.ned;
+- inet.networklayer.ipv4.Ipv4.ned;
+- inet.networklayer.arp.ipv4.Arp.ned;
+- inet.queueing.queue.CompoundPacketQueueBase.ned;
+- inet.queueing.queue.PacketQueue.ned;
+- inet.transportlayer.udp.Udp.ned;
 
