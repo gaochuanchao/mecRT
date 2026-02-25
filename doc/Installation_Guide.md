@@ -21,7 +21,7 @@
  libqt5opengl5-dev libxml2-dev zlib1g-dev doxygen graphviz \
  libwebkit2gtk-4.0-37 xdg-utils
 ~$ python3 -m pip install --user --upgrade numpy pandas matplotlib scipy \
- seaborn posix_ipc
+ seaborn posix_ipc scienceplots
 ~$ sudo apt-get install mpi-default-dev
 ```
 
