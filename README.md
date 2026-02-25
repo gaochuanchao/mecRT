@@ -125,6 +125,22 @@ If using WSL2 on windows 10/11, consider additional [GUI setting](./doc/WSL2_Set
 ## 📚 Citation
 
 If you use mecRT in your research, please cite:
+```
+@INPROCEEDINGS{gao2025real,
+  author={Gao, Chuanchao and Easwaran, Arvind},
+  booktitle={2025 IEEE Real-Time Systems Symposium (RTSS)}, 
+  title={Real-Time Service Subscription and Adaptive Offloading Control in Vehicular Edge Computing}, 
+  year={2025},
+  volume={},
+  number={},
+  pages={175-188},
+  doi={10.1109/RTSS66672.2025.00023}}
+```
+
+or
+
+    [1] C. Gao and A. Easwaran, “Real-Time Service Subscription and Adaptive Offloading Control in Vehicular Edge Computing,” in 2025 IEEE Real-Time Systems Symposium (RTSS)., IEEE Computer Society, 2025, pp. 1591–188. doi: 10.1109/RTSS66672.2025.00023.
+  
 
 
 
