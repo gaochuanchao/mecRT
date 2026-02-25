@@ -7,29 +7,29 @@
 #### 1.1 download OMNeT++
 
 ```bash
-$ cd ~
-$ wget https://github.com/omnetpp/omnetpp/releases/download/omnetpp-6.0.3/omnetpp-6.0.3-linux-x86_64.tgz
-$ tar xvfz omnetpp-6.0.3-linux-x86_64.tgz
+~$ cd ~
+~$ wget https://github.com/omnetpp/omnetpp/releases/download/omnetpp-6.0.3/omnetpp-6.0.3-linux-x86_64.tgz
+~$ tar xvfz omnetpp-6.0.3-linux-x86_64.tgz
 ```
 
 #### 1.2 installing the Prerequisite Packages
 
 ```bash
-$ sudo apt-get update
-$ sudo apt-get install build-essential clang lld gdb bison flex perl \
+~$ sudo apt-get update
+~$ sudo apt-get install build-essential clang lld gdb bison flex perl \
  python3 python3-pip qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools \
  libqt5opengl5-dev libxml2-dev zlib1g-dev doxygen graphviz \
  libwebkit2gtk-4.0-37 xdg-utils
-$ python3 -m pip install --user --upgrade numpy pandas matplotlib scipy \
+~$ python3 -m pip install --user --upgrade numpy pandas matplotlib scipy \
  seaborn posix_ipc
-$ sudo apt-get install mpi-default-dev
+~$ sudo apt-get install mpi-default-dev
 ```
 
 #### 1.3 configure and build OMNeT++
 
 ```bash
-$ cd ~/omnetpp-6.0.3
-$ source setenv
+~$ cd ~/omnetpp-6.0.3
+~/omnetpp-6.0.3$ source setenv
 ```
 
 - To set the environment variables permanently, edit `.bashrc` in your home directory and add a line something like this (note: adjust the `OMNETPP_ROOT` path based on your actual `omnetpp` path):
@@ -42,8 +42,8 @@ $ source setenv
 Next, set `WITH_OSG=no` in `~/omnetpp-6.0.3/configure.user` to disable 3D view in Qtenv, then,
 
 ```bash
-$ ./configure
-$ make -j8
+~/omnetpp-6.0.3$ ./configure
+~/omnetpp-6.0.3$ make -j8
 ```
 
 #### 1.4 post-installation steps (setting up debugging) 
@@ -84,8 +84,8 @@ kernel.yama.ptrace_scope = 0
 Create a workspace
 
 ```bash
-$ mkdir -p simulator
-$ cd simulator
+~$ mkdir -p simulator
+~$ cd simulator
 ```
 
 Add the simulator workspace path into the `.bashrc` file, e.g.,
@@ -99,14 +99,14 @@ export MEC_WORKSPACE="$HOME/simulator"
 #### 2.2 install inet4
 
 ```bash
-$ wget https://github.com/inet-framework/inet/releases/download/v4.5.4/inet-4.5.4-src.tgz
-$ tar xvfz inet-4.5.4-src.tgz
-$ rm inet-4.5.4-src.tgz
-$ cd inet4.5
-$ source setenv
-$ make makefiles
-$ make -j8
-$ make MODE=debug -j8
+~/simulator$ wget https://github.com/inet-framework/inet/releases/download/v4.5.4/inet-4.5.4-src.tgz
+~/simulator$ tar xvfz inet-4.5.4-src.tgz
+~/simulator$ rm inet-4.5.4-src.tgz
+~/simulator$ cd inet4.5
+~/simulator/inet4.5$ source setenv
+~/simulator/inet4.5$ make makefiles
+~/simulator/inet4.5$ make -j8
+~/simulator/inet4.5$ make MODE=debug -j8
 ```
 
 Note: 
@@ -120,24 +120,24 @@ Note:
 Before installing `simu5g`, make sure `inet4.5` has been installed in the working directory.
 
 ```bash
-$ cd ~/simulator
-$ wget https://github.com/Unipisa/Simu5G/archive/refs/tags/v1.2.3.tar.gz
-$ tar xvfz v1.2.3.tar.gz
-$ mv Simu5G-1.2.3 simu5g
-$ rm v1.2.3.tar.gz
-$ cd simu5g
-$ source setenv
-$ make makefiles
-$ make -j8
-$ make MODE=debug -j8
+~$ cd ~/simulator
+~/simulator$ wget https://github.com/Unipisa/Simu5G/archive/refs/tags/v1.2.3.tar.gz
+~/simulator$ tar xvfz v1.2.3.tar.gz
+~/simulator$ mv Simu5G-1.2.3 simu5g
+~/simulator$ rm v1.2.3.tar.gz
+~/simulator$ cd simu5g
+~/simulator/simu5g$ source setenv
+~/simulator/simu5g$ make makefiles
+~/simulator/simu5g$ make -j8
+~/simulator/simu5g$ make MODE=debug -j8
 ```
 
 ### 3. Install Gurobi
 
 ```bash
-$ cd ~
-$ wget https://packages.gurobi.com/12.0/gurobi12.0.3_linux64.tar.gz
-$ tar xvfz gurobi12.0.3_linux64.tar.gz
+~$ cd ~
+~$ wget https://packages.gurobi.com/12.0/gurobi12.0.3_linux64.tar.gz
+~$ tar xvfz gurobi12.0.3_linux64.tar.gz
 ```
 
 #### 3.1 License
@@ -178,17 +178,17 @@ export GRB_LICENSE_FILE=/path/to/gurobi.lic
 Verify if the license is valid:
 
 ```bash
-$ gurobi_cl --license
+~$ gurobi_cl --license
 ```
 
 ### 4. Install mecRT
 
 ```bash
-$ cd ~/simulator
-$ git clone https://github.com/gaochuanchao/mecRT
-$ cd mecRT
-$ make makefiles
-$ make -j8
+~$ cd ~/simulator
+~/simulator$ git clone https://github.com/gaochuanchao/mecRT
+~/simulator$ cd mecRT
+~/simulator/mecRT$ make makefiles
+~/simulator/mecRT$ make -j8
 ```
 
 ### 5. Disable unnecessary data statistics to avoid the result file being too large
