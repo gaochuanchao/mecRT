@@ -396,23 +396,22 @@ def draw_offload_percentage():
 
 
 if __name__ == "__main__":
-    draw_expected_utility()
-    draw_improved_utility()
-    draw_offload_percentage()
+    # draw_expected_utility()
+    # draw_improved_utility()
+    # draw_offload_percentage()
+    if len(sys.argv) != 2:
+        print("Usage: python3 draw_performance_normal.py [4a|4b|4c]")
+        sys.exit(1)
 
-    # if len(sys.argv) != 2:
-    #     print("Usage: python3 draw_performance_normal.py [4a|4b|4c]")
-    #     sys.exit(1)
+    arg = sys.argv[1]
 
-    # arg = sys.argv[1]
-
-    # if arg == "4a":
-    #     draw_expected_utility()
-    # elif arg == "4b":
-    #     draw_improved_utility()
-    # elif arg == "4c":
-    #     draw_offload_percentage()
-    # else:
-    #     print(f"Unknown argument: {arg}")
-    #     print("Valid options: 4a, 4b, 4c")
-    #     sys.exit(1)
+    if arg == "4a":
+        draw_expected_utility()
+    elif arg == "4b":
+        draw_improved_utility()
+    elif arg == "4c":
+        draw_offload_percentage()
+    else:
+        print(f"Unknown argument: {arg}")
+        print("Valid options: 4a, 4b, 4c")
+        sys.exit(1)

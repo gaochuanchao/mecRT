@@ -393,7 +393,7 @@ def draw_offload_percentage():
 
 
 if __name__ == "__main__":
-    draw_expected_utility()
+    # draw_expected_utility()
     draw_improved_utility()
     # draw_offload_percentage()
 

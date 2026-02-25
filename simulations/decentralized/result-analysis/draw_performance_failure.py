@@ -16,6 +16,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib as mpl
 import scienceplots
+import sys
 
 
 # === Configurable Parameters ===
@@ -1048,7 +1049,22 @@ if __name__ == "__main__":
     # draw_link_failure_performance_predicted()
     # draw_node_failure_performance_predicted()
     # draw_node_failure_performance_measured()
-    draw_failure_performance_measured_wide()
-    draw_failure_performance_predicted_wide()
+    # draw_failure_performance_measured_wide()
+    # draw_failure_performance_predicted_wide()
     # draw_node_failure_performance_predicted_wide()
+
+    if len(sys.argv) != 2:
+        print("Usage: python3 draw_performance_failure.py [7a|7b]")
+        sys.exit(1)
+
+    arg = sys.argv[1]
+
+    if arg == "7a":
+        draw_failure_performance_measured_wide()
+    elif arg == "7b":
+        draw_failure_performance_predicted_wide()
+    else:
+        print(f"Unknown argument: {arg}")
+        print("Valid options: 7a, 7b")
+        sys.exit(1)
 

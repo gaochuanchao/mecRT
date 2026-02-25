@@ -16,6 +16,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib as mpl
 import scienceplots
+import sys
 
 
 # === Configurable Parameters ===
@@ -300,4 +301,18 @@ if __name__ == "__main__":
     # draw_expected_utility()
     # draw_expected_utility()
     # draw_exe_time()
-    draw_measured_utility()
+    # draw_measured_utility()
+    if len(sys.argv) != 2:
+        print("Usage: python3 draw_app_count_normal.py [5a|5b]")
+        sys.exit(1)
+
+    arg = sys.argv[1]
+
+    if arg == "5a":
+        draw_measured_utility()
+    elif arg == "5b":
+        draw_exe_time()
+    else:
+        print(f"Unknown argument: {arg}")
+        print("Valid options: 5a, 5b")
+        sys.exit(1)
