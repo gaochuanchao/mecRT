@@ -100,7 +100,7 @@ void AccuracyFastIS::generateScheduleInstances()
                             if (utility <= 0)   // if the saved energy is less than 0, skip
                                 continue;
 
-                            // AppInstance instance = {appIndex, offRsuIndex, procRsuIndex, resBlocks, cmpUnits};
+                            // AppInstance instance = {appIndex, offRsuIndex, resBlocks, cmpUnits};
                             instAppIndex_.push_back(appIndex);
                             instOffRsuIndex_.push_back(rsuIndex);
                             instRBs_.push_back(resBlocks);
@@ -134,7 +134,7 @@ void AccuracyFastIS::generateScheduleInstances()
                             if (utility <= 0)   // if the saved energy is less than 0, skip
                                 continue;
 
-                            // AppInstance instance = {appIndex, offRsuIndex, procRsuIndex, resBlocks, cmpUnits, serviceType};
+                            // AppInstance instance = {appIndex, offRsuIndex, resBlocks, cmpUnits, serviceType};
                             instAppIndex_.push_back(appIndex);
                             instOffRsuIndex_.push_back(rsuIndex);
                             instRBs_.push_back(minRB);
@@ -172,18 +172,18 @@ vector<srvInstance> AccuracyFastIS::scheduleRequests()
     for (int instIdx : solutionIndices) 
     {
         int appIndex = instAppIndex_[instIdx];  // get the application index
-        int offRsuIndex = instOffRsuIndex_[instIdx];  // get the offload RSU index
-        int proRsuIndex = instProRsuIndex_[instIdx];  // get the processing RSU index
+        int rsuIndex = instOffRsuIndex_[instIdx];  // get the offload RSU index
 
         // add the instance to the solution set
-        solution.emplace_back(appIds_[appIndex], rsuIds_[offRsuIndex], rsuIds_[proRsuIndex], instRBs_[instIdx], instCUs_[instIdx]);
+        // typedef tuple<AppId, MacNodeId, MacNodeId, int, int> srvInstance;
+        solution.emplace_back(appIds_[appIndex], rsuIds_[rsuIndex], rsuIds_[rsuIndex], instRBs_[instIdx], instCUs_[instIdx]);
         appMaxOffTime_[appIds_[appIndex]] = instMaxOffTime_[instIdx];  // store the maximum offloading time for the application
         appUtility_[appIds_[appIndex]] = instUtility_[instIdx];  // store the utility for the application
         appExeDelay_[appIds_[appIndex]] = instExeDelay_[instIdx];  // store the execution delay for the application
         appServiceType_[appIds_[appIndex]] = instServiceType_[instIdx];  // store the service type for the application
     }
 
-    EV << NOW << " AccuracyFastIS::scheduleRequests - FastSA schedule scheme ends, selected " << solution.size() 
+    EV << NOW << " AccuracyFastIS::scheduleRequests - FastIS schedule scheme ends, selected " << solution.size() 
         << " service instances from " << instAppIndex_.size() << " total instances" << endl;
 
     return solution;
@@ -236,11 +236,11 @@ void AccuracyFastIS::candidateGenerateForType(vector<int>& instIndices)
     for (const string& srvType : serviceType)
     {
         for (int instIdx = 0; instIdx < instAppIndex_.size(); instIdx++) {
-            int appIndex = instAppIndex_[instIdx];  // get the application index
-            int rsuIndex = instOffRsuIndex_[instIdx];  // get the offload RSU index
-
             if (instCategory_[instIdx] != srvType)
                 continue;
+
+            int appIndex = instAppIndex_[instIdx];  // get the application index
+            int rsuIndex = instOffRsuIndex_[instIdx];  // get the offload RSU index
 
             double rbUtil = rbUtilization_[instIdx];  // RB utilization
             double cuUtil = cuUtilization_[instIdx];  // CU utilization
@@ -278,11 +278,10 @@ void AccuracyFastIS::candidateGenerateForType(vector<int>& instIndices)
         if (selectedApps.find(appIndex) != selectedApps.end())  
             continue;
 
-        int offRsuIndex = instOffRsuIndex_[instIdx];  // get the offload RSU index
-        int proRsuIndex = instProRsuIndex_[instIdx];  // get the processing RSU index
+        int rsuIndex = instOffRsuIndex_[instIdx];  // get the offload RSU index
         
         // check if the RSU has enough resources
-        if (rsuRBsCopy[offRsuIndex] < instRBs_[instIdx] || rsuCUsCopy[proRsuIndex] < instCUs_[instIdx])
+        if (rsuRBsCopy[rsuIndex] < instRBs_[instIdx] || rsuCUsCopy[rsuIndex] < instCUs_[instIdx])
             continue;  // skip if the RSU does not have enough resources
 
         // add the instance to the solution set
@@ -290,8 +289,8 @@ void AccuracyFastIS::candidateGenerateForType(vector<int>& instIndices)
         selectedApps.insert(appIndex);  // mark the application as selected
 
         // update the RSU status
-        rsuRBsCopy[offRsuIndex] -= instRBs_[instIdx];
-        rsuCUsCopy[proRsuIndex] -= instCUs_[instIdx];
+        rsuRBsCopy[rsuIndex] -= instRBs_[instIdx];
+        rsuCUsCopy[rsuIndex] -= instCUs_[instIdx];
     }
 }
 
