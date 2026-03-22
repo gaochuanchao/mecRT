@@ -162,7 +162,6 @@ vector<srvInstance> AccuracyFastIS::scheduleRequests()
     }
 
     vector<int> solutionIndices;  // vectors to store the indices of the instances
-    double utilityOne, utilityTwo;
 
     defineInstanceCategory();  // define the instance categories based on resource utilization
     candidateGenerateForType(solutionIndices);  // generate candidates for the specified type

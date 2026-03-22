@@ -102,6 +102,7 @@ class Scheduler : public omnetpp::cSimpleModule
     double virtualLinkRate_; // the rate of the virtual link in the backhaul network
     double fairFactor_; // the fairness factor for scheduling scheme with forwarding, default is 1.0
     int maxHops_ = 1; // the maximum number of hops for task forwarding in the backhaul network, default is 1
+    MacNodeId rsuId_; // the RSU/gNB ID of the scheduler node
 
   protected:
     bool enableInitDebug_;
@@ -118,6 +119,7 @@ class Scheduler : public omnetpp::cSimpleModule
     omnetpp::simsignal_t expectedJobsToBeOffloadedSignal_;
 
     bool enableBackhaul_ = true; // whether to enable the backhaul network, default is true
+    bool enableDistributedScheduling_ = false; // whether to enable distributed scheduling, default is false
     string optimizeObjective_; // the optimization objective for scheduling scheme, default is "accuracy"
 
     /*

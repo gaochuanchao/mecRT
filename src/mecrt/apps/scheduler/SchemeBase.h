@@ -62,11 +62,12 @@ class SchemeBase
 
   public:
     SchemeBase(Scheduler *scheduler);
-    ~SchemeBase() 
-    {
-        scheduler_ = nullptr;  // reset the pointer to avoid dangling pointer
-        db_ = nullptr;  // reset the pointer to avoid dangling pointer
-    }
+    // virtual ~SchemeBase() 
+    // {
+    //     scheduler_ = nullptr;  // reset the pointer to avoid dangling pointer
+    //     db_ = nullptr;  // reset the pointer to avoid dangling pointer
+    // }
+    virtual ~SchemeBase() = default;
 
     /***
      * Update reachable RSUs from each RSU based on the new backhaul network topology
@@ -79,9 +80,39 @@ class SchemeBase
     virtual void generateScheduleInstances() {};
 
     /***
-     * Schedule the request
+     * Schedule the request, for centalized scheduling, schedule all schedule instances at one time
      */
     virtual vector<srvInstance> scheduleRequests() { return vector<srvInstance>(); };
+
+
+    /***
+     * ====================================================================
+     * ================ For distributed scheduling schemes ================
+     * ====================================================================
+     */
+
+    /***
+     * select the candidates (e.g., schedule instances) for target applications.
+     * in distributed scheduling, every scheduler schedule applications in batches, one batch for each synchronization round
+     */
+    virtual void candidateSelection(set<MacNodeId>& targetApps) {};
+
+    /***
+     * select the final solution from the candidates for target applications.
+     * in distributed scheduling, the solution is also selected in batches, one batch for each synchronization round
+     */
+    virtual void solutionSelection(set<MacNodeId>& targetApps) {};
+
+    /***
+     * obtain solution when the distributed scheduling scheme completes
+     */
+    virtual vector<srvInstance> getFinalSchedule() { return vector<srvInstance>(); };
+
+    /***
+     * ====================================================================
+     * ================ For distributed scheduling schemes ================
+     * ====================================================================
+     */
 
     /***
      * Compute offload delay for an application to a specific RSU

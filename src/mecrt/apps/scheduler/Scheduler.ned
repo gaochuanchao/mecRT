@@ -34,6 +34,8 @@ simple Scheduler like IApp
         double fairFactor = default(1.0); // the fairness factor for scheduling scheme with forwarding, default is 1.0
         string nodeInfoModulePath = default("^.nodeInfo"); // path to the NodeInfo module
 
+        bool enableDistributedScheduling = default(false); // whether to enable distributed scheduling, default is false
+
         @signal[schedulingTime](type="double");
         @signal[schemeTime](type="double");
         @signal[instanceGenerateTime](type="double");

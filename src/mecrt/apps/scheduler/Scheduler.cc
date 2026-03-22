@@ -32,6 +32,7 @@
 #include "mecrt/apps/scheduler/accuracy/AccuracyFastSAND.h"
 #include "mecrt/apps/scheduler/accuracy/AccuracyGameTheory.h"
 #include "mecrt/apps/scheduler/accuracy/AccuracyGraphMatch.h"
+#include "mecrt/apps/scheduler/distAccuracy/AccuracyDistIS.h"
 
 #include "mecrt/packets/apps/Grant2Rsu_m.h"
 #include "mecrt/packets/apps/ServiceStatus_m.h"
@@ -52,6 +53,8 @@ Scheduler::Scheduler()
     binder_ = nullptr;
     scheme_ = nullptr;
     nodeInfo_ = nullptr;
+
+    rsuId_ = 0;
 }
 
 Scheduler::~Scheduler()
@@ -118,6 +121,8 @@ void Scheduler::initialize(int stage)
         virtualLinkRate_ = par("virtualLinkRate");
         fairFactor_ = par("fairFactor");
 
+        enableDistributedScheduling_ = par("enableDistributedScheduling");
+
         vecSchedulingTimeSignal_ = registerSignal("schedulingTime");
         vecSchemeTimeSignal_ = registerSignal("schemeTime");
         vecInsGenerateTimeSignal_ = registerSignal("instanceGenerateTime");
@@ -141,6 +146,7 @@ void Scheduler::initialize(int stage)
         WATCH(schemeName_);
         WATCH(maxHops_);
         WATCH(virtualLinkRate_);
+        WATCH(rsuId_);
 
         if (enableInitDebug_)
             std::cout << "Scheduler::initialize - stage: INITSTAGE_LOCAL - ends" << std::endl;
@@ -168,6 +174,8 @@ void Scheduler::initialize(int stage)
             nodeInfo_->setLocalSchedulerSocketId(socketId_);
 
             nodeInfo_->setScheduler(this);
+
+            rsuId_ = nodeInfo_->getNodeId();
         }
         catch (std::exception &e)
         {
@@ -381,55 +389,73 @@ void Scheduler::handleSchedulingStart()
 
 void Scheduler::initializeSchedulingScheme()
 {
-    if (!enableBackhaul_ && optimizeObjective_ == "energy")
+    if (!enableDistributedScheduling_)
     {
-        if (schemeName_ == "Greedy")
-            scheme_ = new SchemeGreedy(this);
-        else if (schemeName_ == "FastLR")
-            scheme_ = new SchemeFastLR(this);
-        else if (schemeName_ == "GameTheory")
-            scheme_ = new SchemeGameTheory(this);
-        else if (schemeName_ == "Iterative")
-            scheme_ = new SchemeIterative(this);
-        else if (schemeName_ == "SARound")
-            scheme_ = new SchemeSARound(this);
+        if (!enableBackhaul_ && optimizeObjective_ == "energy")
+        {
+            if (schemeName_ == "Greedy")
+                scheme_ = new SchemeGreedy(this);
+            else if (schemeName_ == "FastLR")
+                scheme_ = new SchemeFastLR(this);
+            else if (schemeName_ == "GameTheory")
+                scheme_ = new SchemeGameTheory(this);
+            else if (schemeName_ == "Iterative")
+                scheme_ = new SchemeIterative(this);
+            else if (schemeName_ == "SARound")
+                scheme_ = new SchemeSARound(this);
+            else
+                scheme_ = new SchemeBase(this);
+        }
+        else if (enableBackhaul_ && optimizeObjective_ == "energy")
+        {
+            if (schemeName_ == "FwdGreedy")
+                scheme_ = new SchemeFwdGreedy(this);
+            else if (schemeName_ == "FwdGameTheory")
+                scheme_ = new SchemeFwdGameTheory(this);
+            else if (schemeName_ == "FwdQuickLR")
+                scheme_ = new SchemeFwdQuickLR(this);
+            else if (schemeName_ == "FwdGraphMatch")
+                scheme_ = new SchemeFwdGraphMatch(this);
+            else
+                scheme_ = new SchemeBase(this);
+        }
+        else if (enableBackhaul_ && optimizeObjective_ == "accuracy")
+        {
+            if (schemeName_ == "Greedy")
+                scheme_ = new AccuracyGreedy(this);
+            else if (schemeName_ == "FastSA")
+                scheme_ = new AccuracyFastSA(this);
+            else if (schemeName_ == "FastSANF")
+                scheme_ = new AccuracyFastSANF(this);
+            else if (schemeName_ == "FastSAND")
+                scheme_ = new AccuracyFastSAND(this);
+            else if (schemeName_ == "GameTheory")
+                scheme_ = new AccuracyGameTheory(this);
+            else if (schemeName_ == "GraphMatch")
+                scheme_ = new AccuracyGraphMatch(this);
+            else
+                scheme_ = new SchemeBase(this);
+        }
         else
+        {
             scheme_ = new SchemeBase(this);
-    }
-    else if (enableBackhaul_ && optimizeObjective_ == "energy")
-    {
-        if (schemeName_ == "FwdGreedy")
-            scheme_ = new SchemeFwdGreedy(this);
-        else if (schemeName_ == "FwdGameTheory")
-            scheme_ = new SchemeFwdGameTheory(this);
-        else if (schemeName_ == "FwdQuickLR")
-            scheme_ = new SchemeFwdQuickLR(this);
-        else if (schemeName_ == "FwdGraphMatch")
-            scheme_ = new SchemeFwdGraphMatch(this);
-        else
-            scheme_ = new SchemeBase(this);
-    }
-    else if (enableBackhaul_ && optimizeObjective_ == "accuracy")
-    {
-        if (schemeName_ == "Greedy")
-            scheme_ = new AccuracyGreedy(this);
-        else if (schemeName_ == "FastSA")
-            scheme_ = new AccuracyFastSA(this);
-        else if (schemeName_ == "FastSANF")
-            scheme_ = new AccuracyFastSANF(this);
-        else if (schemeName_ == "FastSAND")
-            scheme_ = new AccuracyFastSAND(this);
-        else if (schemeName_ == "GameTheory")
-            scheme_ = new AccuracyGameTheory(this);
-        else if (schemeName_ == "GraphMatch")
-            scheme_ = new AccuracyGraphMatch(this);
-        else
-            scheme_ = new SchemeBase(this);
+        }
     }
     else
     {
-        scheme_ = new SchemeBase(this);
+        if (optimizeObjective_ == "accuracy")
+        {
+            if (schemeName_ == "DistIS")
+                scheme_ = new AccuracyDistIS(this);
+            else
+                scheme_ = new SchemeBase(this);
+        }
+        else
+        {
+            scheme_ = new SchemeBase(this);
+        }
     }
+
 }
 
 
@@ -923,7 +949,7 @@ void Scheduler::removeOutdatedInfo()
     // set<MacNodeId> rsuToRemove = set<MacNodeId>();
     for (auto &res : rsuStatus_)
     {        
-        MacNodeId rsuId = res.first;
+        // MacNodeId rsuId = res.first;
         simtime_t lastBandUpdateTime = res.second.bandUpdateTime;
         simtime_t lastCmpUpdateTime = res.second.cmpUpdateTime;
 
