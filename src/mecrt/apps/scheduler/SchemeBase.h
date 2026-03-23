@@ -95,13 +95,13 @@ class SchemeBase
      * select the candidates (e.g., schedule instances) for target applications.
      * in distributed scheduling, every scheduler schedule applications in batches, one batch for each synchronization round
      */
-    virtual void candidateSelection(set<MacNodeId>& targetApps) {};
+    virtual map<MacNodeId, double> candidateSelection(map<MacNodeId, double>& targetApps, string targetCategory) {};
 
     /***
      * select the final solution from the candidates for target applications.
      * in distributed scheduling, the solution is also selected in batches, one batch for each synchronization round
      */
-    virtual void solutionSelection(set<MacNodeId>& targetApps) {};
+    virtual map<MacNodeId, bool> solutionSelection(map<MacNodeId, bool>& targetApps, string targetCategory) {};
 
     /***
      * obtain solution when the distributed scheduling scheme completes

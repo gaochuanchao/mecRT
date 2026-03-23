@@ -36,18 +36,20 @@ class AccuracyFastIS : public AccuracyGreedy
         db_ = nullptr;  // reset the pointer to avoid dangling pointer
     }
 
-
     /***
      * Generate schedule instances based on the pending applications and the available resources
      */
     virtual void generateScheduleInstances() override;
 
     /***
+     * Initialize the scheduling data
+     */
+    virtual void initializeData() override;
+
+    /***
      * Schedule the request
      */
     virtual vector<srvInstance> scheduleRequests() override;
-
-    virtual void defineInstanceCategory();
 
     virtual void candidateGenerateForType(vector<int>& instIndices);
 };

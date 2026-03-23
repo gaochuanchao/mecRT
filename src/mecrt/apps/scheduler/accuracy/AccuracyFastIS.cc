@@ -24,6 +24,16 @@ AccuracyFastIS::AccuracyFastIS(Scheduler *scheduler)
 }
 
 
+void AccuracyFastIS::initializeData()
+{
+    AccuracyGreedy::initializeData();
+    
+    instCategory_.clear();
+    rbUtilization_.clear();
+    cuUtilization_.clear();
+}
+
+
 void AccuracyFastIS::generateScheduleInstances()
 {
     EV << NOW << " AccuracyFastIS::generateScheduleInstances - Generating schedule instances" << endl;
@@ -55,13 +65,13 @@ void AccuracyFastIS::generateScheduleInstances()
                     continue;  // if not found, skip
 
                 int rsuIndex = rsuId2Index_[rsuId];  // get the index of the RSU in the rsuIds vector
-                if (rsuRBs_[rsuIndex] <= 0)
-                    continue;  // if there is no resource blocks available, skip
                 int maxRB = floor(rsuRBs_[rsuIndex] * fairFactor_);  // maximum resource blocks for the offload RSU
+                if (maxRB <= 0)
+                    continue;  // if there is no resource blocks available, skip
 
-                if (rsuCUs_[rsuIndex] <= 0)
-                    continue;  // if there is no computing units available, skip
                 int maxCU = floor(rsuCUs_[rsuIndex] * fairFactor_);  // maximum computing units for the processing RSU
+                if (maxCU <= 0)
+                    continue;  // if there is no computing units available, skip
 
                 if (debugMode)
                     EV << "\t period: " << period << ", offload RSU " << rsuId 
@@ -109,6 +119,17 @@ void AccuracyFastIS::generateScheduleInstances()
                             instMaxOffTime_.push_back(period - exeDelay - offloadOverhead_);  // maximum offloading time for the instance
                             instServiceType_.push_back(serviceType);  // selected service type for the instance
                             instExeDelay_.push_back(exeDelay);  // execution delay for the instance
+
+                            // define category for the instance
+                            rbUtilization_.push_back(double(resBlocks) / maxRB);
+                            cuUtilization_.push_back(double(minCU) / maxCU);
+                            bool isLightRB = (resBlocks * 2 <= maxRB);
+                            bool isLightCU = (minCU * 2 <= maxCU);
+
+                            if (isLightRB && isLightCU)
+                                instCategory_.push_back("LI");
+                            else
+                                instCategory_.push_back("HI");
                         }
                     }
                 }
@@ -143,6 +164,17 @@ void AccuracyFastIS::generateScheduleInstances()
                             instMaxOffTime_.push_back(offloadTimeThreshold);  // maximum offloading time for the instance
                             instServiceType_.push_back(serviceType);  // selected service type for the instance
                             instExeDelay_.push_back(exeDelay);  // execution delay for the instance
+
+                            // define category for the instance
+                            rbUtilization_.push_back(double(minRB) / maxRB);
+                            cuUtilization_.push_back(double(cmpUnits) / maxCU);
+                            bool isLightRB = (minRB * 2 <= maxRB);
+                            bool isLightCU = (cmpUnits * 2 <= maxCU);
+
+                            if (isLightRB && isLightCU)
+                                instCategory_.push_back("LI");
+                            else
+                                instCategory_.push_back("HI");
                         }
                     }
                 }
@@ -163,7 +195,6 @@ vector<srvInstance> AccuracyFastIS::scheduleRequests()
 
     vector<int> solutionIndices;  // vectors to store the indices of the instances
 
-    defineInstanceCategory();  // define the instance categories based on resource utilization
     candidateGenerateForType(solutionIndices);  // generate candidates for the specified type
 
     // construct the final solution based on the selected indices
@@ -186,36 +217,6 @@ vector<srvInstance> AccuracyFastIS::scheduleRequests()
         << " service instances from " << instAppIndex_.size() << " total instances" << endl;
 
     return solution;
-}
-
-
-void AccuracyFastIS::defineInstanceCategory()
-{
-    int totalInstances = instAppIndex_.size();
-    instCategory_.clear();
-    rbUtilization_.clear();
-    cuUtilization_.clear();
-    
-    instCategory_.reserve(totalInstances);
-    rbUtilization_.reserve(totalInstances);
-    cuUtilization_.reserve(totalInstances);
-
-    for (int instIdx = 0; instIdx < totalInstances; instIdx++) {
-        int rsuIndex = instOffRsuIndex_[instIdx];  // get the offload RSU index
-        double rb = instRBs_[instIdx];  // get the resource blocks
-        double cu = instCUs_[instIdx];  // get the computing units
-
-        rbUtilization_.push_back(rb / rsuRBs_[rsuIndex]);
-        cuUtilization_.push_back(cu / rsuCUs_[rsuIndex]);
-
-        bool isLightRB = (rb * 2 <= rsuRBs_[rsuIndex]);
-        bool isLightCU = (cu * 2 <= rsuCUs_[rsuIndex]);
-
-        if (isLightRB && isLightCU)
-            instCategory_.push_back("LI");
-        else
-            instCategory_.push_back("HI");
-    }
 }
 
 

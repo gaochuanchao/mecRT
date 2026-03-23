@@ -58,6 +58,16 @@ void AccuracyDistIS::initializeData()
     appUtility_.clear();  // utility (i.e., energy savings) for the applications
     appExeDelay_.clear();  // Clear the application execution delay vector
     appServiceType_.clear();  // Clear the application service type vector
+
+    instCategory_.clear(); // clear the category for the service instances
+    rbUtilization_.clear();  // clear the resource block utilization for the service instances
+    cuUtilization_.clear();  // clear the computing unit utilization for the service instances
+
+    reductionRsu_ = 0; // reset the reduction for the RSU
+    reductAppInRsu_ = vector<double>(appIds_.size(), 0.0); // clear the reduction of utility for each application in the RSU
+
+    candidateInsts_.clear(); // clear the candidate service instances for the distributed scheduling scheme
+    finalSchedule_.clear(); // clear the final schedule for the distributed scheduling scheme
 }
 
 
@@ -130,6 +140,14 @@ void AccuracyDistIS::generateScheduleInstances()
                     instServiceType_.push_back(serviceType);  // selected service type for the instance
                     instExeDelay_.push_back(exeDelay);  // execution delay for the instance
 
+                    // define category for the instance
+                    rbUtilization_.push_back(double(resBlocks) / maxRB_);
+                    cuUtilization_.push_back(double(minCU) / maxCU_);
+                    if ((resBlocks * 2 <= maxRB_) && (minCU * 2 <= maxCU_))
+                        instCategory_.push_back("LI");
+                    else
+                        instCategory_.push_back("HI");
+
                     instIndex++;
                 }
             }
@@ -165,6 +183,14 @@ void AccuracyDistIS::generateScheduleInstances()
                     instServiceType_.push_back(serviceType);  // selected service type for the instance
                     instExeDelay_.push_back(exeDelay);  // execution delay for the instance
 
+                    // define category for the instance
+                    rbUtilization_.push_back(double(minRB) / maxRB_);
+                    cuUtilization_.push_back(double(cmpUnits) / maxCU_);
+                    if ((minRB * 2 <= maxRB_) && (cmpUnits * 2 <= maxCU_))
+                        instCategory_.push_back("LI");
+                    else
+                        instCategory_.push_back("HI");
+
                     instIndex++;
                 }
             }
@@ -175,7 +201,88 @@ void AccuracyDistIS::generateScheduleInstances()
 }
 
 
+map<MacNodeId, double> AccuracyDistIS::candidateSelection(map<MacNodeId, double>& targetApps, string targetCategory)
+{
+    /***
+     * In the distributed scheduling scheme, each scheduler selects candidates for apps in batches.
+     * each batch corresponds to one preference value.
+     */
+    map<MacNodeId, double> updatedAppReduction;  // map to store the updated utility reduction for the target applications
 
+    for (const auto& it : targetApps)
+    {
+        int appIndex = appId2Index_[it.first];  // get the application index
+        int beginIndex = instAppBeginIndex_[appIndex];
+        int endIndex = instAppEndIndex_[appIndex];
+
+        if (beginIndex == -1 || endIndex == -1 || beginIndex >= endIndex)
+            continue;  // if there is no valid service instance for the application, skip
+
+        double redApp = it.second;  // get the current utility reduction for the application
+        for (int instIdx = beginIndex; instIdx < endIndex; instIdx++)
+        {
+            if (instCategory_[instIdx] != targetCategory)
+                continue;  // only select candidates from the specified category
+
+            double rbUtil = rbUtilization_[instIdx];  // RB utilization
+            double cuUtil = cuUtilization_[instIdx];  // CU utilization
+            double redRsu = reductionRsu_ - reductAppInRsu_[appIndex];  // reduction of utility for the RSU
+
+            double utility = instUtility_[instIdx] - redApp - 2 * redRsu * (rbUtil + cuUtil);  // updated utility
+
+            if (utility <= 0)
+                continue;  // skip if the updated utility is less than or equal to 0
+
+            // append the instance to the candidate vector, and update the reduction of utility
+            candidateInsts_.push_back(instIdx);
+            redApp += utility;  // update the reduction of utility for the application
+            reductionRsu_ += utility;  // update the reduction of utility for the RSU
+            reductAppInRsu_[appIndex] += utility;  // update the reduction of utility for the application in the RSU
+        }
+
+        updatedAppReduction[it.first] = redApp;  // update the utility reduction for the application
+    }
+
+    return updatedAppReduction;
+}
+
+
+map<MacNodeId, bool> AccuracyDistIS::solutionSelection(map<MacNodeId, bool>& targetApps, string targetCategory)
+{
+    /***
+     * In the distributed scheduling scheme, each scheduler selects the final solution for apps in batches.
+     * each batch corresponds to one preference value.
+     */
+    map<MacNodeId, bool> updatedAppSchedule = targetApps;  // map to store the updated scheduling result for the target applications
+    while (!candidateInsts_.empty())
+    {
+        int instIdx = candidateInsts_.back();  // get the index of the last candidate instance
+        // instance not in the target category means that all target candidates in this round have been selected, break the loop
+        if (instCategory_[instIdx] != targetCategory)
+            break;
+
+        int appIndex = instAppIndex_[instIdx];  // get the application index for the instance
+        AppId appId = appIds_[appIndex];  // get the application ID for the instance
+        if (targetApps.find(appId) == targetApps.end())
+            break;  // if the application is not in the target applications, break the loop
+
+        candidateInsts_.pop_back();  // remove the last candidate instance from the vector
+        if (updatedAppSchedule[appId])
+            continue;  // if the application has already been scheduled, skip
+
+        if (instRBs_[instIdx] > maxRB_ || instCUs_[instIdx] > maxCU_)
+            continue;  // if the required resource is larger than the available resource, skip
+
+        // add the instance to the final schedule, and update the available resource
+        finalSchedule_.emplace_back(appId, rsuId_, rsuId_, instRBs_[instIdx], instCUs_[instIdx]);
+        maxRB_ -= instRBs_[instIdx];
+        maxCU_ -= instCUs_[instIdx];
+
+        updatedAppSchedule[appId] = true;  // schedule the application, and update the scheduling result
+    }
+
+    return updatedAppSchedule;
+}
 
 
 double AccuracyDistIS::computeExeDelay(MacNodeId rsuId, double cmpUnits, string serviceType)

@@ -12,8 +12,8 @@
 //  License: Academic Public License -- NOT FOR COMMERCIAL USE
 //
 
-#ifndef _MECRT_SCHEDULER_SCHEME_ACCURACY_DistIS_H_
-#define _MECRT_SCHEDULER_SCHEME_ACCURACY_DistIS_H_
+#ifndef _MECRT_SCHEDULER_SCHEME_ACCURACY_DISTIS_H_
+#define _MECRT_SCHEDULER_SCHEME_ACCURACY_DISTIS_H_
 
 #include "mecrt/apps/scheduler/SchemeBase.h"
 
@@ -39,6 +39,14 @@ class AccuracyDistIS : public SchemeBase
     vector<string> instServiceType_;  // selected service types for each service instances
     vector<double> instExeDelay_;  // execution delay for each service instance
 
+    vector<string> instCategory_; // category for the service instances
+    vector<double> rbUtilization_;  // resource block utilization for the service instances
+    vector<double> cuUtilization_;  // computing unit utilization for the service instances
+
+    double reductionRsu_; // reduction for the RSU
+    vector<double> reductAppInRsu_; // vector to store the reduction of utility for each application in the RSU
+
+    vector<int> candidateInsts_; // store the index of the candidate service instances
     vector<srvInstance> finalSchedule_; // store the final schedule for the distributed scheduling scheme
 
   public:
@@ -64,14 +72,20 @@ class AccuracyDistIS : public SchemeBase
     /***
      * select the candidates (e.g., schedule instances) for target applications.
      * in distributed scheduling, every scheduler schedule applications in batches, one batch for each synchronization round
+     * targetApps: {appId: utilityReduction}  the utility reduction for the target applications
+     * targetCategory: the category of candidates to select
+     * return: {appId: utilityReduction} the updated utility reduction for the target applications
      */
-    virtual void candidateSelection(set<MacNodeId>& targetApps) override {};
+    virtual map<MacNodeId, double> candidateSelection(map<MacNodeId, double>& targetApps, string targetCategory) override;
 
     /***
      * select the final solution from the candidates for target applications.
      * in distributed scheduling, the solution is also selected in batches, one batch for each synchronization round
+     * targetApps: {appId: isScheduled}  whether the target applications has been scheduled
+     * targetCategory: the category of candidates to select
+     * return: {appId: isScheduled} the updated scheduling result for the target applications
      */
-    virtual void solutionSelection(set<MacNodeId>& targetApps) override {};
+   virtual map<MacNodeId, bool> solutionSelection(map<MacNodeId, bool>& targetApps, string targetCategory) override;
 
     /***
      * obtain solution when the distributed scheduling scheme completes
