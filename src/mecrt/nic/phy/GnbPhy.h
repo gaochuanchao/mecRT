@@ -10,6 +10,7 @@
 #define _MECRT_GNB_AIRPHY_H_
 
 #include "stack/phy/layer/LtePhyEnbD2D.h"
+#include "mecrt/common/NodeInfo.h"
 
 /**
  * @class GnbPhy
@@ -39,6 +40,9 @@ class GnbPhy : public LtePhyEnbD2D
     // ========= LtePhyEnbD2D ==========
     bool enableD2DCqiReporting_;
 
+    NodeInfo *nodeInfo_;  // the node information of the vehicle
+    bool enableDistScheme_; // whether to enable the distributed scheduling scheme, default is false
+
   public:
 
     /**
@@ -56,6 +60,8 @@ class GnbPhy : public LtePhyEnbD2D
     };
 
   protected:
+
+    virtual void handleDistSchemePkt(UserControlInfo* lteinfo, LteAirFrame* frame);
 
     // ================================
     // ========== LtePhyBase ==========

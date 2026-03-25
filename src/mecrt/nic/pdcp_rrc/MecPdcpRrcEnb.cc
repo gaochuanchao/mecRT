@@ -117,7 +117,7 @@ void MecPdcpRrcEnb::fromLowerLayer(cPacket *pktAux)
     auto pkt = check_and_cast<Packet*>(pktAux);
     pkt->trim();
     std::string pktName = pkt->getName();
-    if(pktName == "SrvReq" || pktName == "RsuFD" || pktName == "SrvFD")
+    if(pktName == "SrvReq" || pktName == "RsuFD" || pktName == "SrvFD" || pktName == "DistToken" || pktName == "DistPV")
     {
         // deliver to IP layer
         EV << "MecPdcpRrcEnb::fromLowerLayer - Sending packet " << pktName << " to IP stack\n";

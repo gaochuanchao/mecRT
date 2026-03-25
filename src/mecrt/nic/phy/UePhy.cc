@@ -594,7 +594,7 @@ void UePhy::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVector f
             {
                 pvMax_ = accessibleRsus_.size();
                 distStage_ = "CandiSel";
-                SendPreferenceValue();
+                sendPreferenceValue();
                 sendInitTokenToRsu();
             }
         }
@@ -1076,7 +1076,7 @@ void UePhy::createTokenForApp(inet::Packet *packet)
     appTermnationTime_[appId] = srvReqPkt->getStopTime();
 }
 
-void UePhy::SendPreferenceValue()
+void UePhy::sendPreferenceValue()
 {
     /***
      * 1. define the preference value for each accessible RSU
@@ -1125,7 +1125,7 @@ void UePhy::SendPreferenceValue()
                 << nodeId_ << " sending preference value " << pv << " for app " << appId
                 << " to RSU " << shuffledRsus[pv-1] << endl;
 
-            SendDistPacketToRsu(packet, "DistPV", shuffledRsus[pv-1]);
+            sendDistPacketToRsu(packet, "DistPV", shuffledRsus[pv-1]);
         }
     }
 }
@@ -1145,7 +1145,7 @@ void UePhy::sendInitTokenToRsu()
         auto packet = new inet::Packet("DistToken");
         packet->insertAtFront(copyToken);
 
-        SendDistPacketToRsu(packet, "DistToken", rsuId);
+        sendDistPacketToRsu(packet, "DistToken", rsuId);
     }
 }
 
@@ -1179,7 +1179,7 @@ void UePhy::forwardTokenToRsu(inet::Packet *packet)
 
             EV << "UePhy::forwardTokenToRsu - Candidate Selection Stage, forward token to the next RSU " 
                 << pv2Rsu_[pv] << ", new PV: " << pv << endl;
-            SendDistPacketToRsu(newPkt, "DistToken", pv2Rsu_[pv]);
+            sendDistPacketToRsu(newPkt, "DistToken", pv2Rsu_[pv]);
         }
         else if (pv == pvMax_ && targetCategory == "LI")
         {
@@ -1190,7 +1190,7 @@ void UePhy::forwardTokenToRsu(inet::Packet *packet)
 
             EV << "UePhy::forwardTokenToRsu - Candidate Selection Stage, changeto HI category and send to RSU " 
                 << pv2Rsu_[1] << ", new PV: " << pv << endl;
-            SendDistPacketToRsu(newPkt, "DistToken", pv2Rsu_[1]);
+            sendDistPacketToRsu(newPkt, "DistToken", pv2Rsu_[1]);
         }
         else if (pv == pvMax_ && targetCategory == "HI")
         {
@@ -1201,7 +1201,7 @@ void UePhy::forwardTokenToRsu(inet::Packet *packet)
 
             EV << "UePhy::forwardTokenToRsu - Candidate Selection Stage is done, enter Solution Selection Stage, send token back to RSU " 
                 << pv2Rsu_[pvMax_] << ", new PV: " << pvMax_ << endl;
-            SendDistPacketToRsu(newPkt, "DistToken", pv2Rsu_[pvMax_]);
+            sendDistPacketToRsu(newPkt, "DistToken", pv2Rsu_[pvMax_]);
         }
     }
     else if (distStage_ == "SolSel")
@@ -1214,7 +1214,7 @@ void UePhy::forwardTokenToRsu(inet::Packet *packet)
 
             EV << "UePhy::forwardTokenToRsu - Solution Selection Stage, forward token to the next RSU " 
                 << pv2Rsu_[pv] << ", new PV: " << pv << endl;
-            SendDistPacketToRsu(newPkt, "DistToken", pv2Rsu_[pv]);
+            sendDistPacketToRsu(newPkt, "DistToken", pv2Rsu_[pv]);
         }
         else if (pv == 1 && targetCategory == "HI")
         {
@@ -1225,14 +1225,14 @@ void UePhy::forwardTokenToRsu(inet::Packet *packet)
 
             EV << "UePhy::forwardTokenToRsu - Solution Selection Stage, change to LI category and send to RSU " 
                 << pv2Rsu_[pvMax_] << ", new PV: " << pvMax_ << endl;
-            SendDistPacketToRsu(newPkt, "DistToken", pv2Rsu_[pvMax_]);
+            sendDistPacketToRsu(newPkt, "DistToken", pv2Rsu_[pvMax_]);
         }
     }
     
 }
 
 
-void UePhy::SendDistPacketToRsu(inet::Packet *packet, const char * frameName, MacNodeId destRsuId)
+void UePhy::sendDistPacketToRsu(inet::Packet *packet, const char * frameName, MacNodeId destRsuId)
 {
     UserControlInfo* uinfo = new UserControlInfo();
     uinfo->setSourceId(nodeId_);

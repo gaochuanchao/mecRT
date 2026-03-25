@@ -213,6 +213,8 @@ void GnbMac::initialize(int stage)
         } catch (cException &e) {
             throw cRuntimeError("GnbMac:initialize - cannot find nodeInfo module\n");
         }
+
+        enableDistScheme_ = nodeInfo_->getEnableDistScheme(); // whether to enable the distributed scheduling scheme, get from NodeInfo
         
         // ========= LteMacEnb ===========
         /* Create and initialize AMC module */
@@ -808,6 +810,19 @@ void GnbMac::fromPhy(cPacket *pktAux)
         }
         else if (userInfo->getFrameType()==GRANTPKT)
         {
+            if (enableDistScheme_)
+            {
+                if (!strcmp(pkt->getName(), "DistToken") || !strcmp(pkt->getName(), "DistPV"))
+                {
+                    EV << NOW << " GnbMac::fromPhy - node " << nodeId_ << " Received distributed scheduling pkt " 
+                        << pkt->getName() << ", send to local scheduler" << endl;
+                    pkt->clearTags();
+                    mecSendDataToAppLayer(pkt, nodeInfo_->getLocalSchedulerPort(), gnbAddress_);
+                    
+                    return;
+                }
+            }
+
             //Scheduling Grant
             EV << NOW << " GnbMac::fromPhy - node " << nodeId_ << " Received Scheduling Grant pkt" << endl;
             macHandleGrant(pkt);
@@ -879,6 +894,7 @@ void GnbMac::fromPhy(cPacket *pktAux)
         }
     }
 }
+
 
 
 void GnbMac::macHandleRac(cPacket* pktAux)
@@ -1102,7 +1118,7 @@ void GnbMac::mecFeedbackRsuStatus(double carrierFreq, MacNodeId ueId, bool isBro
             rsuFd->addTag<CreationTimeTag>()->setCreationTime(simTime());
             packet->insertAtBack(rsuFd);
 
-            mecSendDataToServer(packet, serverPort_, gnbAddress_);
+            mecSendDataToAppLayer(packet, serverPort_, gnbAddress_);
         }
 
         return;
@@ -1221,7 +1237,7 @@ void GnbMac::mecFeedbackServiceStatus(AppId appId, bool isSuccess)
     srvStatus->addTag<CreationTimeTag>()->setCreationTime(simTime());
     packet->insertAtFront(srvStatus);
 
-    mecSendDataToServer(packet, appGrantInfo.processGnbPort, appGrantInfo.processGnbAddr);
+    mecSendDataToAppLayer(packet, appGrantInfo.processGnbPort, appGrantInfo.processGnbAddr);
 
     availableBands_ = rbManagerUl_->getAvailableBands();
 }
@@ -1287,11 +1303,11 @@ void GnbMac::mecRecoverRsuStatus()
     rsuFd->addTag<CreationTimeTag>()->setCreationTime(simTime());
     packet->insertAtBack(rsuFd);
 
-    mecSendDataToServer(packet, serverPort_, gnbAddress_);
+    mecSendDataToAppLayer(packet, serverPort_, gnbAddress_);
 }
 
 
-void GnbMac::mecSendDataToServer(Packet* packet, int port, L3Address targetAddr)
+void GnbMac::mecSendDataToAppLayer(Packet* packet, int port, L3Address targetAddr)
 {
     // manually create the udp header and ipv4 header in order
     // to transfer this packet to units outside the 5G core network

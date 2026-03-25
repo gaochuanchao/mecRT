@@ -102,6 +102,7 @@ class GnbMac : public NRMacGnb
     bool disableNic_ = false; // whether to disable the NIC module, used for fault simulation
 
     NodeInfo* nodeInfo_ = nullptr; // pointer to the NodeInfo instance of this node
+    bool enableDistScheme_; // whether to enable the distributed scheduling scheme
 
     /// Vec AMC module
     MecNRAmc *amc_;
@@ -143,6 +144,9 @@ class GnbMac : public NRMacGnb
 
     int availableBands_;  // the number of available bands for the gNB
 
+    // ================================================
+    // ========== For Distributed Scheduling ==========
+    // ================================================
 
 
     /***
@@ -170,9 +174,9 @@ class GnbMac : public NRMacGnb
     // virtual void vecNotifyServiceBandAdjust(AppId appId);
 
     /**
-     * send data packet to RSU server
+     * send data packet to Application layer
      */
-    virtual void mecSendDataToServer(Packet* packet, int port, L3Address gnbAddress);
+    virtual void mecSendDataToAppLayer(Packet* packet, int port, L3Address gnbAddress);
 
     // send the received data to the upper layer
     virtual void flushAppPduList();

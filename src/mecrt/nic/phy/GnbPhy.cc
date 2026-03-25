@@ -155,6 +155,13 @@ void GnbPhy::initialize(int stage)
             channelModel_[carrierFrequency] = chanModel;
         }
 
+        try {
+            nodeInfo_ = getModuleFromPar<NodeInfo>(par("nodeInfoModulePath"), this);
+        } catch (cException &e) {
+            throw cRuntimeError("UeMac::initialize - cannot find nodeInfo module\n");
+        }
+        enableDistScheme_ = nodeInfo_->getEnableDistScheme();
+
         if (enableInitDebug_)
             std::cout << "GnbPhy::initialize - stage: INITSTAGE_PHYSICAL_LAYER - ends" << std::endl;
     }
@@ -269,6 +276,16 @@ void GnbPhy::handleAirFrame(cMessage* msg)
         return;
     }
 
+    // handle packets for distributed scheduling scheme
+    if (enableDistScheme_)
+    {
+        if (!strcmp("DistToken", frame->getName()) || !strcmp("DistPV", frame->getName()))
+        {
+            handleDistSchemePkt(lteInfo, frame);
+            return;
+        }
+    }
+
     //handle all control pkt
     if (handleControlPkt(lteInfo, frame))
         return; // If frame contain a control pkt no further action is needed
@@ -334,6 +351,38 @@ void GnbPhy::handleAirFrame(cMessage* msg)
 
     if (getEnvir()->isGUI())
         updateDisplayString();
+}
+
+
+void GnbPhy::handleDistSchemePkt(UserControlInfo* lteinfo, LteAirFrame* frame)
+{
+    if (strcmp(frame->getName(), "DistToken") == 0)
+    {
+        EV << "GnbPhy::handleDistSchemePkt - received DistToken packet" << endl;
+    }
+    else if (strcmp(frame->getName(), "DistPV") == 0)
+    {
+        EV << "GnbPhy::handleDistSchemePkt - received DistPV packet" << endl;
+    }
+    else
+    {
+        EV << "GnbPhy::handleDistSchemePkt - received unknown packet for distributed scheduling scheme, delete it" << endl;
+        delete lteinfo;
+        delete frame;
+        return;
+    }
+
+    auto pkt = check_and_cast<inet::Packet *>(frame->decapsulate());
+    delete frame;
+
+    // attach the control info to the packet as control info
+    auto lteInfoTag = pkt->addTagIfAbsent<UserControlInfo>();
+    *lteInfoTag = *lteinfo;
+    delete lteinfo;
+
+    // send decapsulated message along with control info to upperGateOut_
+    send(pkt, upperGateOut_);
+
 }
 
 // do not achieve real override, as the original method is not defined as virtual
@@ -444,6 +493,7 @@ void GnbPhy::handleFeedbackPkt(UserControlInfo* lteinfo, LteAirFrame *frame)
     // send decapsulated message along with result control info to upperGateOut_
     send(pktAux, upperGateOut_);
 }
+
 
 
 void GnbPhy::requestFeedback(UserControlInfo* lteinfo, LteAirFrame* frame, Packet* pktAux)

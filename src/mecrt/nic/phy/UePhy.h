@@ -97,13 +97,13 @@ class UePhy : public NRPhyUe
     
     virtual void createTokenForApp(inet::Packet *packet);
 
-    virtual void SendPreferenceValue();
+    virtual void sendPreferenceValue();
 
     virtual void sendInitTokenToRsu();
 
     virtual void forwardTokenToRsu(inet::Packet *packet);
 
-    virtual void SendDistPacketToRsu(inet::Packet *packet, const char * frameName, MacNodeId destRsuId);
+    virtual void sendDistPacketToRsu(inet::Packet *packet, const char * frameName, MacNodeId destRsuId);
 
 
     // ================================
