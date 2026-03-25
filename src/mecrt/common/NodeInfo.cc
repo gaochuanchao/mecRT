@@ -126,6 +126,8 @@ void NodeInfo::initialize(int stage)
         EV_INFO << "NodeInfo:initialize - stage: INITSTAGE_LOCAL\n";        
         // initialize default values
         nodeType_ = par("nodeType").stdstringValue();
+        enableDistScheme_ = par("enableDistScheme").boolValue();
+
         // ifFailTime_ = par("ifFailTime").doubleValue();
         // nodeFailTime_ = par("nodeFailTime").doubleValue();
         // ifRecoverTime_ = par("ifRecoverTime").doubleValue();
@@ -164,6 +166,7 @@ void NodeInfo::initialize(int stage)
         WATCH(nodeFailTime_);
         WATCH(nodeRecoverTime_);
         WATCH_VECTOR(failedIfIds_);
+        WATCH(enableDistScheme_);
 
         if (enableInitDebug_)
             std::cout << "NodeInfo:initialize - stage: INITSTAGE_LOCAL - ends\n";

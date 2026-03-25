@@ -121,8 +121,6 @@ void Scheduler::initialize(int stage)
         virtualLinkRate_ = par("virtualLinkRate");
         fairFactor_ = par("fairFactor");
 
-        enableDistributedScheduling_ = par("enableDistributedScheduling");
-
         vecSchedulingTimeSignal_ = registerSignal("schedulingTime");
         vecSchemeTimeSignal_ = registerSignal("schemeTime");
         vecInsGenerateTimeSignal_ = registerSignal("instanceGenerateTime");
@@ -176,6 +174,7 @@ void Scheduler::initialize(int stage)
             nodeInfo_->setScheduler(this);
 
             rsuId_ = nodeInfo_->getNodeId();
+            enableDistScheme_ = nodeInfo_->getEnableDistScheme();
         }
         catch (std::exception &e)
         {
@@ -217,6 +216,7 @@ void Scheduler::initialize(int stage)
         WATCH(localPort_);
         WATCH(socketId_);
         WATCH_SET(appsWaitStopFb_);
+        WATCH(enableDistScheme_);
 
         if (enableInitDebug_)
             std::cout << "Scheduler::initialize - stage: INITSTAGE_LAST - ends" << std::endl;
@@ -389,7 +389,7 @@ void Scheduler::handleSchedulingStart()
 
 void Scheduler::initializeSchedulingScheme()
 {
-    if (!enableDistributedScheduling_)
+    if (!enableDistScheme_)
     {
         if (!enableBackhaul_ && optimizeObjective_ == "energy")
         {

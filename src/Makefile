@@ -81,6 +81,8 @@ OBJS = \
     $O/mecrt/packets/apps/Grant2Veh.o \
     $O/mecrt/routing/MecOspf.o \
     $O/mecrt/udp/MecUdp.o \
+    $O/mecrt/packets/apps/DistPV_m.o \
+    $O/mecrt/packets/apps/DistToken_m.o \
     $O/mecrt/packets/apps/Grant2Rsu_m.o \
     $O/mecrt/packets/apps/Grant2Veh_Base_m.o \
     $O/mecrt/packets/apps/RsuFeedback_m.o \
@@ -92,6 +94,8 @@ OBJS = \
 
 # Message files
 MSGFILES = \
+    mecrt/packets/apps/DistPV.msg \
+    mecrt/packets/apps/DistToken.msg \
     mecrt/packets/apps/Grant2Rsu.msg \
     mecrt/packets/apps/Grant2Veh_Base.msg \
     mecrt/packets/apps/RsuFeedback.msg \

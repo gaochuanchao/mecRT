@@ -119,7 +119,7 @@ class Scheduler : public omnetpp::cSimpleModule
     omnetpp::simsignal_t expectedJobsToBeOffloadedSignal_;
 
     bool enableBackhaul_ = true; // whether to enable the backhaul network, default is true
-    bool enableDistributedScheduling_ = false; // whether to enable distributed scheduling, default is false
+    bool enableDistScheme_ = false; // whether to enable distributed scheduling, default is false
     string optimizeObjective_; // the optimization objective for scheduling scheme, default is "accuracy"
 
     /*

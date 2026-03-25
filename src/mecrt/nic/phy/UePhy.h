@@ -12,6 +12,7 @@
 #include "stack/phy/layer/NRPhyUe.h"
 #include "mecrt/common/BandManager.h"
 #include "mecrt/common/NodeInfo.h"
+#include "mecrt/packets/apps/DistToken_m.h"
 
 
 class BandManager;
@@ -58,25 +59,52 @@ class UePhy : public NRPhyUe
     // the distance for SRS transmission, if srsDistanceCheck_ is true, the SRS will only be sent to RSUs within this distance
     double srsDistance_;  
 
-	// ========= for offloading =========
-	/***
-     * the offloading power consumption of the device. It is different from the txPower: 
-     *    offload power is the power of whole NIC module
-     *    txPower is the power within the signal (at the transmitter side)
-     */
+    double carrierFrequency_;  // the carrier frequency used by the UE, used for data offloading
+
+    // ========= for offloading =========
+    /***
+       * the offloading power consumption of the device. It is different from the txPower: 
+       *    offload power is the power of whole NIC module
+       *    txPower is the power within the signal (at the transmitter side)
+       */
     double offloadPower_;
     BandManager *bandManager_;
 
-	/***
-	 * Only do broadcasting when the scheduling is going to start
-	 * after scheduling, only send feedback to the offloading rsu to reduce the number of feedback packets
-	 * i.e., if no grant is received by the ue, only broadcast the feedback when next scheduling is going to start 
-	 */
-	double fbPeriod_;
-	std::set<MacNodeId> grantedRsus_;
+    /***
+     * Only do broadcasting when the scheduling is going to start
+     * after scheduling, only send feedback to the offloading rsu to reduce the number of feedback packets
+     * i.e., if no grant is received by the ue, only broadcast the feedback when next scheduling is going to start 
+     */
+    double fbPeriod_;
+    set<MacNodeId> grantedRsus_;
 
-	// ========= for broadcasting =========
-	std::set<MacNodeId> rsuSet_;  // the list of RSUs in the simulation
+    // ========= for broadcasting =========
+    set<MacNodeId> rsuSet_;  // the list of RSUs in the simulation
+
+    // =====================================================
+    // ========= for distributed scheduling scheme =========
+    // =====================================================
+    NodeInfo *nodeInfo_;  // the node information of the vehicle
+    bool enableDistScheme_; // whether to enable the distributed scheduling scheme, default is false
+    // the distributed scheduling tokens for apps running on this UE
+    map<AppId, inet::Ptr<DistToken>> distTokens_;
+    map<AppId, simtime_t> appTermnationTime_;  // the termination time of each app, used to remove the token after the app finishes
+    // store the set of accessible RSUs for this UE, used for token forwarding
+    set<MacNodeId> accessibleRsus_;
+    map<int, MacNodeId> pv2Rsu_;  // {pvId: rsuId}, the preference value assigned to each accessible RSU
+    int pvMax_;  // the maximum preference value, i.e., the number of accessible RSUs
+    string distStage_;  // the stage of distributed scheduling, e.g., "CandiSel" or "SolSel"
+    
+    virtual void createTokenForApp(inet::Packet *packet);
+
+    virtual void SendPreferenceValue();
+
+    virtual void sendInitTokenToRsu();
+
+    virtual void forwardTokenToRsu(inet::Packet *packet);
+
+    virtual void SendDistPacketToRsu(inet::Packet *packet, const char * frameName, MacNodeId destRsuId);
+
 
     // ================================
     // ========= LtePhyBase ==========

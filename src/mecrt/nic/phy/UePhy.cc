@@ -12,6 +12,9 @@
 #include "mecrt/mobility/MecMobility.h"
 #include "mecrt/nic/mac/GnbMac.h"
 
+#include "mecrt/packets/apps/VecPacket_m.h"
+#include "mecrt/packets/apps/DistPV_m.h"
+
 Define_Module(UePhy);
 
 UePhy::UePhy()
@@ -118,6 +121,8 @@ void UePhy::initialize(int stage)
         WATCH(hysteresisTh_);
         WATCH(hysteresisFactor_);
         WATCH(handoverDelta_);
+        WATCH_SET(accessibleRsus_);
+        WATCH_MAP(pv2Rsu_);
 
         // ========= LtePhyUeD2D ==========
         averageCqiD2D_ = registerSignal("averageCqiD2D");
@@ -222,6 +227,8 @@ void UePhy::initialize(int stage)
         channelModel_[carrierFrequency] = primaryChannelModel_;
         binder_->registerCarrierUe(carrierFrequency, numerologyIndex, nodeId_);
 
+        carrierFrequency_ = carrierFrequency;
+
         int vectSize = primaryChannelModel_->getVectorSize();
         LteChannelModel* chanModel = NULL;
         for (int index=1; index<vectSize; index++)
@@ -266,8 +273,6 @@ void UePhy::initialize(int stage)
                 LtePhyBase* cellPhy = check_and_cast<LtePhyBase*>((*it)->eNodeB->getSubmodule("cellularNic")->getSubmodule("phy"));
                 double cellTxPower = cellPhy->getTxPwr();
                 Coord cellPos = cellPhy->getCoord();
-                rsuSet_.insert(cellId);
-
                 if (resAllocateMode_)
                     binder_->registerNextHop(cellId, nodeId_);
 
@@ -276,6 +281,8 @@ void UePhy::initialize(int stage)
                 LteChannelModel* cellChannelModel = cellPhy->getChannelModel(ueCarrierFrequency);
                 if (cellChannelModel == nullptr)
                     continue;
+
+                rsuSet_.insert(cellId);
 
                 // build a control info
                 cInfo->setSourceId(cellId);
@@ -383,6 +390,14 @@ void UePhy::initialize(int stage)
     {
         if (enableInitDebug_)
             std::cout << "UePhy::initialize - stage: INITSTAGE_LAST - begins" << std::endl;
+
+        try {
+            nodeInfo_ = getModuleFromPar<NodeInfo>(par("nodeInfoModulePath"), this);
+        } catch (cException &e) {
+            throw cRuntimeError("UeMac::initialize - cannot find nodeInfo module\n");
+        }
+
+        enableDistScheme_ = nodeInfo_->getEnableDistScheme();
 
         int fbTtiCount = getParentModule()->getSubmodule("nrDlFbGen")->par("fbPeriod");
         fbPeriod_ = fbTtiCount * TTI;   // convert to seconds
@@ -529,6 +544,12 @@ void UePhy::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVector f
         {
             EV << "UePhy::sendFeedback - broadcast feedback to the air channel for carrier " << carrierFrequency << endl;
 
+            if (enableDistScheme_)
+            {
+                accessibleRsus_.clear();
+                pv2Rsu_.clear();
+                pvMax_ = 0;
+            }
             /***
              * LteChannelControl: max interference distance:14057.7m
              * This has the same underlying principle as the sendBroadcast: based on sendDirect()
@@ -554,6 +575,9 @@ void UePhy::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVector f
                     continue;   // skip this RSU
                 }
 
+                if (enableDistScheme_)
+                    accessibleRsus_.insert(destId);
+
                 LteAirFrame* carrierFrame = frame->dup();
                 UserControlInfo* carrierInfo = uinfo->dup();
                 carrierInfo->setCarrierFrequency(carrierFrequency);
@@ -564,6 +588,14 @@ void UePhy::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVector f
                 EV << "UePhy::sendFeedback - " << nodeTypeToA(nodeType_) << " with id "
                     << nodeId_ << " sending feedback to RSU " << destId << endl;
                 sendUnicast(carrierFrame);
+            }
+
+            if (enableDistScheme_)
+            {
+                pvMax_ = accessibleRsus_.size();
+                distStage_ = "CandiSel";
+                SendPreferenceValue();
+                sendInitTokenToRsu();
             }
         }
         else
@@ -794,13 +826,24 @@ void UePhy::handleAirFrame(cMessage* msg)
     // send H-ARQ feedback up
     if (lteInfo->getFrameType() == HARQPKT || lteInfo->getFrameType() == GRANTPKT || lteInfo->getFrameType() == RACPKT || lteInfo->getFrameType() == D2DMODESWITCHPKT)
     {
+        
         //handleControlMsg(frame, lteInfo);
         auto pkt = check_and_cast<inet::Packet *>(frame->decapsulate());
         delete frame;
         *(pkt->addTagIfAbsent<UserControlInfo>()) = *lteInfo;
         delete lteInfo;
-        send(pkt, upperGateOut_);
 
+        if (enableDistScheme_ && !strcmp(pkt->getName(), "DistToken"))
+        {
+            // if this is a distance token, send it to the distance scheme module
+            EV << "UePhy::handleAirFrame - received a distributed token, forward to the next RSU" << endl;
+            forwardTokenToRsu(pkt);
+
+            delete pkt;
+            return;
+        }
+
+        send(pkt, upperGateOut_);
         return;
     }
 
@@ -966,6 +1009,12 @@ void UePhy::handleUpperMessage(cMessage* msg)
             updateMasterNode();
             lteInfo->setDestId(masterId_);
         }
+
+        // check if the packet is SrvReq
+        if (enableDistScheme_ && !strcmp(pkt->getName(), "SrvReq"))
+        {
+            createTokenForApp(pkt);
+        }
         
         frame = new LteAirFrame("harqFeedback-grant");
         // set transmission duration according to the numerology
@@ -1005,4 +1054,201 @@ void UePhy::handleUpperMessage(cMessage* msg)
 }
 
 
+void UePhy::createTokenForApp(inet::Packet *packet)
+{
+    // get the SrvReq packet
+    auto ipv4Header = packet->peekAtFront<inet::Ipv4Header>();
+    auto udpHeader = packet->peekAtFront<inet::UdpHeader>(ipv4Header->getChunkLength());
+    auto srvReqPkt = packet->peekAtFront<VecRequest>(ipv4Header->getChunkLength() + udpHeader->getChunkLength());
+    AppId appId = srvReqPkt->getAppId();
+
+    EV << "UePhy::createTokenForApp - create a token for the application" << appId << endl;
+
+    // create a token for the application
+    inet::Ptr<DistToken> token = inet::makeShared<DistToken>();
+    token->setAppId(appId);
+    token->setUtilReduction(0);
+    token->setPreferenceValue(1);
+    token->setTargetCategory("LI");
+    token->setIsScheduled(false);
+
+    distTokens_[appId] = token;
+    appTermnationTime_[appId] = srvReqPkt->getStopTime();
+}
+
+void UePhy::SendPreferenceValue()
+{
+    /***
+     * 1. define the preference value for each accessible RSU
+     * 2. create a preference value packet and send it to the RSU for each application
+     */
+
+    // create a shuffled list of accessible RSUs
+    std::vector<MacNodeId> shuffledRsus(accessibleRsus_.begin(), accessibleRsus_.end());
+    auto rng = inet::getEnvir()->getRNG(0);
+    for (size_t i = shuffledRsus.size(); i > 1; --i) {
+        size_t j = rng->intRand(i);  // uniform in [0, i-1]
+        std::swap(shuffledRsus[i - 1], shuffledRsus[j]);
+    }
+
+    // remove apps that have been terminated
+    std::vector<AppId> terminatedApps;
+    for (auto& tokenPair : distTokens_)
+    {        
+        AppId appId = tokenPair.first;
+        if (simTime() >= appTermnationTime_[appId])
+        {            
+            terminatedApps.push_back(appId);
+            EV << "UePhy::SendPreferenceValue - application " << appId << " terminates, remove it from distTokens_" << endl;
+        }
+    }
+    for (AppId appId : terminatedApps)
+    {
+        distTokens_.erase(appId);
+        appTermnationTime_.erase(appId);
+    }
+
+    // assign preference value to each accessible RSU and send the preference value to the RSU for each application
+    for (int pv = 1; pv <= shuffledRsus.size(); pv++)
+    {
+        pv2Rsu_[pv] = shuffledRsus[pv-1];
+        for (auto& tokenPair : distTokens_)
+        {
+            AppId appId = tokenPair.first;
+            auto packet = new inet::Packet("DistPV");
+            auto pvPkt = inet::makeShared<DistPV>();
+            pvPkt->setAppId(appId);
+            pvPkt->setPreferenceValue(pv);
+            packet->insertAtFront(pvPkt);
+
+            EV << "UePhy::sendPreferenceValueToRsu - " << nodeTypeToA(nodeType_) << " with id "
+                << nodeId_ << " sending preference value " << pv << " for app " << appId
+                << " to RSU " << shuffledRsus[pv-1] << endl;
+
+            SendDistPacketToRsu(packet, "DistPV", shuffledRsus[pv-1]);
+        }
+    }
+}
+
+
+void UePhy::sendInitTokenToRsu()
+{
+    /***
+     * Send the token to the RSU with PV = 1
+     */
+    
+    MacNodeId rsuId = pv2Rsu_[1];   // send the token to the RSU with PV = 1
+    for (auto& tokenPair : distTokens_)
+    {
+        auto copyToken = makeShared<DistToken>(*(tokenPair.second));
+
+        auto packet = new inet::Packet("DistToken");
+        packet->insertAtFront(copyToken);
+
+        SendDistPacketToRsu(packet, "DistToken", rsuId);
+    }
+}
+
+
+void UePhy::forwardTokenToRsu(inet::Packet *packet)
+{
+    // get the DistToken packet
+    auto ipv4Header = packet->peekAtFront<inet::Ipv4Header>();
+    auto udpHeader = packet->peekAtFront<inet::UdpHeader>(ipv4Header->getChunkLength());
+    auto tokenPkt = packet->peekAtFront<DistToken>(ipv4Header->getChunkLength() + udpHeader->getChunkLength());
+
+    string targetCategory = tokenPkt->getTargetCategory();
+    int pv = tokenPkt->getPreferenceValue();
+
+    if (distStage_ == "SolSel" && pv == 1 && targetCategory == "LI")
+    {
+        EV << "UePhy::forwardTokenToRsu - solution selection is done, algorithm terminated." << endl;
+        return;     // algorithm terminated.
+    }
+        
+    
+    auto newPkt = new inet::Packet("DistToken");
+    auto tokenCopy = makeShared<DistToken>(*tokenPkt);
+    if (distStage_ == "CandiSel")
+    {
+        if (pv < pvMax_)
+        {
+            pv = pv + 1;
+            tokenCopy->setPreferenceValue(pv);
+            newPkt->insertAtFront(tokenCopy);
+
+            EV << "UePhy::forwardTokenToRsu - Candidate Selection Stage, forward token to the next RSU " 
+                << pv2Rsu_[pv] << ", new PV: " << pv << endl;
+            SendDistPacketToRsu(newPkt, "DistToken", pv2Rsu_[pv]);
+        }
+        else if (pv == pvMax_ && targetCategory == "LI")
+        {
+            // change to HI category and send to the RSU with PV = 1
+            tokenCopy->setPreferenceValue(1);
+            tokenCopy->setTargetCategory("HI");
+            newPkt->insertAtFront(tokenCopy);
+
+            EV << "UePhy::forwardTokenToRsu - Candidate Selection Stage, changeto HI category and send to RSU " 
+                << pv2Rsu_[1] << ", new PV: " << pv << endl;
+            SendDistPacketToRsu(newPkt, "DistToken", pv2Rsu_[1]);
+        }
+        else if (pv == pvMax_ && targetCategory == "HI")
+        {
+            // canddiate selection is done, enter the solution selection stage
+            distStage_ = "SolSel";
+            tokenCopy->setPreferenceValue(pvMax_);
+            newPkt->insertAtFront(tokenCopy);
+
+            EV << "UePhy::forwardTokenToRsu - Candidate Selection Stage is done, enter Solution Selection Stage, send token back to RSU " 
+                << pv2Rsu_[pvMax_] << ", new PV: " << pvMax_ << endl;
+            SendDistPacketToRsu(newPkt, "DistToken", pv2Rsu_[pvMax_]);
+        }
+    }
+    else if (distStage_ == "SolSel")
+    {
+        if (pv > 1)
+        {
+            pv = pv - 1;
+            tokenCopy->setPreferenceValue(pv);
+            newPkt->insertAtFront(tokenCopy);
+
+            EV << "UePhy::forwardTokenToRsu - Solution Selection Stage, forward token to the next RSU " 
+                << pv2Rsu_[pv] << ", new PV: " << pv << endl;
+            SendDistPacketToRsu(newPkt, "DistToken", pv2Rsu_[pv]);
+        }
+        else if (pv == 1 && targetCategory == "HI")
+        {
+            // change to LI category and send to the RSU with PV = pvMax_
+            tokenCopy->setTargetCategory("LI");
+            tokenCopy->setPreferenceValue(pvMax_);
+            newPkt->insertAtFront(tokenCopy);
+
+            EV << "UePhy::forwardTokenToRsu - Solution Selection Stage, change to LI category and send to RSU " 
+                << pv2Rsu_[pvMax_] << ", new PV: " << pvMax_ << endl;
+            SendDistPacketToRsu(newPkt, "DistToken", pv2Rsu_[pvMax_]);
+        }
+    }
+    
+}
+
+
+void UePhy::SendDistPacketToRsu(inet::Packet *packet, const char * frameName, MacNodeId destRsuId)
+{
+    UserControlInfo* uinfo = new UserControlInfo();
+    uinfo->setSourceId(nodeId_);
+    uinfo->setFrameType(GRANTPKT);
+    uinfo->setIsCorruptible(false);
+    uinfo->setDirection(UL);
+    uinfo->setCarrierFrequency(carrierFrequency_);
+    uinfo->setDestId(destRsuId);
+
+    LteAirFrame* frame = new LteAirFrame(frameName);
+    frame->encapsulate(check_and_cast<cPacket*>(packet));
+    simtime_t signalLength = TTI;
+    frame->setSchedulingPriority(airFramePriority_-1);
+    frame->setDuration(signalLength);
+    frame->setControlInfo(uinfo);
+
+    sendUnicast(frame);
+}
 
