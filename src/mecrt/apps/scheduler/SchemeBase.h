@@ -19,9 +19,6 @@
 
 using namespace std;
 
-// service instance represented by (appId, offloading rsuId, processing rsuId, bands, cmpUnits)
-typedef tuple<AppId, MacNodeId, MacNodeId, int, int> srvInstance;
-
 class SchemeBase
 {
   protected:

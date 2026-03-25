@@ -63,6 +63,8 @@ void UePhy::initialize(int stage)
 
         airFramePriority_ = -1; // smaller value means higher priority
 
+        distCheckTime_ = 0;
+
         binder_ = getBinder();
         // get gate ids
         upperGateIn_ = findGate("upperGateIn");
@@ -540,11 +542,11 @@ void UePhy::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVector f
          */
         EV << "UePhy::sendFeedback - NOW: " << NOW << ", fbPeriod_: " << fbPeriod_ 
             << ", NEXT_SCHEDULING_TIME: " << NEXT_SCHEDULING_TIME << endl;
-        if ((NOW + fbPeriod_ + 5 * TTI >= NEXT_SCHEDULING_TIME) && (NOW + 5 * TTI <= NEXT_SCHEDULING_TIME))     
+        if ((NOW + fbPeriod_ + 5 * TTI > NEXT_SCHEDULING_TIME) && (NOW + 5 * TTI <= NEXT_SCHEDULING_TIME))     
         {
             EV << "UePhy::sendFeedback - broadcast feedback to the air channel for carrier " << carrierFrequency << endl;
 
-            if (enableDistScheme_)
+            if (enableDistScheme_ && distCheckTime_ < NEXT_SCHEDULING_TIME)
             {
                 accessibleRsus_.clear();
                 pv2Rsu_.clear();
@@ -575,7 +577,7 @@ void UePhy::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVector f
                     continue;   // skip this RSU
                 }
 
-                if (enableDistScheme_)
+                if (enableDistScheme_ && distCheckTime_ < NEXT_SCHEDULING_TIME)
                     accessibleRsus_.insert(destId);
 
                 LteAirFrame* carrierFrame = frame->dup();
@@ -590,12 +592,14 @@ void UePhy::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVector f
                 sendUnicast(carrierFrame);
             }
 
-            if (enableDistScheme_)
+            if (enableDistScheme_ && distCheckTime_ < NEXT_SCHEDULING_TIME)
             {
                 pvMax_ = accessibleRsus_.size();
                 distStage_ = "CandiSel";
                 sendPreferenceValue();
                 sendInitTokenToRsu();
+
+                distCheckTime_ = NEXT_SCHEDULING_TIME;
             }
         }
         else

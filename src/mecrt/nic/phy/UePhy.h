@@ -94,6 +94,7 @@ class UePhy : public NRPhyUe
     map<int, MacNodeId> pv2Rsu_;  // {pvId: rsuId}, the preference value assigned to each accessible RSU
     int pvMax_;  // the maximum preference value, i.e., the number of accessible RSUs
     string distStage_;  // the stage of distributed scheduling, e.g., "CandiSel" or "SolSel"
+    double distCheckTime_;  // the last time when the preference value is assigned
     
     virtual void createTokenForApp(inet::Packet *packet);
 

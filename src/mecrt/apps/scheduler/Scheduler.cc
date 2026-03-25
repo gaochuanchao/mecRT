@@ -129,7 +129,7 @@ void Scheduler::initialize(int stage)
         vecGrantedAppCountSignal_ = registerSignal("grantedAppCount");
         globalSchedulerReadySignal_ = registerSignal("globalSchedulerReady");
         // the expected number of jobs to be offloaded per second at each scheduling period
-        expectedJobsToBeOffloadedSignal_ = registerSignal("expectedJobsToBeOffloaded"); 
+        expectedJobsToBeOffloadedSignal_ = registerSignal("expectedJobsToBeOffloaded");
         
         WATCH(cuStep_);
         WATCH(rbStep_);
@@ -175,6 +175,14 @@ void Scheduler::initialize(int stage)
 
             rsuId_ = nodeInfo_->getNodeId();
             enableDistScheme_ = nodeInfo_->getEnableDistScheme();
+
+            if (enableDistScheme_)
+            {
+                distStage_ = "CandiSel";  // default to candidate selection stage
+                pv2Tokens_.clear();
+                pvCounter_.clear();
+                targetPV_ = 1; // initial target preference value for candidate selection
+            }
         }
         catch (std::exception &e)
         {
@@ -267,6 +275,51 @@ void Scheduler::handleMessage(cMessage *msg)
         delete msg;
         msg = nullptr;
     }
+    else if (!strcmp(msg->getName(), "DistToken"))
+    {
+        if (enableDistScheme_)
+            recordDistToken(msg);
+        
+        delete msg;
+        msg = nullptr;
+    }
+    else if (!strcmp(msg->getName(), "DistPV"))
+    {
+        if (enableDistScheme_)
+        {
+            Packet* pkt = check_and_cast<Packet*>(msg);
+            auto distPV = pkt->peekAtFront<DistPV>();
+
+            pvCounter_[distPV->getPreferenceValue()]++;
+        }
+        
+        delete msg;
+        msg = nullptr;
+    }
+
+}
+
+
+void Scheduler::recordDistToken(cMessage *msg)
+{
+    Packet* pkt = check_and_cast<Packet*>(msg);
+    auto distToken = pkt->peekAtFront<DistToken>();
+    auto tokenCopy = makeShared<DistToken>(*distToken);
+
+    int pv = distToken->getPreferenceValue();
+    pv2Tokens_[pv].push_back(tokenCopy);
+
+    if (pvCounter_[targetPV_] == pv2Tokens_[targetPV_].size())
+    {
+        EV << NOW << " Scheduler::recordDistToken - received all tokens for preference value " << targetPV_ << endl;
+        performBatchScheduling();
+    }
+}
+
+
+void Scheduler::performBatchScheduling()
+{
+
 }
 
 
@@ -337,6 +390,9 @@ void Scheduler::handleSchedulingStart()
     //         << "\t the scheduled time is not reached, re-schedule at " << NEXT_SCHEDULING_TIME << endl;
     //     return;
     // }
+
+    if (enableDistScheme_)
+        pvMax_ = pvCounter_.size();
     
     /***
      * if a service stop command is sent, need to wait for the service stop feedback to update the RSU status
@@ -352,15 +408,21 @@ void Scheduler::handleSchedulingStart()
     schedulingTime_ = SimTime(0, SIMTIME_US);
     
     removeOutdatedInfo();
+    if (!enableDistScheme_)
+    {
+        centralizedScheduleRequest();
+        postScheduling();
+    }
+    
+}
+
+
+void Scheduler::postScheduling()
+{
     // record the real execution time of the scheduling scheme
-    auto start = chrono::steady_clock::now();
-    scheduleRequest();
-    auto end = chrono::steady_clock::now();
-    schedulingTime_ = SimTime(chrono::duration_cast<chrono::microseconds>(end - start).count(), SIMTIME_US);
+    schedulingTime_ = insGenerateTime_ + schemeExecTime_;
     emit(vecSchedulingTimeSignal_, schedulingTime_.dbl());
 
-    schemeExecTime_ = schedulingTime_ - insGenerateTime_;
-    emit(vecSchemeTimeSignal_, schemeExecTime_.dbl());
     if (schemeExecTime_ < schedulingInterval_ - appStopInterval_)
     {
         if (countExeTime_)
@@ -579,6 +641,10 @@ void Scheduler::recordVehRequest(cMessage *msg)
     //         newAppPending_ = true;
     // }
 }
+
+
+
+
 
 /***
  * record the RSU status and the connection between vehicle and RSU
@@ -801,23 +867,24 @@ void Scheduler::checkLostGrant()
 }
 
 
-void Scheduler::scheduleRequest()
+void Scheduler::centralizedScheduleRequest()
 {
-    map<AppId, double> appUtilityMap = map<AppId, double>();
     if (unscheduledApps_.size() == 0)
     {
-        EV << NOW << " Scheduler::scheduleRequest - no request to schedule" << endl;
+        EV << NOW << " Scheduler::centralizedScheduleRequest - no request to schedule" << endl;
+        map<AppId, double> appUtilityMap = map<AppId, double>();
         db_->addGrantedAppInfo(appUtilityMap);
         emit(vecPendingAppCountSignal_, 0);
+        emit(vecInsGenerateTimeSignal_, insGenerateTime_.dbl());
+        emit(vecSchemeTimeSignal_, schemeExecTime_.dbl());
+        emit(vecGrantedAppCountSignal_, 0);
+        emit(vecUtilitySignal_, 0);
+        emit(expectedJobsToBeOffloadedSignal_, 0);
+
         return;
     }
 
     emit(vecPendingAppCountSignal_, int(unscheduledApps_.size()));
-
-    vecSchedule_.clear();
-    double totalUtility = 0;
-    double totalOffloadCount = 0;
-
     // record the time for generating the schedule instances
     auto start = chrono::steady_clock::now();
     scheme_->generateScheduleInstances();
@@ -825,7 +892,23 @@ void Scheduler::scheduleRequest()
     insGenerateTime_ = SimTime(chrono::duration_cast<chrono::microseconds>(end - start).count(), SIMTIME_US);
     emit(vecInsGenerateTimeSignal_, insGenerateTime_.dbl());
 
+    start = chrono::steady_clock::now();
     vector<srvInstance> selectedIns = scheme_->scheduleRequests();
+    end = chrono::steady_clock::now();
+    schemeExecTime_ = SimTime(chrono::duration_cast<chrono::microseconds>(end - start).count(), SIMTIME_US);
+    emit(vecSchemeTimeSignal_, schemeExecTime_.dbl());
+
+    collectSchedulingResults(selectedIns);
+}
+
+
+void Scheduler::collectSchedulingResults(vector<srvInstance> &selectedIns)
+{
+    double totalUtility = 0;
+    double totalOffloadCount = 0;
+    vecSchedule_.clear();
+    map<AppId, double> appUtilityMap = map<AppId, double>();
+
     for (srvInstance ins : selectedIns)
     {
         AppId appId = get<0>(ins);

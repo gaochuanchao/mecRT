@@ -28,6 +28,8 @@
 
 #include "mecrt/packets/apps/VecPacket_m.h"
 #include "mecrt/packets/apps/RsuFeedback_m.h"
+#include "mecrt/packets/apps/DistToken_m.h"
+#include "mecrt/packets/apps/DistPV_m.h"
 #include "mecrt/common/MecCommon.h"
 #include "mecrt/common/Database.h"
 #include "mecrt/common/NodeInfo.h"
@@ -77,6 +79,10 @@ struct ServiceInstance {
     double maxOffloadTime;  // the maximum offloading time results in positive energy saving
     string serviceType; // the service type of the application
 };
+
+
+// service instance represented by (appId, offloading rsuId, processing rsuId, bands, cmpUnits)
+typedef tuple<AppId, MacNodeId, MacNodeId, int, int> srvInstance;
 
 
 class SchemeBase;  // forward declaration
@@ -158,6 +164,14 @@ class Scheduler : public omnetpp::cSimpleModule
     omnetpp::cMessage *schedStarter_;   /// start the scheduling
     omnetpp::cMessage *schedComplete_;    /// inform the completion of scheduling
     omnetpp::cMessage *preSchedCheck_;    /// do the necessary check (stop services) before scheduling
+
+    // Distributed scheduling related variables
+    string distStage_;  // the stage of distributed scheduling, e.g., "CandiSel", "SolSel"
+    map<int, vector<Ptr<DistToken>>> pv2Tokens_;  // {pv: vector of tokens}, the received tokens for each preference value
+    map<int, int> pvCounter_;  // {pv: count}, the count of received tokens for each preference value
+    int pvMax_; // the maximum preference value received
+    int targetPV_; // the target preference value for candidate selection
+    vector<double> distBatchTimes_; // the batch times for distributed scheduling, used for performance evaluation
     
   public:
 
@@ -209,7 +223,9 @@ class Scheduler : public omnetpp::cSimpleModule
     /***
      * Schedule the request
      */
-    virtual void scheduleRequest();
+    virtual void centralizedScheduleRequest();
+    virtual void collectSchedulingResults(vector<srvInstance> &selectedIns);
+    virtual void postScheduling();
 
     /**
      * Remove the outdated vehicle-RSU connection, RSU status, and vehicle requests
@@ -242,6 +258,16 @@ class Scheduler : public omnetpp::cSimpleModule
      */
     virtual void checkLostGrant();
 
+
+    /**
+     * Record the distribution token for distributed scheduling
+     */
+    virtual void recordDistToken(cMessage *msg);
+
+    /***
+     * Start Batch Scheduling for distributed scheduling
+     */
+    virtual void performBatchScheduling();
 };
 
 #endif // _MECRT_SCHEDULER_H_
