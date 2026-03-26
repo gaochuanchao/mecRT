@@ -26,6 +26,8 @@ AccuracyFastIS::AccuracyFastIS(Scheduler *scheduler)
 
 void AccuracyFastIS::initializeData()
 {
+    EV << NOW << " AccuracyFastIS::initializeData - Initializing scheduling data" << endl;
+
     AccuracyGreedy::initializeData();
     
     instCategory_.clear();

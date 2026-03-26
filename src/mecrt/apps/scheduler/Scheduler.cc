@@ -13,8 +13,6 @@
 //  License: Academic Public License -- NOT FOR COMMERCIAL USE
 //
 
-#include <chrono>
-
 #include "mecrt/apps/scheduler/Scheduler.h"
 #include "mecrt/apps/scheduler/SchemeBase.h"
 #include "mecrt/apps/scheduler/energy/SchemeFastLR.h"
@@ -33,6 +31,7 @@
 #include "mecrt/apps/scheduler/accuracy/AccuracyGameTheory.h"
 #include "mecrt/apps/scheduler/accuracy/AccuracyGraphMatch.h"
 #include "mecrt/apps/scheduler/distAccuracy/AccuracyDistIS.h"
+#include "mecrt/apps/scheduler/accuracy/AccuracyFastIS.h"
 
 #include "mecrt/packets/apps/Grant2Rsu_m.h"
 #include "mecrt/packets/apps/ServiceStatus_m.h"
@@ -165,7 +164,7 @@ void Scheduler::initialize(int stage)
 
         try
         {
-            nodeInfo_ = check_and_cast<NodeInfo*>(getModuleByPath(par("nodeInfoModulePath").stringValue()));
+            nodeInfo_ = getModuleFromPar<NodeInfo>(par("nodeInfoModulePath"), this);
             nodeInfo_->setLocalSchedulerPort(localPort_);
             nodeInfo_->setScheduleInterval(schedulingInterval_.dbl());
             nodeInfo_->setAppStopInterval(appStopInterval_.dbl());
@@ -178,10 +177,9 @@ void Scheduler::initialize(int stage)
 
             if (enableDistScheme_)
             {
-                distStage_ = "CandiSel";  // default to candidate selection stage
                 pv2Tokens_.clear();
                 pvCounter_.clear();
-                targetPV_ = 1; // initial target preference value for candidate selection
+                distUnScheduledApps_.clear();
             }
         }
         catch (std::exception &e)
@@ -289,8 +287,10 @@ void Scheduler::handleMessage(cMessage *msg)
         {
             Packet* pkt = check_and_cast<Packet*>(msg);
             auto distPV = pkt->peekAtFront<DistPV>();
+            AppId appId = distPV->getAppId();
 
             pvCounter_[distPV->getPreferenceValue()]++;
+            distUnScheduledApps_.insert(appId);
         }
         
         delete msg;
@@ -319,36 +319,33 @@ void Scheduler::recordDistToken(cMessage *msg)
 
 void Scheduler::performBatchScheduling()
 {
+    // perform batch scheduling
+
+
+
+    // At the end, check if the distributed scheduling is terminated
+    if (distStage_ == "SolSel" && targetPV_ == 1 && targetCategory_ == "LI")
+    {
+        EV << NOW << " Scheduler::performBatchScheduling - distributed scheduling terminated" << endl;
+
+        distEndTime_ = chrono::steady_clock::now();
+        schemeExecTime_ = SimTime(chrono::duration_cast<chrono::microseconds>(distEndTime_ - distStartTime_).count(), SIMTIME_US);
+        emit(vecSchemeTimeSignal_, schemeExecTime_.dbl());
+
+        pv2Tokens_.clear();
+        pvCounter_.clear();
+        distUnScheduledApps_.clear();
+
+        vector<srvInstance> selectedIns = scheme_->getFinalSchedule();
+        collectSchedulingResults(selectedIns);
+        postScheduling();
+    }
 
 }
 
 
 void Scheduler::handlePreSchedulingCheck()
-{
-    /***
-     * The NEXT_SCHEDULING_TIME may be updated by other global scheduler when the whole topology is divided
-     * into several parts due to some links or nodes failure. In this case, we need to check if we have reached
-     * the latest NEXT_SCHEDULING_TIME - appStopInterval_.
-     */
-    // commenting out the following code to avoid starvation issue
-    // if (simTime() < NEXT_SCHEDULING_TIME - appStopInterval_)
-    // {
-    //     scheduleAt(NEXT_SCHEDULING_TIME - appStopInterval_, preSchedCheck_);
-    //     EV << NOW << " Scheduler::handleMessage - the NEXT_SCHEDULING_TIME has been updated by other global scheduler!\n"
-    //         << "\t the updated pre-scheduling check time is not reached, re-schedule at " 
-    //         << NEXT_SCHEDULING_TIME - appStopInterval_ << endl;
-        
-    //     // also reset the schedule start timer
-    //     if (schedStarter_->isScheduled())
-    //     {
-    //         cancelEvent(schedStarter_);
-    //         scheduleAt(NEXT_SCHEDULING_TIME, schedStarter_);
-    //         EV << NOW << " Scheduler::handleMessage - re-schedule the scheduling start time at " 
-    //             << NEXT_SCHEDULING_TIME << endl;
-    //     }
-    //     return;
-    // }
-    
+{    
     // check if the stop time is reached for the allocated applications
     for (AppId appId : allocatedApps_)
     {
@@ -369,30 +366,19 @@ void Scheduler::handlePreSchedulingCheck()
         for (AppId appId : allocatedApps_)
             stopService(appId);
     }
-
 }
 
 
 void Scheduler::handleSchedulingStart()
 {
-    /***
-     * TODO: consider how to synchronize multiple global schedulers
-     * currently this does not work, as the scheduling time may be updated by other global scheduler
-     * this scheduler might never been executed if the scheduling time is always updated to a future time
-     *
-     * check if the NEXT_SCHEDULING_TIME has been updated by other global scheduler
-     * if so, then reschedule the scheduling start time
-     */
-    // if (simTime() < NEXT_SCHEDULING_TIME)
-    // {
-    //     scheduleAt(NEXT_SCHEDULING_TIME, schedStarter_);
-    //     EV << NOW << " Scheduler::handleMessage - the NEXT_SCHEDULING_TIME has been updated by other global scheduler!\n"
-    //         << "\t the scheduled time is not reached, re-schedule at " << NEXT_SCHEDULING_TIME << endl;
-    //     return;
-    // }
-
     if (enableDistScheme_)
+    {
+        distStage_ = "CandiSel";  // default to candidate selection stage
+        targetPV_ = 1; // initial target preference value for candidate selection
+        targetCategory_ = "LI"; // initial target category for candidate selection, default to "LI"
         pvMax_ = pvCounter_.size();
+        unscheduledApps_ = distUnScheduledApps_;  // update the unscheduled apps for scheduling
+    }
     
     /***
      * if a service stop command is sent, need to wait for the service stop feedback to update the RSU status
@@ -408,12 +394,115 @@ void Scheduler::handleSchedulingStart()
     schedulingTime_ = SimTime(0, SIMTIME_US);
     
     removeOutdatedInfo();
-    if (!enableDistScheme_)
+    emit(vecPendingAppCountSignal_, int(unscheduledApps_.size()));
+
+    if (unscheduledApps_.size() == 0)
     {
-        centralizedScheduleRequest();
+        EV << NOW << " Scheduler::centralizedScheduleRequest - no request to schedule" << endl;
+        map<AppId, double> appUtilityMap = map<AppId, double>();
+        db_->addGrantedAppInfo(appUtilityMap);
+        emit(vecInsGenerateTimeSignal_, insGenerateTime_.dbl());
+        emit(vecSchemeTimeSignal_, schemeExecTime_.dbl());
+        emit(vecGrantedAppCountSignal_, 0);
+        emit(vecUtilitySignal_, 0);
+        emit(expectedJobsToBeOffloadedSignal_, 0);
+
         postScheduling();
     }
+    else
+    {
+        // record the time for generating the schedule instances
+        auto start = chrono::steady_clock::now();
+        scheme_->generateScheduleInstances();
+        auto end = chrono::steady_clock::now();
+        insGenerateTime_ = SimTime(chrono::duration_cast<chrono::microseconds>(end - start).count(), SIMTIME_US);
+        emit(vecInsGenerateTimeSignal_, insGenerateTime_.dbl());
+
+        if (!enableDistScheme_)
+        {
+            start = chrono::steady_clock::now();
+            vector<srvInstance> selectedIns = scheme_->scheduleRequests();
+            end = chrono::steady_clock::now();
+            schemeExecTime_ = SimTime(chrono::duration_cast<chrono::microseconds>(end - start).count(), SIMTIME_US);
+            emit(vecSchemeTimeSignal_, schemeExecTime_.dbl());
+
+            collectSchedulingResults(selectedIns);
+            postScheduling();
+        }
+        else    // in distributed scheduling, first schedule the first batch of candidates
+        {
+            distStartTime_ = chrono::steady_clock::now();
+            performBatchScheduling();
+        }
+    }
     
+}
+
+
+void Scheduler::collectSchedulingResults(vector<srvInstance> &selectedIns)
+{
+    double totalUtility = 0;
+    double totalOffloadCount = 0;
+    vecSchedule_.clear();
+    map<AppId, double> appUtilityMap = map<AppId, double>();
+
+    for (srvInstance ins : selectedIns)
+    {
+        AppId appId = get<0>(ins);
+        MacNodeId offloadGnbId = get<1>(ins);
+        MacNodeId processGnbId = get<2>(ins);
+        
+        ServiceInstance srv;
+        srv.appId = appId;
+        srv.offloadGnbId = offloadGnbId;
+        srv.processGnbId = processGnbId;
+        srv.bands = get<3>(ins);
+        srv.cmpUnits = get<4>(ins);
+        srv.exeTime = scheme_->getAppExeDelay(appId);
+        srv.utility = scheme_->getAppUtility(appId);
+        srv.serviceType = scheme_->getAppAssignedService(appId);
+
+        if (srv.utility <= 0)
+        {
+            // add time as well
+            throw cRuntimeError("%f Scheduler::scheduleRequest - application %d has 0 utility, please check the scheduling scheme", simTime().dbl(), appId);
+        }
+
+        double appMaxoffloadTime = scheme_->getMaxOffloadTime(appId);
+        if (appMaxoffloadTime <= 0)
+        {
+            throw cRuntimeError("%f Scheduler::scheduleRequest - application %d has 0 max offload time, please check the scheduling scheme", simTime().dbl(), appId);
+        }
+
+        srv.maxOffloadTime = appMaxoffloadTime;
+        // determine the offloading delay result in positive energy saving
+        if (optimizeObjective_ == "energy")
+        {
+            double energyMaxOffloadTime = appInfo_[appId].energy / appInfo_[appId].offloadPower;
+            srv.maxOffloadTime = min(energyMaxOffloadTime, appMaxoffloadTime);
+        }
+        
+        vecSchedule_.push_back(srv);
+        appUtilityMap[appId] = srv.utility;
+        totalUtility += srv.utility;
+        totalOffloadCount += 1.0 / appInfo_[appId].period.dbl();
+    }
+
+    db_->addGrantedAppInfo(appUtilityMap);
+
+    int grantedAppCount = vecSchedule_.size();
+    if (!rescheduleAll_)
+    {
+        grantedAppCount += allocatedApps_.size();
+        for (AppId appId : allocatedApps_)
+        {
+            totalUtility += runningService_[appId].utility;
+        }
+    }
+    
+    emit(vecGrantedAppCountSignal_, grantedAppCount);
+    emit(vecUtilitySignal_, totalUtility);
+    emit(expectedJobsToBeOffloadedSignal_, totalOffloadCount);
 }
 
 
@@ -437,8 +526,13 @@ void Scheduler::postScheduling()
         
     if (periodicScheduling_)
     {
-        // make sure the NEXT_SCHEDULING_TIME has not been updated by other global scheduler
-        // add 1 second margin to avoid starvation
+        /***
+         * When failure occurs in the network, the backhaul network topology may be partitioned into several parts,
+         * and the NEXT_SCHEDULING_TIME may be updated for few time.
+         * To avoid starvation, we add a margin of 1 second to avoid NEXT_SCHEDULING_TIME being updated multiple times
+         * in the same scheduling interval.
+         * TODO: this margin can be further optimized.
+         */
         if (NOW + 1 > NEXT_SCHEDULING_TIME) 
             NEXT_SCHEDULING_TIME = NEXT_SCHEDULING_TIME + schedulingInterval_.dbl();
 
@@ -495,6 +589,8 @@ void Scheduler::initializeSchedulingScheme()
                 scheme_ = new AccuracyGameTheory(this);
             else if (schemeName_ == "GraphMatch")
                 scheme_ = new AccuracyGraphMatch(this);
+            else if (schemeName_ == "FastIS")
+                scheme_ = new AccuracyFastIS(this);
             else
                 scheme_ = new SchemeBase(this);
         }
@@ -532,9 +628,24 @@ void Scheduler::globalSchedulerInit()
 
     if (periodicScheduling_)
     {
+        /***
+         * When the backhaul network is partitioned due to failure, multiple global schedulers can exist.
+         * the first global scheduler recovers after failure need to set a margin for NEXT_SCHEDULING_TIME.
+         */
+        
         // get the time in milliseconds
         double timeNow = int(simTime().dbl() * 1000) / 1000.0;
-        NEXT_SCHEDULING_TIME = appStopInterval_.dbl() + timeNow;
+        if (NEXT_SCHEDULING_TIME > 100000)  // the simulation just starts, initialize the NEXT_SCHEDULING_TIME
+        {
+            NEXT_SCHEDULING_TIME = appStopInterval_.dbl() + timeNow;
+        }
+        else if (simTime() > NEXT_SCHEDULING_TIME)  // the first global scheduler reset after failure.
+        {
+            // add a margin of 0.1s to wait for other global schedulers to be initialized
+            // in case of network being partitioned
+            NEXT_SCHEDULING_TIME = appStopInterval_.dbl() + timeNow + FAULT_RECOVERY_MARGIN;
+        }
+
         scheduleAt(NEXT_SCHEDULING_TIME, schedStarter_);
 
         EV << "Scheduler::globalSchedulerInit - next scheduling time: " << NEXT_SCHEDULING_TIME << std::endl;
@@ -641,9 +752,6 @@ void Scheduler::recordVehRequest(cMessage *msg)
     //         newAppPending_ = true;
     // }
 }
-
-
-
 
 
 /***
@@ -867,106 +975,6 @@ void Scheduler::checkLostGrant()
 }
 
 
-void Scheduler::centralizedScheduleRequest()
-{
-    if (unscheduledApps_.size() == 0)
-    {
-        EV << NOW << " Scheduler::centralizedScheduleRequest - no request to schedule" << endl;
-        map<AppId, double> appUtilityMap = map<AppId, double>();
-        db_->addGrantedAppInfo(appUtilityMap);
-        emit(vecPendingAppCountSignal_, 0);
-        emit(vecInsGenerateTimeSignal_, insGenerateTime_.dbl());
-        emit(vecSchemeTimeSignal_, schemeExecTime_.dbl());
-        emit(vecGrantedAppCountSignal_, 0);
-        emit(vecUtilitySignal_, 0);
-        emit(expectedJobsToBeOffloadedSignal_, 0);
-
-        return;
-    }
-
-    emit(vecPendingAppCountSignal_, int(unscheduledApps_.size()));
-    // record the time for generating the schedule instances
-    auto start = chrono::steady_clock::now();
-    scheme_->generateScheduleInstances();
-    auto end = chrono::steady_clock::now();
-    insGenerateTime_ = SimTime(chrono::duration_cast<chrono::microseconds>(end - start).count(), SIMTIME_US);
-    emit(vecInsGenerateTimeSignal_, insGenerateTime_.dbl());
-
-    start = chrono::steady_clock::now();
-    vector<srvInstance> selectedIns = scheme_->scheduleRequests();
-    end = chrono::steady_clock::now();
-    schemeExecTime_ = SimTime(chrono::duration_cast<chrono::microseconds>(end - start).count(), SIMTIME_US);
-    emit(vecSchemeTimeSignal_, schemeExecTime_.dbl());
-
-    collectSchedulingResults(selectedIns);
-}
-
-
-void Scheduler::collectSchedulingResults(vector<srvInstance> &selectedIns)
-{
-    double totalUtility = 0;
-    double totalOffloadCount = 0;
-    vecSchedule_.clear();
-    map<AppId, double> appUtilityMap = map<AppId, double>();
-
-    for (srvInstance ins : selectedIns)
-    {
-        AppId appId = get<0>(ins);
-        MacNodeId offloadGnbId = get<1>(ins);
-        MacNodeId processGnbId = get<2>(ins);
-        
-        ServiceInstance srv;
-        srv.appId = appId;
-        srv.offloadGnbId = offloadGnbId;
-        srv.processGnbId = processGnbId;
-        srv.bands = get<3>(ins);
-        srv.cmpUnits = get<4>(ins);
-        srv.exeTime = scheme_->getAppExeDelay(appId);
-        srv.utility = scheme_->getAppUtility(appId);
-        srv.serviceType = scheme_->getAppAssignedService(appId);
-
-        if (srv.utility <= 0)
-        {
-            // add time as well
-            throw cRuntimeError("%f Scheduler::scheduleRequest - application %d has 0 utility, please check the scheduling scheme", simTime().dbl(), appId);
-        }
-
-        double appMaxoffloadTime = scheme_->getMaxOffloadTime(appId);
-        if (appMaxoffloadTime <= 0)
-        {
-            throw cRuntimeError("%f Scheduler::scheduleRequest - application %d has 0 max offload time, please check the scheduling scheme", simTime().dbl(), appId);
-        }
-
-        srv.maxOffloadTime = appMaxoffloadTime;
-        // determine the offloading delay result in positive energy saving
-        if (optimizeObjective_ == "energy")
-        {
-            double energyMaxOffloadTime = appInfo_[appId].energy / appInfo_[appId].offloadPower;
-            srv.maxOffloadTime = min(energyMaxOffloadTime, appMaxoffloadTime);
-        }
-        
-        vecSchedule_.push_back(srv);
-        appUtilityMap[appId] = srv.utility;
-        totalUtility += srv.utility;
-        totalOffloadCount += 1.0 / appInfo_[appId].period.dbl();
-    }
-
-    db_->addGrantedAppInfo(appUtilityMap);
-
-    int grantedAppCount = vecSchedule_.size();
-    if (!rescheduleAll_)
-    {
-        grantedAppCount += allocatedApps_.size();
-        for (AppId appId : allocatedApps_)
-        {
-            totalUtility += runningService_[appId].utility;
-        }
-    }
-    
-    emit(vecGrantedAppCountSignal_, grantedAppCount);
-    emit(vecUtilitySignal_, totalUtility);
-    emit(expectedJobsToBeOffloadedSignal_, totalOffloadCount);
-}
 
 
 void Scheduler::removeOutdatedInfo()

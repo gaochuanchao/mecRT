@@ -158,7 +158,7 @@ void GnbPhy::initialize(int stage)
         try {
             nodeInfo_ = getModuleFromPar<NodeInfo>(par("nodeInfoModulePath"), this);
         } catch (cException &e) {
-            throw cRuntimeError("UeMac::initialize - cannot find nodeInfo module\n");
+            throw cRuntimeError("GnbPhy::initialize - cannot find nodeInfo module\n");
         }
         enableDistScheme_ = nodeInfo_->getEnableDistScheme();
 

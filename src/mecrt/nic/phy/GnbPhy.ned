@@ -18,6 +18,7 @@ simple GnbPhy like LtePhy
         @class("GnbPhy");
         
         bool resAllocateMode = default(true);
+        string nodeInfoModulePath = default("^.^.nodeInfo"); // path to the NodeInfo module
         
         // ================================
         // ========== LtePhyBase ========== 

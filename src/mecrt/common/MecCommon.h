@@ -26,7 +26,12 @@ static const int MEC_OSPF_PORT = 38; // the port number used by MecOspf module
  * update by the global scheduler when it finishes a scheduling round
  * referenced by the UePhy module when deciding whether to broadcast feedback
  */
-extern double NEXT_SCHEDULING_TIME; 
+extern double NEXT_SCHEDULING_TIME; // definition, use a large value initially
+
+/***
+ * the time margin for global scheduler initialize after fault recovery, in seconds
+ */
+extern double FAULT_RECOVERY_MARGIN;
 
 
 typedef unsigned int AppId;

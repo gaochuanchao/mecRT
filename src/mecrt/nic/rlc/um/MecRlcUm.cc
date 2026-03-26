@@ -29,7 +29,7 @@ void MecRlcUm::handleLowerMessage(cPacket *pktAux)
 
     // if it is a service request packet, no need to buffer, direct send to the pdcp stack
     std::string pktName = pkt->getName();
-    if(pktName == "SrvReq" || pktName == "RsuFD" || pktName == "SrvFD" || pktName == "DistToken" || pktName == "DistPV")
+    if(pktName == "SrvReq" || pktName == "RsuFD" || pktName == "SrvFD" || pktName == "VehGrant" || pktName == "DistToken" || pktName == "DistPV")
     {
         // forward packet to PDCP
         EV << "MecRlcUm::handleLowerMessage - Sending packet " << pktName << " to port UM_Sap_up$o\n";

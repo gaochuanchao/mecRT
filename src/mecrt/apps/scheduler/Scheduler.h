@@ -18,6 +18,7 @@
 
 #include <string.h>
 #include <omnetpp.h>
+#include <chrono>
 
 #include <inet/common/INETDefs.h>
 #include <inet/transportlayer/contract/udp/UdpSocket.h>
@@ -171,7 +172,11 @@ class Scheduler : public omnetpp::cSimpleModule
     map<int, int> pvCounter_;  // {pv: count}, the count of received tokens for each preference value
     int pvMax_; // the maximum preference value received
     int targetPV_; // the target preference value for candidate selection
+    string targetCategory_; // the target category for candidate selection, e.g., "LI", "HI"
     vector<double> distBatchTimes_; // the batch times for distributed scheduling, used for performance evaluation
+    set<AppId> distUnScheduledApps_;  // the unscheduled apps in distributed scheduling, used to update unscheduledApps_
+    chrono::_V2::steady_clock::time_point distStartTime_; // the start time of distributed scheduling
+    chrono::_V2::steady_clock::time_point distEndTime_; // the end time of distributed scheduling
     
   public:
 
@@ -223,7 +228,6 @@ class Scheduler : public omnetpp::cSimpleModule
     /***
      * Schedule the request
      */
-    virtual void centralizedScheduleRequest();
     virtual void collectSchedulingResults(vector<srvInstance> &selectedIns);
     virtual void postScheduling();
 
