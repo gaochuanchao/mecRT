@@ -119,6 +119,7 @@ class Scheduler : public omnetpp::cSimpleModule
     omnetpp::simsignal_t vecSchedulingTimeSignal_;
     omnetpp::simsignal_t vecSchemeTimeSignal_;
     omnetpp::simsignal_t vecInsGenerateTimeSignal_;
+    omnetpp::simsignal_t vecDistSchemeExecTimeSignal_;
     omnetpp::simsignal_t vecUtilitySignal_;
     omnetpp::simsignal_t vecPendingAppCountSignal_;
     omnetpp::simsignal_t vecGrantedAppCountSignal_;
@@ -165,18 +166,18 @@ class Scheduler : public omnetpp::cSimpleModule
     omnetpp::cMessage *schedStarter_;   /// start the scheduling
     omnetpp::cMessage *schedComplete_;    /// inform the completion of scheduling
     omnetpp::cMessage *preSchedCheck_;    /// do the necessary check (stop services) before scheduling
+    omnetpp::cMessage *postBatchSchedule_; /// the timer for post-processing after each batch scheduling in distributed scheduling
 
     // Distributed scheduling related variables
     string distStage_;  // the stage of distributed scheduling, e.g., "CandiSel", "SolSel"
-    map<int, vector<Ptr<DistToken>>> pv2Tokens_;  // {pv: vector of tokens}, the received tokens for each preference value
-    map<int, int> pvCounter_;  // {pv: count}, the count of received tokens for each preference value
     int pvMax_; // the maximum preference value received
     int targetPV_; // the target preference value for candidate selection
-    string targetCategory_; // the target category for candidate selection, e.g., "LI", "HI"
+    // string targetCategory_; // the target category for candidate selection, e.g., "LI", "HI"
+    map<int, vector<Ptr<DistToken>>> pv2Tokens_;  // {pv: vector of tokens}, the received tokens for each preference value
+    map<int, int> pvCounter_;  // {pv: count}, the count of received tokens for each preference value
     vector<double> distBatchTimes_; // the batch times for distributed scheduling, used for performance evaluation
     set<AppId> distUnScheduledApps_;  // the unscheduled apps in distributed scheduling, used to update unscheduledApps_
-    chrono::_V2::steady_clock::time_point distStartTime_; // the start time of distributed scheduling
-    chrono::_V2::steady_clock::time_point distEndTime_; // the end time of distributed scheduling
+    omnetpp::simtime_t distStartTime_; // the start time of distributed scheduling
     
   public:
 
@@ -229,7 +230,7 @@ class Scheduler : public omnetpp::cSimpleModule
      * Schedule the request
      */
     virtual void collectSchedulingResults(vector<srvInstance> &selectedIns);
-    virtual void postScheduling();
+    virtual void updateNextSchedulingTime();
 
     /**
      * Remove the outdated vehicle-RSU connection, RSU status, and vehicle requests
@@ -246,11 +247,10 @@ class Scheduler : public omnetpp::cSimpleModule
      */
     virtual void sendGrantPacket(ServiceInstance& srv, bool isStart, bool isStop);
 
-	/**
-	 * stop the running/in-initializing service
-	 */
-	virtual void stopService(AppId appId);
-
+    /**
+     * stop the running/in-initializing service
+     */
+    virtual void stopService(AppId appId);
 
     /***
      * Update the RSU service initialization feedback
@@ -272,6 +272,7 @@ class Scheduler : public omnetpp::cSimpleModule
      * Start Batch Scheduling for distributed scheduling
      */
     virtual void performBatchScheduling();
+    virtual void postBatchScheduling();
 };
 
 #endif // _MECRT_SCHEDULER_H_

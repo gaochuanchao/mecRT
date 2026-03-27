@@ -37,6 +37,7 @@ simple Scheduler like IApp
         @signal[schedulingTime](type="double");
         @signal[schemeTime](type="double");
         @signal[instanceGenerateTime](type="double");
+        @signal[distSchemeExecTime](type="double"); // the execution time of the distributed scheduling scheme
         @signal[schemeUtility](type="double");
         @signal[pendingAppCount](type="int");
         @signal[grantedAppCount](type="int");
@@ -45,6 +46,7 @@ simple Scheduler like IApp
         @statistic[schedulingTime](title="scheduling time"; source="schedulingTime"; record=vector, mean, sum);
         @statistic[schemeTime](title="scheme execution time"; source="schemeTime"; record=vector, mean, sum);
         @statistic[instanceGenerateTime](title="schedule instance generating time"; source="instanceGenerateTime"; record=vector, mean, sum);
+        @statistic[distSchemeExecTime](title="distributed scheme execution time"; source="distSchemeExecTime"; record=vector, mean, sum);
         @statistic[schemeUtility](title="total utility per second"; source="schemeUtility"; record=vector, mean, sum);
         @statistic[pendingAppCount](title="number of apps pending to schedule"; source="pendingAppCount"; record=vector, mean, sum);
         @statistic[grantedAppCount](title="number of granted apps"; source="grantedAppCount"; record=vector, mean, sum);

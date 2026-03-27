@@ -201,13 +201,13 @@ void AccuracyDistIS::generateScheduleInstances()
 }
 
 
-map<MacNodeId, double> AccuracyDistIS::candidateSelection(map<MacNodeId, double>& targetApps, string targetCategory)
+map<AppId, double> AccuracyDistIS::candidateSelection(map<AppId, double>& targetApps, string targetCategory)
 {
     /***
      * In the distributed scheduling scheme, each scheduler selects candidates for apps in batches.
      * each batch corresponds to one preference value.
      */
-    map<MacNodeId, double> updatedAppReduction;  // map to store the updated utility reduction for the target applications
+    map<AppId, double> updatedAppReduction;  // map to store the updated utility reduction for the target applications
 
     for (const auto& it : targetApps)
     {
@@ -247,13 +247,13 @@ map<MacNodeId, double> AccuracyDistIS::candidateSelection(map<MacNodeId, double>
 }
 
 
-map<MacNodeId, bool> AccuracyDistIS::solutionSelection(map<MacNodeId, bool>& targetApps, string targetCategory)
+map<AppId, bool> AccuracyDistIS::solutionSelection(map<AppId, bool>& targetApps, string targetCategory)
 {
     /***
      * In the distributed scheduling scheme, each scheduler selects the final solution for apps in batches.
      * each batch corresponds to one preference value.
      */
-    map<MacNodeId, bool> updatedAppSchedule = targetApps;  // map to store the updated scheduling result for the target applications
+    map<AppId, bool> updatedAppSchedule = targetApps;  // map to store the updated scheduling result for the target applications
     while (!candidateInsts_.empty())
     {
         int instIdx = candidateInsts_.back();  // get the index of the last candidate instance
@@ -263,7 +263,7 @@ map<MacNodeId, bool> AccuracyDistIS::solutionSelection(map<MacNodeId, bool>& tar
 
         int appIndex = instAppIndex_[instIdx];  // get the application index for the instance
         AppId appId = appIds_[appIndex];  // get the application ID for the instance
-        if (targetApps.find(appId) == targetApps.end())
+        if (updatedAppSchedule.find(appId) == updatedAppSchedule.end())
             break;  // if the application is not in the target applications, break the loop
 
         candidateInsts_.pop_back();  // remove the last candidate instance from the vector

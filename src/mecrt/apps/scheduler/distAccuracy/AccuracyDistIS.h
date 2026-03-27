@@ -76,7 +76,7 @@ class AccuracyDistIS : public SchemeBase
      * targetCategory: the category of candidates to select
      * return: {appId: utilityReduction} the updated utility reduction for the target applications
      */
-    virtual map<MacNodeId, double> candidateSelection(map<MacNodeId, double>& targetApps, string targetCategory) override;
+    virtual map<AppId, double> candidateSelection(map<AppId, double>& targetApps, string targetCategory) override;
 
     /***
      * select the final solution from the candidates for target applications.
@@ -85,7 +85,7 @@ class AccuracyDistIS : public SchemeBase
      * targetCategory: the category of candidates to select
      * return: {appId: isScheduled} the updated scheduling result for the target applications
      */
-   virtual map<MacNodeId, bool> solutionSelection(map<MacNodeId, bool>& targetApps, string targetCategory) override;
+   virtual map<AppId, bool> solutionSelection(map<AppId, bool>& targetApps, string targetCategory) override;
 
     /***
      * obtain solution when the distributed scheduling scheme completes

@@ -38,6 +38,10 @@
 #include "inet/common/socket/SocketTag_m.h"
 #include "inet/common/TimeTag_m.h"
 #include "inet/networklayer/common/L3AddressTag_m.h" // Include the header for L3AddressInd
+#include <inet/linklayer/common/InterfaceTag_m.h>
+
+#include <numeric>
+
 
 Define_Module(Scheduler);
 
@@ -82,6 +86,11 @@ Scheduler::~Scheduler()
         cancelAndDelete(preSchedCheck_);
         preSchedCheck_ = nullptr;
     }
+    if (postBatchSchedule_)
+    {
+        cancelAndDelete(postBatchSchedule_);
+        postBatchSchedule_ = nullptr;
+    }
 
     if (enableInitDebug_)
         std::cout << "Scheduler::~Scheduler - destroying Scheduler module done!\n";
@@ -123,6 +132,7 @@ void Scheduler::initialize(int stage)
         vecSchedulingTimeSignal_ = registerSignal("schedulingTime");
         vecSchemeTimeSignal_ = registerSignal("schemeTime");
         vecInsGenerateTimeSignal_ = registerSignal("instanceGenerateTime");
+        vecDistSchemeExecTimeSignal_ = registerSignal("distSchemeExecTime");
         vecUtilitySignal_ = registerSignal("schemeUtility");    // total utility per second of the results
         vecPendingAppCountSignal_ = registerSignal("pendingAppCount");
         vecGrantedAppCountSignal_ = registerSignal("grantedAppCount");
@@ -180,6 +190,8 @@ void Scheduler::initialize(int stage)
                 pv2Tokens_.clear();
                 pvCounter_.clear();
                 distUnScheduledApps_.clear();
+                distBatchTimes_.clear();
+                pvMax_ = 0;
             }
         }
         catch (std::exception &e)
@@ -213,6 +225,9 @@ void Scheduler::initialize(int stage)
 
         preSchedCheck_ = new cMessage("PreScheduleCheck");
         preSchedCheck_->setSchedulingPriority(1);        // after other messages
+
+        postBatchSchedule_ = new cMessage("PostBatchSchedule");
+        postBatchSchedule_->setSchedulingPriority(1);        // after other messages
 
         newAppPending_ = false;
             
@@ -251,6 +266,12 @@ void Scheduler::handleMessage(cMessage *msg)
             EV << NOW << " Scheduler::handleMessage - pre-scheduling check\n";
             handlePreSchedulingCheck();
         }
+        else if (!strcmp(msg->getName(), "PostBatchSchedule"))   // do necessary check and update after each batch scheduling in distributed scheduling
+        {
+            EV << NOW << " Scheduler::handleMessage - post batch scheduling processing\n";
+            if (enableDistScheme_)
+                postBatchScheduling();
+        }
     }
     else if (!strcmp(msg->getName(), "SrvReq"))    // request from vehicle
     {
@@ -288,9 +309,12 @@ void Scheduler::handleMessage(cMessage *msg)
             Packet* pkt = check_and_cast<Packet*>(msg);
             auto distPV = pkt->peekAtFront<DistPV>();
             AppId appId = distPV->getAppId();
-
-            pvCounter_[distPV->getPreferenceValue()]++;
             distUnScheduledApps_.insert(appId);
+
+            int pv = distPV->getPreferenceValue();
+            pvCounter_[pv]++;
+            if (pv > pvMax_)
+                pvMax_ = pv;
         }
         
         delete msg;
@@ -319,28 +343,134 @@ void Scheduler::recordDistToken(cMessage *msg)
 
 void Scheduler::performBatchScheduling()
 {
+    // collect the candidate apps for the current batch
+    vector<Ptr<DistToken>>& tokens = pv2Tokens_[targetPV_];
+    string category = tokens[0]->getTargetCategory();
+    simtime_t bacthExecTime = 0;
+
     // perform batch scheduling
-
-
-
-    // At the end, check if the distributed scheduling is terminated
-    if (distStage_ == "SolSel" && targetPV_ == 1 && targetCategory_ == "LI")
+    if (distStage_ == "CandiSel")
     {
-        EV << NOW << " Scheduler::performBatchScheduling - distributed scheduling terminated" << endl;
+        map<AppId, double> appUtilityMap = map<AppId, double>();
+        for (auto& token : tokens)
+        {
+            AppId appId = token->getAppId();
+            double utility = token->getUtilReduction();
+            appUtilityMap[appId] = utility;
 
-        distEndTime_ = chrono::steady_clock::now();
-        schemeExecTime_ = SimTime(chrono::duration_cast<chrono::microseconds>(distEndTime_ - distStartTime_).count(), SIMTIME_US);
-        emit(vecSchemeTimeSignal_, schemeExecTime_.dbl());
+            if (category != token->getTargetCategory()) // check the category consistency
+                throw cRuntimeError("%f Scheduler::performBatchScheduling - the target category of the received tokens is inconsistent", simTime().dbl());
+        }
 
-        pv2Tokens_.clear();
-        pvCounter_.clear();
-        distUnScheduledApps_.clear();
+        // start batch scheduling and record the execution time for candidate selection
+        auto start = chrono::steady_clock::now();
+        map<AppId, double> updatedUtilityMap = scheme_->candidateSelection(appUtilityMap, category);
+        auto end = chrono::steady_clock::now();
+        bacthExecTime = SimTime(chrono::duration_cast<chrono::microseconds>(end - start).count(), SIMTIME_US);
+        
 
-        vector<srvInstance> selectedIns = scheme_->getFinalSchedule();
-        collectSchedulingResults(selectedIns);
-        postScheduling();
+        // update the utility reduction inside the tokens
+        for (auto& token : tokens)
+        {
+            AppId appId = token->getAppId();
+            double updatedUtility = updatedUtilityMap[appId];
+            token->setUtilReduction(updatedUtility);
+        }
+    }
+    else if (distStage_ == "SolSel")
+    {
+        map<AppId, bool> appSelectedMap = map<AppId, bool>();
+        for (auto& token : tokens)
+        {
+            AppId appId = token->getAppId();
+            bool selected = token->isScheduled();
+            appSelectedMap[appId] = selected;
+
+            if (category != token->getTargetCategory()) // check the category consistency
+                throw cRuntimeError("%f Scheduler::performBatchScheduling - the target category of the received tokens is inconsistent", simTime().dbl());
+        }
+
+        // start batch scheduling and record the execution time for solution selection
+        auto start = chrono::steady_clock::now();
+        map<AppId, bool> updatedSelectedMap = scheme_->solutionSelection(appSelectedMap, category);
+        auto end = chrono::steady_clock::now();
+        bacthExecTime = SimTime(chrono::duration_cast<chrono::microseconds>(end - start).count(), SIMTIME_US);
+
+        // update the selected result inside the tokens
+        for (auto& token : tokens)
+        {
+            AppId appId = token->getAppId();
+            bool updatedSelected = updatedSelectedMap[appId];
+            token->setIsScheduled(updatedSelected);
+        }
     }
 
+    distBatchTimes_.push_back(bacthExecTime.dbl());
+    scheduleAfter(bacthExecTime, postBatchSchedule_);
+}
+
+
+void Scheduler::postBatchScheduling()
+{
+    auto& tokens = pv2Tokens_[targetPV_];
+    string category = tokens[0]->getTargetCategory();
+    // send out the tokens to users
+    while (!tokens.empty())
+    {
+        auto token = tokens.back();
+        tokens.pop_back();
+        // get the ue address and the app id from the token
+        AppId appId = token->getAppId();
+        Ipv4Address ueAddr = Ipv4Address(appInfo_[appId].ueIpv4Address);
+        int appPort = MacCidToLcid(appId);
+
+        Packet* pkt = new Packet("DistToken");
+        pkt->insertAtFront(token);
+
+        int nicInterfaceId = nodeInfo_->getNicInterfaceId();
+        EV << "Sending token for app " << token->getAppId() << " to the 5G NIC with interface id " << nicInterfaceId << endl;
+        // find the NIC interface id of the gNodeB
+        pkt->addTagIfAbsent<InterfaceReq>()->setInterfaceId(nicInterfaceId);
+        socket_.sendTo(pkt, ueAddr, appPort);
+    }
+
+    // update the status for distributed scheduling
+    if (distStage_ == "CandiSel")
+    {
+        if (targetPV_ < pvMax_)
+            targetPV_ += 1;  // update the target preference value for the next batch scheduling
+        else if (targetPV_ == pvMax_ && category == "LI")
+            targetPV_ = 1;  // the category will be updated to "HI" by tasks, here we only reset the target preference value
+        else if (targetPV_ == pvMax_ && category == "HI")
+            distStage_ = "SolSel";  // after finishing the candidate selection for all preference values, start the solution selection
+    }
+    else if (distStage_ == "SolSel")
+    {
+        if (targetPV_ > 1)
+            targetPV_ -= 1;  // update the target preference value for the next batch scheduling
+        else if (targetPV_ == 1 && category == "HI")
+            targetPV_ = pvMax_;  // the category will be updated to "LI" by tasks, here we only reset the target preference value
+        else if (targetPV_ == 1 && category == "LI")
+        {
+            EV << NOW << " Scheduler::postBatchScheduling - distributed scheduling terminated" << endl;
+
+            schemeExecTime_ = simTime() - distStartTime_;
+            emit(vecSchemeTimeSignal_, schemeExecTime_.dbl());
+
+            double totalDistBatchTime = accumulate(distBatchTimes_.begin(), distBatchTimes_.end(), 0.0);
+            emit(vecDistSchemeExecTimeSignal_, totalDistBatchTime);
+
+            pv2Tokens_.clear();
+            pvCounter_.clear();
+            distUnScheduledApps_.clear();
+            distBatchTimes_.clear();
+            pvMax_ = 0;
+
+            vector<srvInstance> selectedIns = scheme_->getFinalSchedule();
+            collectSchedulingResults(selectedIns);
+            updateNextSchedulingTime();
+        }
+    }
 }
 
 
@@ -375,8 +505,6 @@ void Scheduler::handleSchedulingStart()
     {
         distStage_ = "CandiSel";  // default to candidate selection stage
         targetPV_ = 1; // initial target preference value for candidate selection
-        targetCategory_ = "LI"; // initial target category for candidate selection, default to "LI"
-        pvMax_ = pvCounter_.size();
         unscheduledApps_ = distUnScheduledApps_;  // update the unscheduled apps for scheduling
     }
     
@@ -407,7 +535,7 @@ void Scheduler::handleSchedulingStart()
         emit(vecUtilitySignal_, 0);
         emit(expectedJobsToBeOffloadedSignal_, 0);
 
-        postScheduling();
+        updateNextSchedulingTime();
     }
     else
     {
@@ -427,11 +555,11 @@ void Scheduler::handleSchedulingStart()
             emit(vecSchemeTimeSignal_, schemeExecTime_.dbl());
 
             collectSchedulingResults(selectedIns);
-            postScheduling();
+            updateNextSchedulingTime();
         }
         else    // in distributed scheduling, first schedule the first batch of candidates
         {
-            distStartTime_ = chrono::steady_clock::now();
+            distStartTime_ = omnetpp::simTime(); // record the start time of distributed scheduling
             performBatchScheduling();
         }
     }
@@ -506,7 +634,7 @@ void Scheduler::collectSchedulingResults(vector<srvInstance> &selectedIns)
 }
 
 
-void Scheduler::postScheduling()
+void Scheduler::updateNextSchedulingTime()
 {
     // record the real execution time of the scheduling scheme
     schedulingTime_ = insGenerateTime_ + schemeExecTime_;
