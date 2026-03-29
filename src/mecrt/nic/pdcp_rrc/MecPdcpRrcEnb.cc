@@ -71,7 +71,7 @@ void MecPdcpRrcEnb::fromDataPort(cPacket *pktAux)
             << " , ToS: " << lteInfo->getTypeOfService()
             << " , Direction: " << dirToA((Direction)lteInfo->getDirection()) << " ]\n";
 
-    if (!strcmp(pkt->getName(), "NicGrant"))
+    if (!strcmp(pkt->getName(), "NicGrant") || !strcmp(pkt->getName(), "DistToken"))
     {
         // deliver to rlc stack
         EV << "MecPdcpRrcEnb::fromDataPort - Sending packet " << pkt->getName() << " to PDCP stack\n";

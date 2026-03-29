@@ -771,6 +771,7 @@ void Scheduler::globalSchedulerInit()
         {
             // add a margin of 0.1s to wait for other global schedulers to be initialized
             // in case of network being partitioned
+            // FAULT_RECOVERY_MARGIN needs to be smaller than connOutdateInterval_
             NEXT_SCHEDULING_TIME = appStopInterval_.dbl() + timeNow + FAULT_RECOVERY_MARGIN;
         }
 

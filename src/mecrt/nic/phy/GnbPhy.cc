@@ -639,8 +639,16 @@ void GnbPhy::handleUpperMessage(cMessage* msg)
         || lteInfo->getFrameType() == RACPKT
         || lteInfo->getFrameType() == D2DMODESWITCHPKT)
     {
-        frame = new LteAirFrame("harqFeedback-grant");
-        frame->setSchedulingPriority(airFramePriority_-1);
+        if (lteInfo->getFrameType() == GRANTPKT && !strcmp(pkt->getName(), "DistToken"))
+        {
+            frame = new LteAirFrame("DistToken");
+            frame->setSchedulingPriority(airFramePriority_);
+        }
+        else
+        {
+            frame = new LteAirFrame("harqFeedback-grant");
+            frame->setSchedulingPriority(airFramePriority_-1);
+        }
     }
     else
     {

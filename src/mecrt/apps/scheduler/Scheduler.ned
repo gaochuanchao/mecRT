@@ -17,7 +17,7 @@ simple Scheduler like IApp
         bool periodicScheduling = default(true);
 		double grantAckInterval @unit(s) = default(1s);	// 1s
 		double appStopInterval @unit(s) = default(0.05s);	// 50ms
-		double connOutdateInterval @unit(s) = default(0.5s);
+		double connOutdateInterval @unit(s) = default(1s);
 		double offloadOverhead @unit(s) = default(0.001s);	// data offloading overhead, 1ms
 		string scheduleScheme = default("Greedy");
 		bool rescheduleAll = default(false);

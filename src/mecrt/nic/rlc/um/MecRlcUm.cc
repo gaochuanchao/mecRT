@@ -118,20 +118,28 @@ void MecRlcUm::handleUpperMessage(cPacket *pktAux)
     EV << "MecRlcUm::handleUpperMessage - Received packet " << pkt->getName() << " from upper layer, size " << pktAux->getByteLength() << "\n";
 
     // if it is a service request packet, no need to buffer, direct send to the mac stack
-    if(!strcmp(pkt->getName(), "SrvReq"))
+    if(!strcmp(pkt->getName(), "SrvReq"))   // needed at the UE side
     {
         EV << "MecRlcUm::handleUpperMessage - It is a service request, no need buffering. Sending packet " << pkt->getName() << " to port UM_Sap_down$o\n";
         send(pkt, down_[OUT_GATE]);
         return;
     }
 
-    if(!strcmp(pkt->getName(), "NicGrant"))
+    if(!strcmp(pkt->getName(), "NicGrant")) // needed at the RSU side
     {
         EV << "MecRlcUm::handleUpperMessage - It is a grant packet form RSU server, no need buffering. Sending packet " 
                     << pkt->getName() << " to port UM_Sap_down$o\n";
         send(pkt, down_[OUT_GATE]);
         return;
-    }    
+    }
+
+    if(!strcmp(pkt->getName(), "DistToken")) // needed at the RSU side
+    {
+        EV << "MecRlcUm::handleUpperMessage - It is a distribution token packet form RSU server, no need buffering. Sending packet " 
+                    << pkt->getName() << " to port UM_Sap_down$o\n";
+        send(pkt, down_[OUT_GATE]);
+        return;
+    }
 
     UmTxEntity* txbuf = getTxBuffer(lteInfo);
 

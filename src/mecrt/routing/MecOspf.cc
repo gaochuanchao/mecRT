@@ -136,7 +136,11 @@ void MecOspf::initialize(int stage)
 
         try {
             nodeInfo_ = getModuleFromPar<NodeInfo>(par("nodeInfoModulePath"), this);
-            routeUpdate_ = nodeInfo_->getRouteUpdate();
+            enableDistScheme_ = nodeInfo_->getEnableDistScheme();
+            if (enableDistScheme_)  // if the distributed scheduling scheme is enabled, skip route update
+                routeUpdate_ = false;
+            else
+                routeUpdate_ = nodeInfo_->getRouteUpdate();
         } catch (cException &e) {
             cerr << "MecOspf:initialize - cannot find nodeInfo module\n";
             nodeInfo_ = nullptr;
@@ -898,48 +902,73 @@ void MecOspf::recomputeIndirectRouting()
     }
 
     // ======= Step 4: determine the scheduler node ========
-    // select the reachable node with maximum number of neighbors as the scheduler
-    // (if multiple, select the one with the lowest IP address) 
-    size_t maxNeighbors = 0;
-    schedulerAddr_ = routerId_; // default to self
-    for (auto nodeKey : reachableNodes) {
-        // only consider nodes has positive nodeId (i.e., gNBs)
-        if (lsaPacketCache_[nodeKey]->getNodeId() <= 0) continue;
+    if (!enableDistScheme_)
+    {
+        // select the reachable node with maximum number of neighbors as the scheduler
+        // (if multiple, select the one with the lowest IP address) 
+        size_t maxNeighbors = 0;
+        schedulerAddr_ = routerId_; // default to self
+        for (auto nodeKey : reachableNodes) {
+            // only consider nodes has positive nodeId (i.e., gNBs)
+            if (lsaPacketCache_[nodeKey]->getNodeId() <= 0) continue;
 
-        size_t nbrCount = topology_[nodeKey].size();
-        if (nbrCount > maxNeighbors) {
-            maxNeighbors = nbrCount;
-            schedulerAddr_ = Ipv4Address(nodeKey);
-        } else if (nbrCount == maxNeighbors) {
-            // If tie, select the one with the lowest IP address
-            Ipv4Address candidate = Ipv4Address(nodeKey);
-            if (candidate < schedulerAddr_) {
-                schedulerAddr_ = candidate;
+            size_t nbrCount = topology_[nodeKey].size();
+            if (nbrCount > maxNeighbors) {
+                maxNeighbors = nbrCount;
+                schedulerAddr_ = Ipv4Address(nodeKey);
+            } else if (nbrCount == maxNeighbors) {
+                // If tie, select the one with the lowest IP address
+                Ipv4Address candidate = Ipv4Address(nodeKey);
+                if (candidate < schedulerAddr_) {
+                    schedulerAddr_ = candidate;
+                }
             }
         }
-    }
 
-    if (schedulerAddr_ == routerId_)
-    {
-        EV_INFO << "MecOspf:recomputeIndirectRouting - this node is selected as the scheduler node (neighbors=" << maxNeighbors << ")\n";
+        if (schedulerAddr_ == routerId_)
+        {
+            EV_INFO << "MecOspf:recomputeIndirectRouting - this node is selected as the scheduler node (neighbors=" << maxNeighbors << ")\n";
+        }
+        else
+        {
+            int globalSchedulerNodeId = lsaPacketCache_[schedulerAddr_.getInt()]->getNodeId();
+            EV_INFO << "MecOspf:recomputeIndirectRouting - selected gNB node " << globalSchedulerNodeId
+            << " (IP address: " << schedulerAddr_ << ", neighbors=" << maxNeighbors << ") as the global scheduler.\n";
+        }
+
+        globalSchedulerReady_ = true;
+        if (nodeInfo_)
+        {
+            map<int, NetworkInterface*> neighborAddrs;
+            for (const auto& kv : neighbors_) {
+                neighborAddrs.insert({kv.second.destIp.getInt(), kv.second.outInterface});
+            }
+            nodeInfo_->updateNeighborAddrs(neighborAddrs);
+            nodeInfo_->setGlobalSchedulerAddr(schedulerAddr_);
+            updateAdjListToScheduler();
+        }
     }
     else
     {
-        int globalSchedulerNodeId = lsaPacketCache_[schedulerAddr_.getInt()]->getNodeId();
-        EV_INFO << "MecOspf:recomputeIndirectRouting - selected gNB node " << globalSchedulerNodeId
-        << " (IP address: " << schedulerAddr_ << ", neighbors=" << maxNeighbors << ") as the global scheduler.\n";
-    }
+        EV_INFO << "MecOspf:recomputeIndirectRouting - distributed scheme enabled, every local scheduler becomes active\n";
 
-    globalSchedulerReady_ = true;
-    if (nodeInfo_)
-    {
-        map<int, NetworkInterface*> neighborAddrs;
-        for (const auto& kv : neighbors_) {
-            neighborAddrs.insert({kv.second.destIp.getInt(), kv.second.outInterface});
+        schedulerAddr_ = routerId_;
+        globalSchedulerReady_ = true;
+        if (nodeInfo_)
+        {
+            map<int, NetworkInterface*> neighborAddrs;
+            for (const auto& kv : neighbors_) {
+                neighborAddrs.insert({kv.second.destIp.getInt(), kv.second.outInterface});
+            }
+            nodeInfo_->updateNeighborAddrs(neighborAddrs);
+            nodeInfo_->setGlobalSchedulerAddr(schedulerAddr_);
+            
+            // add self as neighbor
+            map<MacNodeId, map<MacNodeId, double>> adjList; // add self loop with cost 0
+            MacNodeId selfNodeId = ipv4ToMacNodeId_[routerId_.getInt()];
+            adjList[selfNodeId][selfNodeId] = 0.0;
+            nodeInfo_->updateAdjListToScheduler(adjList);
         }
-        nodeInfo_->updateNeighborAddrs(neighborAddrs);
-        nodeInfo_->setGlobalSchedulerAddr(schedulerAddr_);
-        updateAdjListToScheduler();
     }
 }
 

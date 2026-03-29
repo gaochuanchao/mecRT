@@ -525,15 +525,6 @@ void NodeInfo::handleNodeStatusTimer()
         // check if the time is too early (the NEXT_SCHEDULING_TIME might be updated by other global scheduler)
         double nextUpdateTime = NEXT_SCHEDULING_TIME - appStopInterval_;
 
-        // TODO: adjust multiple global schedulers synchronization mechanism to avoid this check
-        // if (simTime() < nextUpdateTime)
-        // {
-        //     EV << "NodeInfo:handleNodeStatusTimer - the time is too early to send RSU status update, reschedule rsuStatusTimer at "
-        //         << nextUpdateTime << "\n";
-        //     scheduleAt(nextUpdateTime, rsuStatusTimer_);
-        //     return;
-        // }
-
         if (gnbMac_)
             gnbMac_->mecRecoverRsuStatus();
 
@@ -584,7 +575,9 @@ void NodeInfo::setGlobalSchedulerAddr(inet::Ipv4Address addr)
     // then update rsu status and buffered service request in this node to the new global scheduler immediately
     // then start the rsuStatusTimer_ to periodically update the new global scheduler
     globalSchedulerAddr_ = addr;
-    EV_INFO << "NodeInfo: setGlobalSchedulerAddr - the new global scheduler address is " << globalSchedulerAddr_ << "\n";
+
+    if (!enableDistScheme_)
+        EV_INFO << "NodeInfo: setGlobalSchedulerAddr - the new global scheduler address is " << globalSchedulerAddr_ << "\n";
 
     if (globalSchedulerAddr_ == nodeAddr_)
     {
@@ -592,7 +585,7 @@ void NodeInfo::setGlobalSchedulerAddr(inet::Ipv4Address addr)
         if (scheduler_)
             scheduler_->globalSchedulerInit();
 
-        if (hasGUI())
+        if (!enableDistScheme_ && hasGUI())
             enableGlobalSchedulerIcon();
     }
 
@@ -607,11 +600,17 @@ void NodeInfo::setGlobalSchedulerAddr(inet::Ipv4Address addr)
         cancelEvent(rsuStatusTimer_);
         EV_INFO << "NodeInfo: setGlobalSchedulerAddr - cancelled the rsuStatusTimer to reset the timer\n";
     }
-    double timeNow = int(simTime().dbl() * 1000) / 1000.0;
-    double nextUpdateTime = timeNow + scheduleInterval_;    // an offset of appStopInterval_ is already maintained in Scheduler
-    scheduleAt(nextUpdateTime, rsuStatusTimer_);
-    EV_INFO << "NodeInfo: setGlobalSchedulerAddr - scheduled the rsuStatusTimer at " 
-        << nextUpdateTime << "\n";
+
+    if (!enableDistScheme_)
+    {
+        double timeNow = int(simTime().dbl() * 1000) / 1000.0;
+        double nextUpdateTime = timeNow + scheduleInterval_;
+        if (timeNow < NEXT_SCHEDULING_TIME && NEXT_SCHEDULING_TIME <= nextUpdateTime) // the global scheduler has updated the NEXT_SCHEDULING_TIME
+            nextUpdateTime = NEXT_SCHEDULING_TIME - appStopInterval_; 
+
+        scheduleAt(nextUpdateTime, rsuStatusTimer_);
+        EV_INFO << "NodeInfo: setGlobalSchedulerAddr - scheduled the rsuStatusTimer at " << nextUpdateTime << "\n";
+    }
 }
 
 

@@ -87,6 +87,8 @@ class MecOspf : public omnetpp::cSimpleModule
 
 	bool enableInitDebug_ = false;
 
+    bool enableDistScheme_ = false; // whether to enable the distributed scheduling scheme
+    
     bool routeUpdate_ = true;
 
     int localPort_;

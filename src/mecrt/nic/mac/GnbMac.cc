@@ -1348,6 +1348,23 @@ void GnbMac::handleUpperMessage(cPacket* pktAux)
         }
         return;
     }
+
+    if (!strcmp(pktAux->getName(), "DistToken"))
+    {
+        auto pkt = check_and_cast<Packet *>(pktAux);
+        auto lteInfo = pkt->getTag<FlowControlInfo>();
+
+        // add user control informatino to packet
+        auto uinfo = pkt->addTagIfAbsent<UserControlInfo>();
+        uinfo->setDestId(lteInfo->getDestId());
+        uinfo->setSourceId(nodeId_);
+        uinfo->setFrameType(GRANTPKT);
+        uinfo->setCarrierFrequency(ueCarrierFreq_[lteInfo->getDestId()]);
+
+        sendLowerPackets(pkt);
+
+        return;
+    }
     
     auto pkt = check_and_cast<Packet *>(pktAux);
     auto lteInfo = pkt->getTag<FlowControlInfo>();
