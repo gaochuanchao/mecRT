@@ -48,6 +48,12 @@ Server::~Server()
         srvInitComplete_ = nullptr;
     }
 
+    if (appDataReceivedTimer_)
+    {
+        cancelAndDelete(appDataReceivedTimer_);
+        appDataReceivedTimer_ = nullptr;
+    }
+
     if (enableInitDebug_)
         std::cout << "Server::~Server - destroying Server module done!\n";
 }

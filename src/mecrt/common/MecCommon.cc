@@ -14,4 +14,4 @@
 #include "mecrt/common/MecCommon.h"
 
 double NEXT_SCHEDULING_TIME = 1000000;  // definition, use a large value initially
-double FAULT_RECOVERY_MARGIN = 0.2;  // the time margin for global scheduler initialize after fault recovery, in seconds
+bool BATCH_SCHEDULING_ACTIVE = false;    // TODO, consider move this into the local scheduler

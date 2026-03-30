@@ -135,9 +135,9 @@ module UeNic extends NetworkInterface like ICellularNic
             @display("p=100,389");
         }
         // Feedback generator submodule
-        nrDlFbGen: MecDlFeedbackGenerator {
-            @display("p=100,52;is=s");
-        }
+        // nrDlFbGen: MecDlFeedbackGenerator {
+        //     @display("p=100,52;is=s");
+        // }
         //# Modules used to take trace of PDCP pkt flow
         nrPacketFlowManager: NRPacketFlowManagerUe if hasRNISupport {
             @display("p=100,326");

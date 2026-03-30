@@ -5,9 +5,14 @@ src/out/
 src/libmecrt_dbg.so
 src/libmecrt.so
 simulations/vec/results/
+simulations/vec/result-analysis/
 simulations/forward/results/
 simulations/forward/result-analysis/failure
 simulations/forward/result-analysis/normal
 simulations/forward/result-analysis/ablation-fwd
 simulations/forward/result-analysis/ablation-nd
-simulations/vec/result-analysis/
+simulations/distributed/results/
+simulations/distributed/result-analysis/failure
+simulations/distributed/result-analysis/normal
+simulations/distributed/result-analysis/ablation-fwd
+simulations/distributed/result-analysis/ablation-nd

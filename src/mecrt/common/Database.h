@@ -84,7 +84,7 @@ class Database : public omnetpp::cSimpleModule
     };
 
   public:
-    Database(){};
+    Database();
     ~Database();
 
     virtual void initialize(int stage) override;

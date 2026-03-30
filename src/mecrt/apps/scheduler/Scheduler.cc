@@ -111,11 +111,12 @@ void Scheduler::initialize(int stage)
 
         schedulingInterval_ = getAncestorPar("scheduleInterval");
         grantAckInterval_ = par("grantAckInterval");
-        connOutdateInterval_ = par("connOutdateInterval");
 
         appStopInterval_ = par("appStopInterval");
         if (appStopInterval_ >= periodicScheduling_)
             appStopInterval_ = periodicScheduling_/2;
+        
+        faultRecoveryMargin_ = par("faultRecoveryMargin");
         rescheduleAll_ = par("rescheduleAll");
         offloadOverhead_ = par("offloadOverhead");
         cuStep_ = par("cuStep");
@@ -176,8 +177,8 @@ void Scheduler::initialize(int stage)
         {
             nodeInfo_ = getModuleFromPar<NodeInfo>(par("nodeInfoModulePath"), this);
             nodeInfo_->setLocalSchedulerPort(localPort_);
-            nodeInfo_->setScheduleInterval(schedulingInterval_.dbl());
-            nodeInfo_->setAppStopInterval(appStopInterval_.dbl());
+            nodeInfo_->setScheduleInterval(schedulingInterval_);
+            nodeInfo_->setAppStopInterval(appStopInterval_);
             nodeInfo_->setLocalSchedulerSocketId(socketId_);
 
             nodeInfo_->setScheduler(this);
@@ -192,6 +193,13 @@ void Scheduler::initialize(int stage)
                 distUnScheduledApps_.clear();
                 distBatchTimes_.clear();
                 pvMax_ = 0;
+
+                WATCH(distStage_);
+                WATCH(pvMax_);
+                WATCH(targetPV_);
+                WATCH_MAP(pvCounter_);
+                WATCH_VECTOR(distBatchTimes_);
+                WATCH_SET(distUnScheduledApps_);
             }
         }
         catch (std::exception &e)
@@ -315,6 +323,9 @@ void Scheduler::handleMessage(cMessage *msg)
             pvCounter_[pv]++;
             if (pv > pvMax_)
                 pvMax_ = pv;
+
+            EV << "Scheduler::handleMessage - received distributed packet DistPV from app " << appId 
+                << ", preference value " << pv << endl;
         }
         
         delete msg;
@@ -333,7 +344,14 @@ void Scheduler::recordDistToken(cMessage *msg)
     int pv = distToken->getPreferenceValue();
     pv2Tokens_[pv].push_back(tokenCopy);
 
-    if (pvCounter_[targetPV_] == pv2Tokens_[targetPV_].size())
+    // avoid those scheduler with no pending apps to update NEXT_SCHEDULING_TIME too early
+    if (pv == targetPV_ && !BATCH_SCHEDULING_ACTIVE)
+        BATCH_SCHEDULING_ACTIVE = true;
+
+    EV << "Scheduler::recordDistToken - received distributed packet DistToken from app " << distToken->getAppId() 
+        << ", targeting category " << distToken->getTargetCategory() << ", targeting preference value " << pv << endl;
+
+    if ((NOW >= NEXT_SCHEDULING_TIME) && (pvCounter_[targetPV_] == pv2Tokens_[targetPV_].size()))
     {
         EV << NOW << " Scheduler::recordDistToken - received all tokens for preference value " << targetPV_ << endl;
         performBatchScheduling();
@@ -343,10 +361,25 @@ void Scheduler::recordDistToken(cMessage *msg)
 
 void Scheduler::performBatchScheduling()
 {
+    cout << "[DEBUG] Scheduler::performBatchScheduling - start batch scheduling" << endl;
+    
     // collect the candidate apps for the current batch
     vector<Ptr<DistToken>>& tokens = pv2Tokens_[targetPV_];
+    if (tokens.empty())
+    {
+        EV << NOW << " Scheduler::performBatchScheduling - no token received for preference value " << targetPV_ 
+            << ", skip batch scheduling" << endl;
+
+        distBatchTimes_.push_back(0);
+        scheduleAfter(0, postBatchSchedule_);
+        return;
+    }
+
     string category = tokens[0]->getTargetCategory();
     simtime_t bacthExecTime = 0;
+
+    EV << NOW << " Scheduler::performBatchScheduling - start batch scheduling for distributed scheduling"
+         << ", stage: " << distStage_ << ", preference value: " << targetPV_ << ", category: " << category << endl;
 
     // perform batch scheduling
     if (distStage_ == "CandiSel")
@@ -411,9 +444,17 @@ void Scheduler::performBatchScheduling()
 
 
 void Scheduler::postBatchScheduling()
-{
+{   
     auto& tokens = pv2Tokens_[targetPV_];
+    // TODO check if the tokens are available
+
+    
+
     string category = tokens[0]->getTargetCategory();
+
+    EV << NOW << " Scheduler::postBatchScheduling - post batch scheduling"
+         << ", stage: " << distStage_ << ", preference value: " << targetPV_ << ", category: " << category << endl;
+
     // send out the tokens to users
     while (!tokens.empty())
     {
@@ -466,8 +507,15 @@ void Scheduler::postBatchScheduling()
             distBatchTimes_.clear();
             pvMax_ = 0;
 
-            vector<srvInstance> selectedIns = scheme_->getFinalSchedule();
+            vector<srvInstance> selectedIns;
+            if (schemeExecTime_ < schedulingInterval_ - appStopInterval_)
+            {
+                // only handle the scheduling results when the algorithm runtime is acceptable
+                selectedIns = scheme_->getFinalSchedule();  
+            }
             collectSchedulingResults(selectedIns);
+
+            scheduleAt(simTime(), schedComplete_);
             updateNextSchedulingTime();
         }
     }
@@ -508,6 +556,8 @@ void Scheduler::handleSchedulingStart()
         unscheduledApps_ = distUnScheduledApps_;  // update the unscheduled apps for scheduling
     }
     
+    cout << "Scheduler::handleSchedulingStart - scheduling start, time: " << simTime() << ", unscheduled apps: " << unscheduledApps_.size() << endl;
+
     /***
      * if a service stop command is sent, need to wait for the service stop feedback to update the RSU status
      * only perform the next scheduling when all the service stop feedback is received
@@ -535,10 +585,14 @@ void Scheduler::handleSchedulingStart()
         emit(vecUtilitySignal_, 0);
         emit(expectedJobsToBeOffloadedSignal_, 0);
 
-        updateNextSchedulingTime();
+        scheduleAt(simTime(), schedComplete_);
+
+        if (!enableDistScheme_ || !BATCH_SCHEDULING_ACTIVE)
+            updateNextSchedulingTime();
     }
     else
     {
+        cout << "[DEBUG] Scheduler::handleSchedulingStart - generate schedule instances for " << unscheduledApps_.size() << " apps\n";
         // record the time for generating the schedule instances
         auto start = chrono::steady_clock::now();
         scheme_->generateScheduleInstances();
@@ -553,6 +607,18 @@ void Scheduler::handleSchedulingStart()
             end = chrono::steady_clock::now();
             schemeExecTime_ = SimTime(chrono::duration_cast<chrono::microseconds>(end - start).count(), SIMTIME_US);
             emit(vecSchemeTimeSignal_, schemeExecTime_.dbl());
+
+            if (schemeExecTime_ < schedulingInterval_ - appStopInterval_)
+            {
+                if (countExeTime_)
+                    scheduleAt(simTime()+schemeExecTime_, schedComplete_);
+                else
+                    scheduleAt(simTime(), schedComplete_);
+            }
+            else
+            {
+                vecSchedule_.clear();  // clear the schedule if the execution time is too long
+            }
 
             collectSchedulingResults(selectedIns);
             updateNextSchedulingTime();
@@ -569,6 +635,8 @@ void Scheduler::handleSchedulingStart()
 
 void Scheduler::collectSchedulingResults(vector<srvInstance> &selectedIns)
 {
+    EV << NOW << " Scheduler::collectSchedulingResults - scheduling completed, collecting the scheduling results\n";
+    
     double totalUtility = 0;
     double totalOffloadCount = 0;
     vecSchedule_.clear();
@@ -636,21 +704,11 @@ void Scheduler::collectSchedulingResults(vector<srvInstance> &selectedIns)
 
 void Scheduler::updateNextSchedulingTime()
 {
+    cout << "Scheduler::updateNextSchedulingTime - update the next scheduling time, current time: " << simTime() 
+         << ", instance generation time: " << insGenerateTime_ << ", scheme execution time: " << schemeExecTime_ << endl;
     // record the real execution time of the scheduling scheme
     schedulingTime_ = insGenerateTime_ + schemeExecTime_;
     emit(vecSchedulingTimeSignal_, schedulingTime_.dbl());
-
-    if (schemeExecTime_ < schedulingInterval_ - appStopInterval_)
-    {
-        if (countExeTime_)
-            scheduleAt(simTime()+schemeExecTime_, schedComplete_);
-        else
-            scheduleAt(simTime(), schedComplete_);
-    }
-    else
-    {
-        vecSchedule_.clear();  // clear the schedule if the execution time is too long
-    }
         
     if (periodicScheduling_)
     {
@@ -661,11 +719,21 @@ void Scheduler::updateNextSchedulingTime()
          * in the same scheduling interval.
          * TODO: this margin can be further optimized.
          */
-        if (NOW + 1 > NEXT_SCHEDULING_TIME) 
-            NEXT_SCHEDULING_TIME = NEXT_SCHEDULING_TIME + schedulingInterval_.dbl();
+        if (NOW + 1 > NEXT_SCHEDULING_TIME)
+        {
+            NEXT_SCHEDULING_TIME = NEXT_SCHEDULING_TIME + schedulingInterval_;
+            EV << "Scheduler::updateNextSchedulingTime - the scheduling time is updated to " << NEXT_SCHEDULING_TIME << endl;
+        }
+        else
+        {
+            EV << "Scheduler::updateNextSchedulingTime - the scheduling time has been updated by other scheduler, no need to update" << endl;
+        }
+        
+        if (enableDistScheme_ && BATCH_SCHEDULING_ACTIVE)
+            BATCH_SCHEDULING_ACTIVE = false;
 
         scheduleAt(NEXT_SCHEDULING_TIME, schedStarter_);
-        scheduleAt(NEXT_SCHEDULING_TIME - appStopInterval_.dbl(), preSchedCheck_);
+        scheduleAt(NEXT_SCHEDULING_TIME - appStopInterval_, preSchedCheck_);
         EV << NOW << " Scheduler::handleMessage - next scheduling time: " << NEXT_SCHEDULING_TIME << endl;
     }
 }
@@ -765,14 +833,20 @@ void Scheduler::globalSchedulerInit()
         double timeNow = int(simTime().dbl() * 1000) / 1000.0;
         if (NEXT_SCHEDULING_TIME > 100000)  // the simulation just starts, initialize the NEXT_SCHEDULING_TIME
         {
-            NEXT_SCHEDULING_TIME = appStopInterval_.dbl() + timeNow;
+            EV << "Scheduler::globalSchedulerInit - the system is initialized, set the first scheduling time" << std::endl;
+            NEXT_SCHEDULING_TIME = appStopInterval_ + timeNow;
         }
         else if (simTime() > NEXT_SCHEDULING_TIME)  // the first global scheduler reset after failure.
         {
             // add a margin of 0.1s to wait for other global schedulers to be initialized
             // in case of network being partitioned
-            // FAULT_RECOVERY_MARGIN needs to be smaller than connOutdateInterval_
-            NEXT_SCHEDULING_TIME = appStopInterval_.dbl() + timeNow + FAULT_RECOVERY_MARGIN;
+            // faultRecoveryMargin_ needs to be smaller than connOutdateInterval_
+            EV << "Scheduler::globalSchedulerInit - the scheduling time is first updated after recovery" << std::endl;
+            NEXT_SCHEDULING_TIME = appStopInterval_ + timeNow + faultRecoveryMargin_;
+        }
+        else
+        {
+            EV << "Scheduler::globalSchedulerInit - the scheduling time has been updated by other scheduler, no need to update" << std::endl;
         }
 
         scheduleAt(NEXT_SCHEDULING_TIME, schedStarter_);
@@ -1122,15 +1196,15 @@ void Scheduler::removeOutdatedInfo()
             toRemove.insert(appId);
             continue;
         }
-        simtime_t stopTime = appInfo_[appId].stopTime;
-        simtime_t period = appInfo_[appId].period;
+        double stopTime = appInfo_[appId].stopTime.dbl();
+        double period = appInfo_[appId].period.dbl();
         if (period <= 0)
         {
             toRemove.insert(appId);
             EV << NOW << " Scheduler::scheduleRequest - application " << appId << " has non-positive period, remove the request" << endl;
             continue;
         }
-        simtime_t gap = max(period, schedulingInterval_);
+        double gap = max(period, schedulingInterval_);
         if (simTime() >= (stopTime - gap))  // if the stop time is reached
         {
             EV << NOW << " Scheduler::scheduleRequest - application " << appId << " stop time reached, remove the request" << endl;
@@ -1151,7 +1225,7 @@ void Scheduler::removeOutdatedInfo()
         for (MacNodeId rsuId : vr.second)
         {
             auto link = make_tuple(vehId, rsuId);
-            if ((simTime() - veh2RsuTime_[link] > connOutdateInterval_) || (veh2RsuRate_[link] <= 0))
+            if ((simTime() - veh2RsuTime_[link] > appStopInterval_ + faultRecoveryMargin_) || (veh2RsuRate_[link] <= 0))
             {
                 EV << NOW << " Scheduler::removeOutdatedInfo - connection between vehicle[nodeId=" << vehId 
                     << "] and RSU[nodeId=" << rsuId << "] expired, remove the connection info" << endl;
@@ -1173,14 +1247,14 @@ void Scheduler::removeOutdatedInfo()
         simtime_t lastBandUpdateTime = res.second.bandUpdateTime;
         simtime_t lastCmpUpdateTime = res.second.cmpUpdateTime;
 
-        if (simTime() - lastBandUpdateTime > 2 * appStopInterval_)
+        if ((simTime() - lastBandUpdateTime) > (appStopInterval_ + faultRecoveryMargin_))
         {
             EV << NOW << " Scheduler::removeOutdatedInfo - RSU[nodeId=" << res.first << "] bands information expired" << endl;
             res.second.bands = 0;  // the NIC may be turned off, so set the bands to 0
         }
             
 
-        if (simTime() - lastCmpUpdateTime > 2 * appStopInterval_)
+        if ((simTime() - lastCmpUpdateTime) > (appStopInterval_ + faultRecoveryMargin_))
         {
             EV << NOW << " Scheduler::removeOutdatedInfo - RSU[nodeId=" << res.first << "] computing units information expired" << endl;
             res.second.cmpUnits = 0;  // the computing unit may be turned off, so set the cmpUnits to 0

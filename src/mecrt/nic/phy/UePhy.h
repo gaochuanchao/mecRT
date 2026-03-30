@@ -75,8 +75,25 @@ class UePhy : public NRPhyUe
      * after scheduling, only send feedback to the offloading rsu to reduce the number of feedback packets
      * i.e., if no grant is received by the ue, only broadcast the feedback when next scheduling is going to start 
      */
-    double fbPeriod_;
     set<MacNodeId> grantedRsus_;
+
+    // for feedback generation
+    omnetpp::cMessage *channelFeedbackTimer_;   /// self message to trigger the channel feedback generation
+    string feedbackType_;  // the type of feedback to send, e.g., ALLBANDS, PREFERRED, WIDEBAND
+    double fbPeriod_;
+    string rbAllocationType_;  // resource allocation type ("distributed" or "localized")
+    // initial transmission mode, e.g., SINGLE_ANTENNA_PORT0,SINGLE_ANTENNA_PORT5,TRANSMIT_DIVERSITY,OL_SPATIAL_MULTIPLEXING,
+    // CL_SPATIAL_MULTIPLEXING,MULTI_USER,
+    string txMode_;
+    //Type of generator: ideal, real, das_aware
+    //ideal: feedback generator reports feedback for each txmode and for each rus
+    //real: feedback generator reports feedback only for the last txmode used but for each rus
+    //das_aware: feedback generator reports feedback only for the last txmode used and only for rus in Antenna set
+    string feedbackGeneratorType_;
+
+    double moveStartTime_;  // when to start feedback generation
+    double moveStoptime_; // when to stop feedback generation
+
 
     // ========= for broadcasting =========
     set<MacNodeId> rsuSet_;  // the list of RSUs in the simulation
@@ -94,7 +111,7 @@ class UePhy : public NRPhyUe
     map<int, MacNodeId> pv2Rsu_;  // {pvId: rsuId}, the preference value assigned to each accessible RSU
     int pvMax_;  // the maximum preference value, i.e., the number of accessible RSUs
     string distStage_;  // the stage of distributed scheduling, e.g., "CandiSel" or "SolSel"
-    double distCheckTime_;  // the last time when the preference value is assigned
+    bool distReady_;  // whether the UE is ready for distributed scheduling
     
     virtual void createTokenForApp(inet::Packet *packet);
 
@@ -106,6 +123,7 @@ class UePhy : public NRPhyUe
 
     virtual void sendDistPacketToRsu(inet::Packet *packet, const char * frameName, MacNodeId destRsuId);
 
+    virtual void handleSelfMessage(cMessage *msg) override;
 
     // ================================
     // ========= LtePhyBase ==========

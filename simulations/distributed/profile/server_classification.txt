@@ -1,0 +1,5 @@
+network	    RTX4500	RTX4090	RTX3090	accuracy
+resnet101	2.71	2.99	10.58	0.816
+resnet152	5.01	4.46	15.74	0.8231
+convnext-l	7.14	4.28	9.19	0.841
+regnet-y-l	18.75	11.94	20.26	0.8586

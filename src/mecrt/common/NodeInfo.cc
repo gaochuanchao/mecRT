@@ -605,8 +605,9 @@ void NodeInfo::setGlobalSchedulerAddr(inet::Ipv4Address addr)
     {
         double timeNow = int(simTime().dbl() * 1000) / 1000.0;
         double nextUpdateTime = timeNow + scheduleInterval_;
-        if (timeNow < NEXT_SCHEDULING_TIME && NEXT_SCHEDULING_TIME <= nextUpdateTime) // the global scheduler has updated the NEXT_SCHEDULING_TIME
-            nextUpdateTime = NEXT_SCHEDULING_TIME - appStopInterval_; 
+        // the global scheduler has updated the NEXT_SCHEDULING_TIME, for RSUs that invoked after the global RSU
+        if (timeNow < NEXT_SCHEDULING_TIME && NEXT_SCHEDULING_TIME <= nextUpdateTime) 
+            nextUpdateTime = NEXT_SCHEDULING_TIME + scheduleInterval_ - appStopInterval_; 
 
         scheduleAt(nextUpdateTime, rsuStatusTimer_);
         EV_INFO << "NodeInfo: setGlobalSchedulerAddr - scheduled the rsuStatusTimer at " << nextUpdateTime << "\n";

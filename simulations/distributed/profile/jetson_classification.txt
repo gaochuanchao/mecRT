@@ -1,0 +1,4 @@
+network     time    accuracy
+resnet18	31.48	0.6974
+googlenet	44      0.6975
+regnet-x-s	60.14	0.7282

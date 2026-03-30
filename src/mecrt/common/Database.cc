@@ -22,6 +22,13 @@
 
 Define_Module(Database);
 
+Database::Database()
+{
+    errorInjectionTimer_ = nullptr;
+    bnResyncTimer_ = nullptr;
+    collectGrantedAppInfoTimer_ = nullptr;
+}
+
 Database::~Database()
 {
     if (enableInitDebug_)
@@ -87,13 +94,17 @@ void Database::initialize(int stage)
         loadGnbExeDataFromFile();
         loadGnbPosDataFromFile();
 
-        errorInjectionTimer_ = new omnetpp::cMessage("errorInjectionTimer");
-        errorInjectionTimer_->setSchedulingPriority(1); // set a lower priority
-        scheduleAt(simTime(), errorInjectionTimer_);
-
-        bnResyncTimer_ = new omnetpp::cMessage("bnResyncTimer");
-        bnResyncTimer_->setSchedulingPriority(1); // set a lower priority
-
+        if (linkErrorInjection_ || serverErrorInjection_)
+        {
+            errorInjectionTimer_ = new omnetpp::cMessage("errorInjectionTimer");
+            errorInjectionTimer_->setSchedulingPriority(1); // set a lower priority
+            
+            bnResyncTimer_ = new omnetpp::cMessage("bnResyncTimer");
+            bnResyncTimer_->setSchedulingPriority(1); // set a lower priority
+            
+            scheduleAt(simTime(), errorInjectionTimer_);
+        }
+        
         collectGrantedAppInfoTimer_ = new omnetpp::cMessage("collectGrantedAppInfoTimer");
         grantedAppUtilitySignal_ = registerSignal("databaseGrantedAppUtility");
         grantedAppCountSignal_ = registerSignal("databaseGrantedAppCount");

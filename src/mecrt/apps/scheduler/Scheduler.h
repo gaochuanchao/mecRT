@@ -102,7 +102,6 @@ class Scheduler : public omnetpp::cSimpleModule
     map<tuple<MacNodeId, MacNodeId>, int> veh2RsuRate_;  // {(vehId, gnbId): bytePerBand}  byte rate per band per TTI
     double ttiPeriod_; // duration for each TTI
     double offloadOverhead_;    // the overhead for offloading
-    omnetpp::simtime_t connOutdateInterval_;    /// the interval for the connection (veh to gNB) to be outdated
     int cuStep_ = 1;  // the step for computing units, default is 1
     int rbStep_ = 1;  // the step for resource blocks, default is 1
     double srvTimeScale_; // the scale for app execution time on servers with full resource, default is 1.0
@@ -155,13 +154,14 @@ class Scheduler : public omnetpp::cSimpleModule
     bool countExeTime_;    /// whether to count the execution time of schedule scheme, default is true
 
     /// the interval for scheduling the tasks, this interval should be larger than the schedule scheme execution time
-    omnetpp::simtime_t schedulingInterval_;   
     omnetpp::simtime_t schedulingStartTime_;   /// the time when the scheduling starts, for resource updating
     omnetpp::simtime_t schedulingTime_;    /// the time for scheduling the tasks (schemeExecTime_ + insGenerateTime_)
     omnetpp::simtime_t schemeExecTime_;    /// the execution time of the scheduling scheme
     omnetpp::simtime_t insGenerateTime_;    /// the time for generating the schedule instances
     omnetpp::simtime_t grantAckInterval_;    /// the interval for sending the grant again
-	  omnetpp::simtime_t appStopInterval_;    /// the interval for stopping the running application
+    double schedulingInterval_;  
+	  double appStopInterval_;    /// the interval for stopping the running application
+    double faultRecoveryMargin_; // the margin for recovering from the fault
 
     omnetpp::cMessage *schedStarter_;   /// start the scheduling
     omnetpp::cMessage *schedComplete_;    /// inform the completion of scheduling

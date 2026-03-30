@@ -25,6 +25,15 @@ simple UePhy like LtePhy
         double offloadPower = default(2210);    // offloading power of vehicle NIC, default 2210mW
         string nodeInfoModulePath = default("^.^.nodeInfo"); // path to the NodeInfo module
         
+        // ========================================== 
+        // ========== For Channel Feedback ========== 
+        // ========================================== 
+        int fbPeriod = default(30);  // period for Periodic feedback in TTI, e.g., 30 means every 30 TTI
+        string feedbackType = default("ALLBANDS");  // can be ALLBANDS, PREFERRED, WIDEBAND
+        string rbAllocationType = default("localized");     // resource allocation type ("distributed" or "localized")
+        string initialTxMode = default("SINGLE_ANTENNA_PORT0");     // initial txMode (see LteCommon.h) 
+        string feedbackGeneratorType= default("IDEAL"); //Type of generator: ideal, real, das_aware
+
         // ================================
         // ========== LtePhyBase ========== 
         // ================================

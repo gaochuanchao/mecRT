@@ -23,6 +23,7 @@ UePhy::UePhy()
     d2dDecodingTimer_ = nullptr;
     enableInitDebug_ = false;
     das_ = nullptr;
+    channelFeedbackTimer_ = nullptr;
 }
 
 UePhy::~UePhy()
@@ -45,6 +46,11 @@ UePhy::~UePhy()
         cancelAndDelete(d2dDecodingTimer_);
         d2dDecodingTimer_ = nullptr;
     }
+    if (channelFeedbackTimer_)
+    {
+        cancelAndDelete(channelFeedbackTimer_);
+        channelFeedbackTimer_ = nullptr;
+    }
 
     if (enableInitDebug_)
         std::cout << "UePhy::~UePhy - destroying PHY protocol done!\n";
@@ -63,7 +69,7 @@ void UePhy::initialize(int stage)
 
         airFramePriority_ = -1; // smaller value means higher priority
 
-        distCheckTime_ = 0;
+        distReady_ = true;
 
         binder_ = getBinder();
         // get gate ids
@@ -164,11 +170,11 @@ void UePhy::initialize(int stage)
             // TODO register the device to the battery with two accounts, e.g. 0=tx and 1=rx
             // it only affects statistics
             //registerWithBattery("LtePhy", 2);
-//            txAmount_ = par("batteryTxCurrentAmount");
-//            rxAmount_ = par("batteryRxCurrentAmount");
-//
-//            WATCH(txAmount_);
-//            WATCH(rxAmount_);
+            // txAmount_ = par("batteryTxCurrentAmount");
+            // rxAmount_ = par("batteryRxCurrentAmount");
+
+            // WATCH(txAmount_);
+            // WATCH(rxAmount_);
         }
 
         txPower_ = ueTxPower_;
@@ -335,8 +341,6 @@ void UePhy::initialize(int stage)
         das_->setMasterRuSet(masterId_);
         emit(servingCell_, (long)masterId_);
 
-
-
         if (enableInitDebug_)
             std::cout << "UePhy::initialize - stage: INITSTAGE_PHYSICAL_LAYER - ends" << std::endl;
     }
@@ -400,10 +404,32 @@ void UePhy::initialize(int stage)
         }
 
         enableDistScheme_ = nodeInfo_->getEnableDistScheme();
+        WATCH(enableDistScheme_);
 
-        int fbTtiCount = getParentModule()->getSubmodule("nrDlFbGen")->par("fbPeriod");
-        fbPeriod_ = fbTtiCount * TTI;   // convert to seconds
+        if (isNr_)
+        {
+            MecMobility *mobility = check_and_cast<MecMobility*>(getParentModule()->getParentModule()->getSubmodule("mobility"));
+            moveStartTime_ = mobility->getMoveStartTime().dbl();
+            moveStoptime_ = mobility->getMoveStopTime().dbl();
 
+            // for feedback generation
+            feedbackType_ = par("feedbackType").stringValue();
+            rbAllocationType_ = par("rbAllocationType").stringValue();
+            feedbackGeneratorType_ = par("feedbackGeneratorType").stringValue();
+            txMode_ = par("initialTxMode").stringValue();
+            int numTtis = par("fbPeriod");
+            fbPeriod_ = numTtis * TTI;  // convert from TTI to seconds
+            channelFeedbackTimer_ = new omnetpp::cMessage("channelFeedbackTimer");
+            channelFeedbackTimer_->setSchedulingPriority(1);    // after other messages
+            scheduleAt(simTime() + moveStartTime_ + SimTime(uniform(0, numTtis), SIMTIME_MS), channelFeedbackTimer_);
+
+            WATCH(feedbackType_);
+            WATCH(rbAllocationType_);
+            WATCH(feedbackGeneratorType_);
+            WATCH(txMode_);
+            WATCH(fbPeriod_);
+        }
+        
         if (enableInitDebug_)
             std::cout << "UePhy::initialize - stage: INITSTAGE_LAST - ends" << std::endl;
     }
@@ -412,21 +438,22 @@ void UePhy::initialize(int stage)
 
 void UePhy::handleMessage(cMessage* msg)
 {
-    EV << "UePhy::handleMessage - new message received" << endl;
-
     if (msg->isSelfMessage())
     {
+        EV << "UePhy::handleMessage - self message received: " << msg->getName() << endl;
         handleSelfMessage(msg);
     }
     // AirFrame
     else if (msg->getArrivalGate()->getId() == radioInGate_)
     {
+        EV << "UePhy::handleMessage - AirFrame received" << endl;
         handleAirFrame(msg);
     }
-
     // message from stack
     else if (msg->getArrivalGate()->getId() == upperGateIn_)
     {
+        
+        EV << "UePhy::handleMessage - upper message received" << endl;
         handleUpperMessage(msg);
     }
     // unknown message
@@ -434,6 +461,35 @@ void UePhy::handleMessage(cMessage* msg)
     {
         EV << "Unknown message received." << endl;
         delete msg;
+    }
+}
+
+
+void UePhy::handleSelfMessage(cMessage* msg)
+{
+    if(msg->isName("channelFeedbackTimer"))
+    {
+        if (NOW >= moveStoptime_)
+        {
+            EV << "UePhy::handleSelfMessage - mobility stopped, stop channel feedback generation" << endl;
+            return;
+        }
+        
+        LteFeedbackDoubleVector fb;
+        FeedbackRequest feedbackReq;
+        feedbackReq.request = true;
+        feedbackReq.genType = getFeedbackGeneratorType(feedbackGeneratorType_);
+        feedbackReq.type = getFeedbackType(feedbackType_);
+        feedbackReq.txMode = aToTxMode(txMode_);
+        feedbackReq.rbAllocationType = getRbAllocationType(rbAllocationType_);
+
+        sendFeedback(fb, fb, feedbackReq);
+
+        scheduleAt(simTime() + fbPeriod_, channelFeedbackTimer_);
+    }
+    else
+    {
+        LtePhyUeD2D::handleSelfMessage(msg);
     }
 }
 
@@ -489,14 +545,14 @@ void UePhy::updateMasterNode()
 
 void UePhy::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVector fbUl, FeedbackRequest req)
 {
-    Enter_Method("SendFeedback");
-    EV << "UePhy::sendFeedback - feedback from Feedback Generator" << endl;
+    // Enter_Method("SendFeedback");
+    EV << "UePhy::sendFeedback - sending channel quality estimation signal" << endl;
 
     //Create a feedback packet
     auto fbPkt = makeShared<LteFeedbackPkt>();
     //Set the feedback
     fbPkt->setLteFeedbackDoubleVectorDl(fbDl);
-    fbPkt->setLteFeedbackDoubleVectorDl(fbUl);
+    fbPkt->setLteFeedbackDoubleVectorUl(fbUl);
     fbPkt->setSourceNodeId(nodeId_);
 
     auto pkt = new Packet("feedback_pkt");
@@ -546,7 +602,7 @@ void UePhy::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVector f
         {
             EV << "UePhy::sendFeedback - broadcast feedback to the air channel for carrier " << carrierFrequency << endl;
 
-            if (enableDistScheme_ && distCheckTime_ < NEXT_SCHEDULING_TIME)
+            if (enableDistScheme_ && distReady_)
             {
                 accessibleRsus_.clear();
                 pv2Rsu_.clear();
@@ -577,7 +633,7 @@ void UePhy::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVector f
                     continue;   // skip this RSU
                 }
 
-                if (enableDistScheme_ && distCheckTime_ < NEXT_SCHEDULING_TIME)
+                if (enableDistScheme_ && distReady_)
                     accessibleRsus_.insert(destId);
 
                 LteAirFrame* carrierFrame = frame->dup();
@@ -592,14 +648,14 @@ void UePhy::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVector f
                 sendUnicast(carrierFrame);
             }
 
-            if (enableDistScheme_ && distCheckTime_ < NEXT_SCHEDULING_TIME)
+            if (enableDistScheme_ && distReady_)
             {
                 pvMax_ = accessibleRsus_.size();
                 distStage_ = "CandiSel";
                 sendPreferenceValue();
                 sendInitTokenToRsu();
 
-                distCheckTime_ = NEXT_SCHEDULING_TIME;
+                distReady_ = false;
             }
         }
         else
@@ -1062,11 +1118,11 @@ void UePhy::createTokenForApp(inet::Packet *packet)
 {
     // get the SrvReq packet
     auto ipv4Header = packet->peekAtFront<inet::Ipv4Header>();
-    auto udpHeader = packet->peekAtFront<inet::UdpHeader>(ipv4Header->getChunkLength());
-    auto srvReqPkt = packet->peekAtFront<VecRequest>(ipv4Header->getChunkLength() + udpHeader->getChunkLength());
+    auto udpHeader = packet->peekDataAt<inet::UdpHeader>(ipv4Header->getChunkLength());
+    auto srvReqPkt = packet->peekDataAt<VecRequest>(ipv4Header->getChunkLength() + udpHeader->getChunkLength());
     AppId appId = srvReqPkt->getAppId();
 
-    EV << "UePhy::createTokenForApp - create a token for the application" << appId << endl;
+    EV << "UePhy::createTokenForApp - create a token for the application " << appId << endl;
 
     // create a token for the application
     inet::Ptr<DistToken> token = inet::makeShared<DistToken>();
@@ -1158,8 +1214,8 @@ void UePhy::forwardTokenToRsu(inet::Packet *packet)
 {
     // get the DistToken packet
     auto ipv4Header = packet->peekAtFront<inet::Ipv4Header>();
-    auto udpHeader = packet->peekAtFront<inet::UdpHeader>(ipv4Header->getChunkLength());
-    auto tokenPkt = packet->peekAtFront<DistToken>(ipv4Header->getChunkLength() + udpHeader->getChunkLength());
+    auto udpHeader = packet->peekDataAt<inet::UdpHeader>(ipv4Header->getChunkLength());
+    auto tokenPkt = packet->peekDataAt<DistToken>(ipv4Header->getChunkLength() + udpHeader->getChunkLength());
 
     string targetCategory = tokenPkt->getTargetCategory();
     int pv = tokenPkt->getPreferenceValue();
@@ -1167,6 +1223,7 @@ void UePhy::forwardTokenToRsu(inet::Packet *packet)
     if (distStage_ == "SolSel" && pv == 1 && targetCategory == "LI")
     {
         EV << "UePhy::forwardTokenToRsu - solution selection is done, algorithm terminated." << endl;
+        distReady_ = true;
         return;     // algorithm terminated.
     }
         

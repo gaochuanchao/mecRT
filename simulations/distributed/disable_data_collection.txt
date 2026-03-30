@@ -1,0 +1,18 @@
+Disable some vector collection during simulation
+
+========== SIMU5G ==========
+simu5g.stack.phy.ChannelModel.LteChannelModel.ned
+simu5g.stack.pdcp_rrc.LtePdcpRrc.ned;
+simu5g.stack.rlc.LteRlc.ned;
+
+========== INET ============
+inet.linklayer.ppp.Ppp.ned;
+inet.linklayer.loopback.Loopback.ned;
+inet.linklayer.ethernet.basic.EthernetEncapsulation.ned;
+inet.networklayer.common.NetworkInterface.ned;
+inet.networklayer.ipv4.Ipv4.ned;
+inet.networklayer.arp.ipv4.Arp.ned;
+inet.queueing.queue.CompoundPacketQueueBase.ned;
+inet.queueing.queue.PacketQueue.ned;
+inet.transportlayer.udp.Udp.ned;
+
