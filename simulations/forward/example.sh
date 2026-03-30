@@ -5,7 +5,7 @@ export DISPLAY="${DISPLAY}"
 export LIBGL_ALWAYS_INDIRECT=1
 
 # Change to working directory
-cd ${MEC_WORKSPACE}/mecRT/simulations/decentralized
+cd ${MEC_WORKSPACE}/mecRT/simulations/forward
 
 # Run the simulation
 # -r 0: run the simulation for 0 iterations

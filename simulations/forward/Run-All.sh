@@ -1,5 +1,5 @@
 #!/bin/bash
-cd ${MEC_WORKSPACE}/mecRT/simulations/decentralized
+cd ${MEC_WORKSPACE}/mecRT/simulations/forward
 
 for i in {0..23}; do  # 24 configurations
   echo "===================================="

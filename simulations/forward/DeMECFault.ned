@@ -12,7 +12,7 @@
 // 
 
 
-package mecRT.simulations.decentralized;
+package mecRT.simulations.forward;
 
 import inet.networklayer.configurator.ipv4.Ipv4NetworkConfigurator;
 import inet.networklayer.ipv4.RoutingTableRecorder;
@@ -33,7 +33,7 @@ import simu5g.world.radio.LteChannelControl;
 //
 // This network represents the deployment option 3 in 3GPP 38.801
 //
-network DeMEC
+network DeMECFault
 {
     parameters:
         int numUe = default(1);
@@ -43,7 +43,7 @@ network DeMEC
         // int npcPort = default(29); // port used by the node packet controller of the gNodeB
         double scheduleInterval @unit(s) = default(1s); // in TTI, if the scheduler run periodically, specify the interval
 
-        @display("i=block/network2;bgb=1319.256,1118.4559;bgi=background/pisa");
+        @display("i=block/network2;bgb=1319.256,1118.4559;bgi=map");
     submodules:
         channelControl: LteChannelControl {
             @display("p=1211.76,22.44;is=s");
@@ -87,17 +87,21 @@ network DeMEC
         gnb[1].pppg++ <--> Eth100G <--> gnb[3].pppg++;
         gnb[1].pppg++ <--> Eth100G <--> gnb[4].pppg++;
         gnb[2].pppg++ <--> Eth100G <--> gnb[4].pppg++;
+        gnb[2].pppg++ <--> Eth100G <--> gnb[5].pppg++;
         gnb[3].pppg++ <--> Eth100G <--> gnb[4].pppg++;
         gnb[3].pppg++ <--> Eth100G <--> gnb[6].pppg++;
+        gnb[3].pppg++ <--> Eth100G <--> gnb[8].pppg++;
         gnb[4].pppg++ <--> Eth100G <--> gnb[5].pppg++;
         gnb[4].pppg++ <--> Eth100G <--> gnb[6].pppg++;
         gnb[5].pppg++ <--> Eth100G <--> gnb[6].pppg++;
         gnb[5].pppg++ <--> Eth100G <--> gnb[9].pppg++;
+        gnb[5].pppg++ <--> Eth100G <--> gnb[14].pppg++;
         gnb[6].pppg++ <--> Eth100G <--> gnb[7].pppg++;
         gnb[6].pppg++ <--> Eth100G <--> gnb[8].pppg++;
         gnb[6].pppg++ <--> Eth100G <--> gnb[10].pppg++;
         gnb[7].pppg++ <--> Eth100G <--> gnb[8].pppg++;
         gnb[8].pppg++ <--> Eth100G <--> gnb[10].pppg++;
+        gnb[8].pppg++ <--> Eth100G <--> gnb[12].pppg++;
         gnb[9].pppg++ <--> Eth100G <--> gnb[10].pppg++;
         gnb[9].pppg++ <--> Eth100G <--> gnb[13].pppg++;
         gnb[10].pppg++ <--> Eth100G <--> gnb[11].pppg++;

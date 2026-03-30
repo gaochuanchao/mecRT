@@ -1174,11 +1174,18 @@ void Scheduler::removeOutdatedInfo()
         simtime_t lastCmpUpdateTime = res.second.cmpUpdateTime;
 
         if (simTime() - lastBandUpdateTime > 2 * appStopInterval_)
+        {
+            EV << NOW << " Scheduler::removeOutdatedInfo - RSU[nodeId=" << res.first << "] bands information expired" << endl;
             res.second.bands = 0;  // the NIC may be turned off, so set the bands to 0
+        }
+            
 
         if (simTime() - lastCmpUpdateTime > 2 * appStopInterval_)
+        {
+            EV << NOW << " Scheduler::removeOutdatedInfo - RSU[nodeId=" << res.first << "] computing units information expired" << endl;
             res.second.cmpUnits = 0;  // the computing unit may be turned off, so set the cmpUnits to 0
-
+        }
+            
         // if ((simTime() - lastBandUpdateTime > 2 * appStopInterval_) && (simTime() - lastCmpUpdateTime > 2 * appStopInterval_))
         // {
         //     EV << NOW << " Scheduler::removeOutdatedInfo - RSU[nodeId=" << rsuId << "] status expired, remove the RSU info" << endl;

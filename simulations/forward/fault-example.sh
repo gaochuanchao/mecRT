@@ -1,5 +1,5 @@
 #!/bin/bash
-cd ${MEC_WORKSPACE}/mecRT/simulations/decentralized
+cd ${MEC_WORKSPACE}/mecRT/simulations/forward
 
 echo "============================================="
 echo "Running configuration NodeFailureExample"
