@@ -28,11 +28,6 @@ static const int MEC_OSPF_PORT = 38; // the port number used by MecOspf module
  */
 extern double NEXT_SCHEDULING_TIME; // definition, use a large value initially
 
-
-// TODO, consider move this into the local scheduler
-// avoid those scheduler with no pending apps to update NEXT_SCHEDULING_TIME too early
-extern bool BATCH_SCHEDULING_ACTIVE;    
-
 typedef unsigned int AppId;
 
 #endif // _MECRT_MECCOMMON_H_

@@ -171,9 +171,11 @@ class Scheduler : public omnetpp::cSimpleModule
     // Distributed scheduling related variables
     string distStage_;  // the stage of distributed scheduling, e.g., "CandiSel", "SolSel"
     int pvMax_; // the maximum preference value received
+    int pvMin_; // the minimum preference value received
     int targetPV_; // the target preference value for candidate selection
-    // string targetCategory_; // the target category for candidate selection, e.g., "LI", "HI"
-    map<int, vector<Ptr<DistToken>>> pv2Tokens_;  // {pv: vector of tokens}, the received tokens for each preference value
+    bool distributedSchemeStarted_; // whether the distributed scheduling scheme has started
+    string targetCategory_; // the target category for candidate selection, e.g., "LI", "HI"
+    map<string, map<int, vector<Ptr<DistToken>>>> pv2Tokens_;  // {category: {pv: vector of tokens}}
     map<int, int> pvCounter_;  // {pv: count}, the count of received tokens for each preference value
     vector<double> distBatchTimes_; // the batch times for distributed scheduling, used for performance evaluation
     set<AppId> distUnScheduledApps_;  // the unscheduled apps in distributed scheduling, used to update unscheduledApps_
@@ -211,7 +213,13 @@ class Scheduler : public omnetpp::cSimpleModule
      * Handle the messages
      */
     virtual void handleMessage(omnetpp::cMessage *msg) override;
-    virtual void handleSchedulingStart();
+
+    /***
+    * Handle the scheduling process
+    */
+    virtual void handleCentralizedScheduling();
+    virtual void handleDistributedScheduling();
+
     virtual void handlePreSchedulingCheck();
 
     virtual void finish() override;

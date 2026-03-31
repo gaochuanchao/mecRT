@@ -174,6 +174,8 @@ class MecOspf : public omnetpp::cSimpleModule
     virtual void clearNeighborRoutes();          // remove direct neighbor routes
     virtual void updateAdjListToScheduler(); // inform the scheduler about our current adjacency list
 
+    virtual void distInitializeLocalScheduler(); // initialize the local scheduler (if in distributed scheduling scheme)
+
     // helpers
     uint32_t ipKey(const Ipv4Address &a) const { return a.getInt(); }
     Ipv4Address getLocalAddressOnGate(cGate *gate);   // get local IP associated with a gate
