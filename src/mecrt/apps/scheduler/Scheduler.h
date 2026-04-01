@@ -174,11 +174,12 @@ class Scheduler : public omnetpp::cSimpleModule
     int pvMin_; // the minimum preference value received
     int targetPV_; // the target preference value for candidate selection
     bool distributedSchemeStarted_; // whether the distributed scheduling scheme has started
+    bool batchSchedulingOngoing_; // whether the batch scheduling is ongoing
     string targetCategory_; // the target category for candidate selection, e.g., "LI", "HI"
     map<string, map<int, vector<Ptr<DistToken>>>> pv2Tokens_;  // {category: {pv: vector of tokens}}
     map<int, int> pvCounter_;  // {pv: count}, the count of received tokens for each preference value
     vector<double> distBatchTimes_; // the batch times for distributed scheduling, used for performance evaluation
-    set<AppId> distUnScheduledApps_;  // the unscheduled apps in distributed scheduling, used to update unscheduledApps_
+    set<AppId> distUnscheduledApps_;  // the unscheduled apps in distributed scheduling, used to update unscheduledApps_
     omnetpp::simtime_t distStartTime_; // the start time of distributed scheduling
     
   public:

@@ -129,7 +129,7 @@ void UePhy::initialize(int stage)
         WATCH(hysteresisTh_);
         WATCH(hysteresisFactor_);
         WATCH(handoverDelta_);
-        WATCH_SET(accessibleRsus_);
+        WATCH_MAP(accessibleRsus_);
         WATCH_MAP(pv2Rsu_);
 
         // ========= LtePhyUeD2D ==========
@@ -634,7 +634,7 @@ void UePhy::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVector f
                 }
 
                 if (enableDistScheme_ && distReady_)
-                    accessibleRsus_.insert(destId);
+                    accessibleRsus_[destId] = dist;
 
                 LteAirFrame* carrierFrame = frame->dup();
                 UserControlInfo* carrierInfo = uinfo->dup();
@@ -651,11 +651,19 @@ void UePhy::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVector f
             if (enableDistScheme_ && distReady_)
             {
                 pvMax_ = accessibleRsus_.size();
-                distStage_ = "CandiSel";
-                sendPreferenceValue();
-                sendInitTokenToRsu();
 
-                distReady_ = false;
+                if (pvMax_ > 0)
+                {
+                    distStage_ = "CandiSel";
+                    sendPreferenceValue();
+                    sendInitTokenToRsu();
+                    distReady_ = false;
+                }
+                else
+                {
+                    distReady_ = true;
+                    EV << "UePhy::sendFeedback - no accessible RSUs, skip sending preference value and token" << endl;
+                }
             }
         }
         else
@@ -896,7 +904,7 @@ void UePhy::handleAirFrame(cMessage* msg)
         if (enableDistScheme_ && !strcmp(pkt->getName(), "DistToken"))
         {
             // if this is a distance token, send it to the distance scheme module
-            EV << "UePhy::handleAirFrame - received a distributed token, forward to the next RSU" << endl;
+            EV << "UePhy::handleAirFrame - received a token in distributed scheme" << endl;
             forwardTokenToRsu(pkt);
 
             delete pkt;
@@ -1144,12 +1152,14 @@ void UePhy::sendPreferenceValue()
      */
 
     // create a shuffled list of accessible RSUs
-    std::vector<MacNodeId> shuffledRsus(accessibleRsus_.begin(), accessibleRsus_.end());
-    auto rng = inet::getEnvir()->getRNG(0);
-    for (size_t i = shuffledRsus.size(); i > 1; --i) {
-        size_t j = rng->intRand(i);  // uniform in [0, i-1]
-        std::swap(shuffledRsus[i - 1], shuffledRsus[j]);
+    // sort RSUs in ascending order of the physical distance
+    vector<MacNodeId> sortedRsus;
+    sortedRsus.reserve(accessibleRsus_.size());
+    for (const auto& rsuPair : accessibleRsus_)    
+    {
+        sortedRsus.push_back(rsuPair.first);
     }
+    sort(sortedRsus.begin(), sortedRsus.end(), [this](MacNodeId a, MacNodeId b) {return accessibleRsus_.at(a) < accessibleRsus_.at(b);});
 
     // remove apps that have been terminated
     std::vector<AppId> terminatedApps;
@@ -1169,23 +1179,23 @@ void UePhy::sendPreferenceValue()
     }
 
     // assign preference value to each accessible RSU and send the preference value to the RSU for each application
-    for (int pv = 1; pv <= shuffledRsus.size(); pv++)
+    for (int pv = 0; pv < sortedRsus.size(); pv++)
     {
-        pv2Rsu_[pv] = shuffledRsus[pv-1];
+        pv2Rsu_[pv+1] = sortedRsus[pv]; // preference value starts from 1
         for (auto& tokenPair : distTokens_)
         {
             AppId appId = tokenPair.first;
             auto packet = new inet::Packet("DistPV");
             auto pvPkt = inet::makeShared<DistPV>();
             pvPkt->setAppId(appId);
-            pvPkt->setPreferenceValue(pv);
+            pvPkt->setPreferenceValue(pv+1);
             packet->insertAtFront(pvPkt);
 
             EV << "UePhy::sendPreferenceValueToRsu - " << nodeTypeToA(nodeType_) << " with id "
-                << nodeId_ << " sending preference value " << pv << " for app " << appId
-                << " to RSU " << shuffledRsus[pv-1] << endl;
+                << nodeId_ << " sending preference value " << pv+1 << " for app " << appId
+                << " to RSU " << sortedRsus[pv] << endl;
 
-            sendDistPacketToRsu(packet, "DistPV", shuffledRsus[pv-1]);
+            sendDistPacketToRsu(packet, "DistPV", sortedRsus[pv]);
         }
     }
 }
@@ -1222,12 +1232,11 @@ void UePhy::forwardTokenToRsu(inet::Packet *packet)
 
     if (distStage_ == "SolSel" && pv == 1 && targetCategory == "LI")
     {
-        EV << "UePhy::forwardTokenToRsu - solution selection is done, algorithm terminated." << endl;
+        EV << "UePhy::forwardTokenToRsu - solution selection is done, delete token." << endl;
         distReady_ = true;
         return;     // algorithm terminated.
     }
         
-    
     auto newPkt = new inet::Packet("DistToken");
     auto tokenCopy = makeShared<DistToken>(*tokenPkt);
     if (distStage_ == "CandiSel")

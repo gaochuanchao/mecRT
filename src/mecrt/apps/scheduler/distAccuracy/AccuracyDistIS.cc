@@ -73,9 +73,8 @@ void AccuracyDistIS::initializeData()
 
 void AccuracyDistIS::generateScheduleInstances()
 {
-    EV << NOW << " AccuracyDistIS::generateScheduleInstances - Generating schedule instances" << endl;
-
     initializeData();  // transform the scheduling data
+    EV << NOW << " AccuracyDistIS::generateScheduleInstances - Generating schedule instances" << endl;
 
     bool debugMode = false;
 
@@ -207,6 +206,8 @@ map<AppId, double> AccuracyDistIS::candidateSelection(map<AppId, double>& target
      * In the distributed scheduling scheme, each scheduler selects candidates for apps in batches.
      * each batch corresponds to one preference value.
      */
+    EV << "AccuracyDistIS::candidateSelection - Selecting candidates for category " << targetCategory << endl;
+
     map<AppId, double> updatedAppReduction;  // map to store the updated utility reduction for the target applications
 
     for (const auto& it : targetApps)
@@ -253,6 +254,8 @@ map<AppId, bool> AccuracyDistIS::solutionSelection(map<AppId, bool>& targetApps,
      * In the distributed scheduling scheme, each scheduler selects the final solution for apps in batches.
      * each batch corresponds to one preference value.
      */
+    EV << "AccuracyDistIS::solutionSelection - Selecting solutions for category " << targetCategory << endl;
+
     map<AppId, bool> updatedAppSchedule = targetApps;  // map to store the updated scheduling result for the target applications
     while (!candidateInsts_.empty())
     {
@@ -277,6 +280,11 @@ map<AppId, bool> AccuracyDistIS::solutionSelection(map<AppId, bool>& targetApps,
         finalSchedule_.emplace_back(appId, rsuId_, rsuId_, instRBs_[instIdx], instCUs_[instIdx]);
         maxRB_ -= instRBs_[instIdx];
         maxCU_ -= instCUs_[instIdx];
+
+        appMaxOffTime_[appId] = instMaxOffTime_[instIdx];  // store the maximum offloading time for the application
+        appUtility_[appId] = instUtility_[instIdx];  // store the utility for the application
+        appExeDelay_[appId] = instExeDelay_[instIdx];  // store the execution delay for the application
+        appServiceType_[appId] = instServiceType_[instIdx];  // store the service type for the application
 
         updatedAppSchedule[appId] = true;  // schedule the application, and update the scheduling result
     }

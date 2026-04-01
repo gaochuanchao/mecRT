@@ -197,7 +197,7 @@ vector<srvInstance> AccuracyFastIS::scheduleRequests()
 
     vector<int> solutionIndices;  // vectors to store the indices of the instances
 
-    candidateGenerateForType(solutionIndices);  // generate candidates for the specified type
+    solutionGeneration(solutionIndices);  // generate the solution for the specified type
 
     // construct the final solution based on the selected indices
     vector<srvInstance> solution;  // vectors to store the solutions
@@ -222,7 +222,7 @@ vector<srvInstance> AccuracyFastIS::scheduleRequests()
 }
 
 
-void AccuracyFastIS::candidateGenerateForType(vector<int>& instIndices)
+void AccuracyFastIS::solutionGeneration(vector<int>& instIndices)
 {   
     // define five assistant vectors
     vector<double> reductPerAppIndex(appIds_.size(), 0.0);  // vector to store the reduction of utility for each application

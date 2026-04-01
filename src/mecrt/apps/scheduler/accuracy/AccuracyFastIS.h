@@ -51,7 +51,7 @@ class AccuracyFastIS : public AccuracyGreedy
      */
     virtual vector<srvInstance> scheduleRequests() override;
 
-    virtual void candidateGenerateForType(vector<int>& instIndices);
+    virtual void solutionGeneration(vector<int>& instIndices);
 };
 
 #endif // _MECRT_SCHEDULER_SCHEME_ACCURACY_FAST_IS_H_

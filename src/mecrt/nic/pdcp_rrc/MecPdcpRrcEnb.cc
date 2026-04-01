@@ -75,6 +75,10 @@ void MecPdcpRrcEnb::fromDataPort(cPacket *pktAux)
     {
         // deliver to rlc stack
         EV << "MecPdcpRrcEnb::fromDataPort - Sending packet " << pkt->getName() << " to PDCP stack\n";
+
+        if (!strcmp(pkt->getName(), "DistToken"))
+            lteInfo->setDestId(destId);
+
         sendToLowerLayer(pkt);
         return;
     }
