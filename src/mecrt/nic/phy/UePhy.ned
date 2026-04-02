@@ -24,6 +24,8 @@ simple UePhy like LtePhy
         // the offload power of the whole NIC module, not only the power carriered by the signal
         double offloadPower = default(2210);    // offloading power of vehicle NIC, default 2210mW
         string nodeInfoModulePath = default("^.^.nodeInfo"); // path to the NodeInfo module
+        bool capAccessibleRsus = default(false);  // whether limit the number of accessible RSUs for each UE
+        int accessibleRsuLimit = default(5);  // the maximum number of accessible RSUs for each UE
         
         // ========================================== 
         // ========== For Channel Feedback ========== 

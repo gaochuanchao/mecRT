@@ -16,8 +16,8 @@
 //
 
 
-#ifndef _MECRT_SCHEDULER_SCHEME_ACCURACY_FAST_IS_H_
-#define _MECRT_SCHEDULER_SCHEME_ACCURACY_FAST_IS_H_
+#ifndef _MECRT_SCHEDULER_SCHEME_ACCURACY_NF_FAST_IS_H_
+#define _MECRT_SCHEDULER_SCHEME_ACCURACY_NF_FAST_IS_H_
 
 #include "mecrt/apps/scheduler/accuracy/AccuracyGreedy.h"
 

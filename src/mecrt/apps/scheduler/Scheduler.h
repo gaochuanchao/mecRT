@@ -93,6 +93,7 @@ class Scheduler : public omnetpp::cSimpleModule
   public:
     Database *db_;
     map<AppId, RequestMeta> appInfo_;
+    set<AppId> bufferedApps_;  // the apps information that have been buffered via backhaul synchronization
     set<AppId> unscheduledApps_;  // the apps that have not been scheduled
     map<MacNodeId, RsuResource> rsuStatus_;
     map<MacNodeId, int> rsuOnholdRbs_;  // {rsuId: onhold resource blocks}, the RSU resource blocks that are on hold

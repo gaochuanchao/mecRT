@@ -106,8 +106,9 @@ class UePhy : public NRPhyUe
     // the distributed scheduling tokens for apps running on this UE
     map<AppId, inet::Ptr<DistToken>> distTokens_;
     map<AppId, simtime_t> appTermnationTime_;  // the termination time of each app, used to remove the token after the app finishes
-    // store the set of accessible RSUs for this UE, used for token forwarding
-    map<MacNodeId, double> accessibleRsus_;
+    vector<MacNodeId> sortedAccessibleRsus_;  // the sorted list of accessible RSUs based on ascending distance
+    bool capAccessibleRsus_;  // whether limit the number of accessible RSUs for each UE
+    int accessibleRsuLimit_;  // the maximum number of accessible RSUs for each UE
     map<int, MacNodeId> pv2Rsu_;  // {pvId: rsuId}, the preference value assigned to each accessible RSU
     int pvMax_;  // the maximum preference value, i.e., the number of accessible RSUs
     string distStage_;  // the stage of distributed scheduling, e.g., "CandiSel" or "SolSel"

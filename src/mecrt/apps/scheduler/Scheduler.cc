@@ -31,7 +31,9 @@
 #include "mecrt/apps/scheduler/accuracy/AccuracyGameTheory.h"
 #include "mecrt/apps/scheduler/accuracy/AccuracyGraphMatch.h"
 #include "mecrt/apps/scheduler/distAccuracy/AccuracyDistIS.h"
-#include "mecrt/apps/scheduler/accuracy/AccuracyFastIS.h"
+#include "mecrt/apps/scheduler/accuracyNF/AccuracyFastIS.h"
+#include "mecrt/apps/scheduler/accuracyNF/AccuracySARound.h"
+#include "mecrt/apps/scheduler/accuracyNF/AccuracyIterative.h"
 
 #include "mecrt/packets/apps/Grant2Rsu_m.h"
 #include "mecrt/packets/apps/ServiceStatus_m.h"
@@ -50,6 +52,8 @@ Scheduler::Scheduler()
     schedStarter_ = nullptr;
     schedComplete_ = nullptr;
     preSchedCheck_ = nullptr;
+    postBatchSchedule_ = nullptr;
+
     enableInitDebug_ = false;
 
     db_ = nullptr;
@@ -247,6 +251,7 @@ void Scheduler::initialize(int stage)
             
         WATCH_SET(allocatedApps_);
         WATCH_SET(unscheduledApps_);
+        WATCH_SET(bufferedApps_);
         WATCH_SET(appsWaitInitFb_);
         WATCH(localPort_);
         WATCH(socketId_);
@@ -383,6 +388,14 @@ void Scheduler::handleDistributedScheduling()
 
         return;
     }
+
+    // print pvCounter for logging
+    EV << NOW << " Scheduler::handleDistributedScheduling - pvCounter: ";
+    for (auto& pvCount : pvCounter_)
+    {
+        EV << "PV-" << pvCount.first << ": " << pvCount.second << "; ";
+    }
+    EV << endl;
 
     distStage_ = "CandiSel";  // default to candidate selection stage
     targetPV_ = pvMin_;
@@ -534,15 +547,22 @@ void Scheduler::postBatchScheduling()
     // check the termination condition for distributed scheduling
     if (distStage_ == "SolSel" && targetPV_ == pvMin_ && targetCategory_ == "LI")
     {
-        EV << NOW << " Scheduler::postBatchScheduling - distributed scheduling terminated" << endl;
-
         schemeExecTime_ = simTime() - distStartTime_;            
         double totalDistBatchTime = accumulate(distBatchTimes_.begin(), distBatchTimes_.end(), 0.0);
-        
-        EV << "\tinstance generation time: " << insGenerateTime_ 
-            << ", scheme execution time: " << schemeExecTime_ << endl;
+
         // record the real execution time of the scheduling scheme
+        vector<srvInstance> selectedIns;
         schedulingTime_ = insGenerateTime_ + schemeExecTime_;
+        
+        if (schemeExecTime_ < schedulingInterval_ - appStopInterval_)
+            selectedIns = scheme_->getFinalSchedule();  // only handle the scheduling results when runtime is acceptable
+
+        EV << "Scheduler::postBatchScheduling - distributed scheduling finished! " << "instance generation time: " 
+            << insGenerateTime_ << ", scheme execution time: " << schemeExecTime_ << ", selected " << selectedIns.size()
+            << "/" << unscheduledApps_.size() << " apps" << endl;
+        
+        collectSchedulingResults(selectedIns);
+        scheduleAt(simTime(), schedComplete_);
 
         emit(vecSchemeTimeSignal_, schemeExecTime_.dbl());
         emit(vecDistSchemeExecTimeSignal_, totalDistBatchTime);
@@ -551,6 +571,7 @@ void Scheduler::postBatchScheduling()
         pv2Tokens_.clear();
         pvCounter_.clear();
         distUnscheduledApps_.clear();
+        unscheduledApps_.clear();
         distBatchTimes_.clear();
         pvMax_ = 0;
         pvMin_ = 0;
@@ -558,16 +579,6 @@ void Scheduler::postBatchScheduling()
         targetCategory_ = "LI";
         distributedSchemeStarted_ = false;
         batchSchedulingOngoing_ = false;
-
-        vector<srvInstance> selectedIns;
-        if (schemeExecTime_ < schedulingInterval_ - appStopInterval_)
-        {
-            // only handle the scheduling results when the algorithm runtime is acceptable
-            selectedIns = scheme_->getFinalSchedule();  
-        }
-        collectSchedulingResults(selectedIns);
-
-        scheduleAt(simTime(), schedComplete_);
 
         return;
     }
@@ -848,6 +859,21 @@ void Scheduler::initializeSchedulingScheme()
             else
                 scheme_ = new SchemeBase(this);
         }
+        else if (!enableBackhaul_ && optimizeObjective_ == "accuracy")
+        {
+            if (schemeName_ == "Greedy")
+                scheme_ = new AccuracyGreedy(this);
+            else if (schemeName_ == "GameTheory")
+                scheme_ = new AccuracyGameTheory(this);
+            else if (schemeName_ == "FastIS")
+                scheme_ = new AccuracyFastIS(this);
+            else if (schemeName_ == "SARound")
+                scheme_ = new AccuracySARound(this);
+            else if (schemeName_ == "Iterative")
+                scheme_ = new AccuracyIterative(this);
+            else
+                scheme_ = new SchemeBase(this);
+        }
         else if (enableBackhaul_ && optimizeObjective_ == "accuracy")
         {
             if (schemeName_ == "Greedy")
@@ -1017,6 +1043,7 @@ void Scheduler::recordVehRequest(cMessage *msg)
     reqMeta.ueIpv4Address = vecReq->getUeIpAddress();
     appInfo_[appId] = reqMeta;
     unscheduledApps_.insert(appId);
+    bufferedApps_.insert(appId);
 
     EV << NOW << " Scheduler::recordVehRequest - request from Veh[nodeId=" << vehId << "] is received, appId: " << appId
         << ", inputSize: " << reqMeta.inputSize << ", outputSize: " << reqMeta.outputSize

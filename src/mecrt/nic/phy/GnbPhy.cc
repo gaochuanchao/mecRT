@@ -665,10 +665,17 @@ void GnbPhy::handleUpperMessage(cMessage* msg)
     // else
     //     frame->setSchedulingPriority(airFramePriority_);
 
-    // set transmission duration according to the numerology
-    NumerologyIndex numerologyIndex = binder_->getNumerologyIndexFromCarrierFreq(lteInfo->getCarrierFrequency());
-    double slotDuration = binder_->getSlotDurationFromNumerologyIndex(numerologyIndex);
-    frame->setDuration(slotDuration);
+    if (!strcmp(frame->getName(), "DistToken"))
+    {
+        frame->setDuration(TTI / 8);    // set duration of DistToken to 1/8 of TTI, numerology 3, which is 125us
+    }
+    else
+    {
+        // set transmission duration according to the numerology
+        NumerologyIndex numerologyIndex = binder_->getNumerologyIndexFromCarrierFreq(lteInfo->getCarrierFrequency());
+        double slotDuration = binder_->getSlotDurationFromNumerologyIndex(numerologyIndex);
+        frame->setDuration(slotDuration);
+    }
 
     // set current position
     lteInfo->setCoord(getCoord());

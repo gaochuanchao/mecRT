@@ -15,7 +15,7 @@
 //  License: Academic Public License -- NOT FOR COMMERCIAL USE
 //
 
-#include "mecrt/apps/scheduler/accuracy/AccuracyFastIS.h"
+#include "mecrt/apps/scheduler/accuracyNF/AccuracyFastIS.h"
 
 AccuracyFastIS::AccuracyFastIS(Scheduler *scheduler)
     : AccuracyGreedy(scheduler)
@@ -38,9 +38,8 @@ void AccuracyFastIS::initializeData()
 
 void AccuracyFastIS::generateScheduleInstances()
 {
-    EV << NOW << " AccuracyFastIS::generateScheduleInstances - Generating schedule instances" << endl;
-
     initializeData();  // transform the scheduling data
+    EV << NOW << " AccuracyFastIS::generateScheduleInstances - Generating schedule instances" << endl;
 
     bool debugMode = false;
 
@@ -112,7 +111,7 @@ void AccuracyFastIS::generateScheduleInstances()
                             if (utility <= 0)   // if the saved energy is less than 0, skip
                                 continue;
 
-                            // AppInstance instance = {appIndex, offRsuIndex, resBlocks, cmpUnits};
+                            // AppInstance instance = {appIndex, offRsuIndex, resBlocks, cmpUnits, serviceType};
                             instAppIndex_.push_back(appIndex);
                             instOffRsuIndex_.push_back(rsuIndex);
                             instRBs_.push_back(resBlocks);
