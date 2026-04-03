@@ -152,7 +152,6 @@ class Scheduler : public omnetpp::cSimpleModule
     bool periodicScheduling_;     /// whether to schedule the tasks periodically, if false, then change to event trigger mode
     bool newAppPending_;    /// whether new application has arrived when the schedule scheme is running, used for event trigger mode
 	  bool rescheduleAll_;    /// whether to reschedule all the apps (stop those running apps first), used for reset mode
-    bool countExeTime_;    /// whether to count the execution time of schedule scheme, default is true
 
     /// the interval for scheduling the tasks, this interval should be larger than the schedule scheme execution time
     omnetpp::simtime_t schedulingStartTime_;   /// the time when the scheduling starts, for resource updating
@@ -168,6 +167,7 @@ class Scheduler : public omnetpp::cSimpleModule
     omnetpp::cMessage *schedComplete_;    /// inform the completion of scheduling
     omnetpp::cMessage *preSchedCheck_;    /// do the necessary check (stop services) before scheduling
     omnetpp::cMessage *postBatchSchedule_; /// the timer for post-processing after each batch scheduling in distributed scheduling
+    omnetpp::cMessage *distInstGenTimer_;  // the timer for generating the schedule instance in distributed scheduling
 
     // Distributed scheduling related variables
     string distStage_;  // the stage of distributed scheduling, e.g., "CandiSel", "SolSel"

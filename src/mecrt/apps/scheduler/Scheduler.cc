@@ -34,6 +34,7 @@
 #include "mecrt/apps/scheduler/accuracyNF/AccuracyFastIS.h"
 #include "mecrt/apps/scheduler/accuracyNF/AccuracySARound.h"
 #include "mecrt/apps/scheduler/accuracyNF/AccuracyIterative.h"
+#include "mecrt/apps/scheduler/accuracyNF/AccuracyIDAssign.h"
 
 #include "mecrt/packets/apps/Grant2Rsu_m.h"
 #include "mecrt/packets/apps/ServiceStatus_m.h"
@@ -53,6 +54,7 @@ Scheduler::Scheduler()
     schedComplete_ = nullptr;
     preSchedCheck_ = nullptr;
     postBatchSchedule_ = nullptr;
+    distInstGenTimer_ = nullptr;
 
     enableInitDebug_ = false;
 
@@ -95,6 +97,11 @@ Scheduler::~Scheduler()
         cancelAndDelete(postBatchSchedule_);
         postBatchSchedule_ = nullptr;
     }
+    if (distInstGenTimer_)
+    {
+        cancelAndDelete(distInstGenTimer_);
+        distInstGenTimer_ = nullptr;
+    }
 
     if (enableInitDebug_)
         std::cout << "Scheduler::~Scheduler - destroying Scheduler module done!\n";
@@ -126,7 +133,6 @@ void Scheduler::initialize(int stage)
         cuStep_ = par("cuStep");
         rbStep_ = par("rbStep");
         srvTimeScale_ = par("srvTimeScale");
-        countExeTime_ = par("countExeTime");
         enableBackhaul_ = par("enableBackhaul");
         optimizeObjective_ = par("optimizeObjective").stringValue();
         schemeName_ = par("scheduleScheme").stringValue();
@@ -152,7 +158,6 @@ void Scheduler::initialize(int stage)
         WATCH(periodicScheduling_);
         WATCH(appStopInterval_);
         WATCH(rescheduleAll_);
-        WATCH(countExeTime_);
         WATCH(enableBackhaul_);
         WATCH(optimizeObjective_);
         WATCH(schemeName_);
@@ -247,6 +252,9 @@ void Scheduler::initialize(int stage)
         postBatchSchedule_ = new cMessage("PostBatchSchedule");
         postBatchSchedule_->setSchedulingPriority(1);        // after other messages
 
+        distInstGenTimer_ = new cMessage("DistInstGenTimer");
+        distInstGenTimer_->setSchedulingPriority(1);        // after other messages
+
         newAppPending_ = false;
             
         WATCH_SET(allocatedApps_);
@@ -272,8 +280,7 @@ void Scheduler::handleMessage(cMessage *msg)
     {
         if (!strcmp(msg->getName(), "ScheduleStart"))
         {
-            EV << NOW << " Scheduler::handleMessage - start scheduling\n";
-
+            EV << NOW << " Scheduler::handleMessage - scheduling start\n";
             updateNextSchedulingTime(); // schedule the next scheduling time
 
             // reset the time
@@ -288,7 +295,7 @@ void Scheduler::handleMessage(cMessage *msg)
         }
         else if (!strcmp(msg->getName(), "ScheduleComplete"))
         {
-            EV << NOW << " Scheduler::handleMessage - scheduling completed, execution time " << schemeExecTime_ << endl;
+            EV << NOW << " Scheduler::handleMessage - scheduling completed, time spend: " << schedulingTime_ << endl;
             sendGrant();
         }
         else if (!strcmp(msg->getName(), "PreScheduleCheck"))   // do necessary service check before next scheduling
@@ -301,6 +308,16 @@ void Scheduler::handleMessage(cMessage *msg)
             EV << NOW << " Scheduler::handleMessage - post batch scheduling processing\n";
             if (enableDistScheme_)
                 postBatchScheduling();
+        }
+        else if (!strcmp(msg->getName(), "DistInstGenTimer"))   // generate schedule instances in distributed scheduling
+        {
+            EV << NOW << " Scheduler::handleMessage - schedule instances generation complete!" << endl;
+            distStartTime_ = omnetpp::simTime(); // record the start time of distributed scheduling
+            if (pvCounter_[targetPV_] == pv2Tokens_[targetCategory_][targetPV_].size())
+                performBatchScheduling();
+            else
+                EV << NOW << " Scheduler::handleDistributedScheduling - waiting for tokens for preference value " << targetPV_ << ", received " 
+                    << pv2Tokens_[targetCategory_][targetPV_].size() << "/" << pvCounter_[targetPV_] << endl;
         }
     }
     else if (!strcmp(msg->getName(), "SrvReq"))    // request from vehicle
@@ -393,7 +410,7 @@ void Scheduler::handleDistributedScheduling()
     EV << NOW << " Scheduler::handleDistributedScheduling - pvCounter: ";
     for (auto& pvCount : pvCounter_)
     {
-        EV << "PV-" << pvCount.first << ": " << pvCount.second << "; ";
+        EV << "{PV " << pvCount.first << ": " << pvCount.second << "}, ";
     }
     EV << endl;
 
@@ -409,19 +426,8 @@ void Scheduler::handleDistributedScheduling()
     insGenerateTime_ = SimTime(chrono::duration_cast<chrono::microseconds>(end - start).count(), SIMTIME_US);
     emit(vecInsGenerateTimeSignal_, insGenerateTime_.dbl());
 
-    EV << NOW << " Scheduler::handleDistributedScheduling - generating schedule instances, time: " << insGenerateTime_ << endl;
-
-    // in distributed scheduling, first schedule the first batch of candidates
-    distStartTime_ = omnetpp::simTime(); // record the start time of distributed scheduling
-    if (pvCounter_[targetPV_] == pv2Tokens_[targetCategory_][targetPV_].size())
-    {
-        performBatchScheduling();
-    }
-    else
-    {
-        EV << NOW << " Scheduler::handleDistributedScheduling - waiting for tokens for preference value " << targetPV_ << ", received " 
-            << pv2Tokens_[targetCategory_][targetPV_].size() << "/" << pvCounter_[targetPV_] << endl;
-    }
+    EV << NOW << " Scheduler::handleDistributedScheduling - schedule instances generation time: " << insGenerateTime_ << endl;
+    scheduleAt(simTime() + insGenerateTime_, distInstGenTimer_);
 }
 
 
@@ -437,13 +443,13 @@ void Scheduler::recordDistToken(cMessage *msg)
 
     EV << "Scheduler::recordDistToken - received distributed packet DistToken from app " << distToken->getAppId() 
         << ", category " << distToken->getTargetCategory() << ", preference value " << pv << endl;
-    EV << "\t\t current received token count for category " << category << ", preference value " << pv << ": " 
+    EV << "\t current received token count for category " << category << ", preference value " << pv << ": " 
         << pv2Tokens_[category][pv].size() << "/" << pvCounter_[pv] << endl;
 
     // only schedule tokens after the scheduling starts and all the tokens for the target preference value are received
     if (distributedSchemeStarted_ && !batchSchedulingOngoing_ && (pvCounter_[targetPV_] == pv2Tokens_[targetCategory_][targetPV_].size()))
     {
-        EV << "\t\t received all tokens for preference value " << targetPV_ 
+        EV << "\t received all tokens for preference value " << targetPV_ 
             << " and no batch scheduling is ongoing, proceeding to batch scheduling" << endl;
         performBatchScheduling();
     }
@@ -538,7 +544,7 @@ void Scheduler::postBatchScheduling()
         pkt->insertAtFront(token);
 
         int nicInterfaceId = nodeInfo_->getNicInterfaceId();
-        EV << "\tSending token for app " << token->getAppId() << " to the 5G NIC with interface id " << nicInterfaceId << endl;
+        EV << "\t Sending token for app " << token->getAppId() << " to the 5G NIC with interface id " << nicInterfaceId << endl;
         // find the NIC interface id of the gNodeB
         pkt->addTagIfAbsent<InterfaceReq>()->setInterfaceId(nicInterfaceId);
         socket_.sendTo(pkt, ueAddr, appPort);
@@ -554,7 +560,7 @@ void Scheduler::postBatchScheduling()
         vector<srvInstance> selectedIns;
         schedulingTime_ = insGenerateTime_ + schemeExecTime_;
         
-        if (schemeExecTime_ < schedulingInterval_ - appStopInterval_)
+        if (schedulingTime_ < schedulingInterval_ - appStopInterval_)
             selectedIns = scheme_->getFinalSchedule();  // only handle the scheduling results when runtime is acceptable
 
         EV << "Scheduler::postBatchScheduling - distributed scheduling finished! " << "instance generation time: " 
@@ -628,7 +634,7 @@ void Scheduler::postBatchScheduling()
         }
     }
 
-    EV << "\t\t updated distributed scheduling status, next stage: " << distStage_ << ", next preference value: " 
+    EV << "\t updated distributed scheduling status, next stage: " << distStage_ << ", next preference value: " 
             << targetPV_ << ", next category: " << targetCategory_ << endl;
 
     batchSchedulingOngoing_ = false;
@@ -703,6 +709,12 @@ void Scheduler::handleCentralizedScheduling()
             << ", scheme execution time: " << schemeExecTime_ << endl;
         // record the real execution time of the scheduling scheme
         schedulingTime_ = insGenerateTime_ + schemeExecTime_;
+
+        // check if the scheduling time is acceptable, if not, skip the scheduling results and clear the schedule
+        if (schedulingTime_ < schedulingInterval_ - appStopInterval_)
+            scheduleAt(simTime()+schedulingTime_, schedComplete_);
+        else
+            selectedIns.clear();  // clear the schedule if the execution time is too long
     }
     else
     {
@@ -712,19 +724,6 @@ void Scheduler::handleCentralizedScheduling()
     emit(vecInsGenerateTimeSignal_, insGenerateTime_.dbl());
     emit(vecSchemeTimeSignal_, schemeExecTime_.dbl());
     emit(vecSchedulingTimeSignal_, schedulingTime_.dbl());
-
-    // check if the scheduling time is acceptable, if not, skip the scheduling results and clear the schedule
-    if (schemeExecTime_ < schedulingInterval_ - appStopInterval_)
-    {
-        if (countExeTime_)
-            scheduleAt(simTime()+schemeExecTime_, schedComplete_);
-        else
-            scheduleAt(simTime(), schedComplete_);
-    }
-    else
-    {
-        selectedIns.clear();  // clear the schedule if the execution time is too long
-    }
 
     collectSchedulingResults(selectedIns);
 }
@@ -860,7 +859,7 @@ void Scheduler::initializeSchedulingScheme()
                 scheme_ = new SchemeBase(this);
         }
         else if (!enableBackhaul_ && optimizeObjective_ == "accuracy")
-        {
+        {   // benchmark shemes for distributed scheduling scheme comparison
             if (schemeName_ == "Greedy")
                 scheme_ = new AccuracyGreedy(this);
             else if (schemeName_ == "GameTheory")
@@ -871,6 +870,8 @@ void Scheduler::initializeSchedulingScheme()
                 scheme_ = new AccuracySARound(this);
             else if (schemeName_ == "Iterative")
                 scheme_ = new AccuracyIterative(this);
+            else if (schemeName_ == "IDAssign")
+                scheme_ = new AccuracyIDAssign(this);
             else
                 scheme_ = new SchemeBase(this);
         }

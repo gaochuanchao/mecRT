@@ -206,6 +206,8 @@ vector<srvInstance> AccuracyIterative::scheduleRequests()
     vector<int> tempSolution;  
     double totalUtility = 0.0;  // variable to store the total utility of the scheduled service instances
 
+    appInst_.clear();  // clear the application instance vector
+    appInst_.resize(appIds_.size(), -1);  // resize the application instance vector with -1 (no instance selected)
     // initialize the application mapping and resource allocations
     for (int appIndex = 0; appIndex < appIds_.size(); appIndex++)   // enumerate the applications
     {
@@ -226,76 +228,51 @@ vector<srvInstance> AccuracyIterative::scheduleRequests()
         int instIndex = instances[rand() % instances.size()];  // randomly select an instance index
         appCu_[appIndex] = instCUs_[instIndex];  // get the computing units allocated to this application
         appRb_[appIndex] = instRBs_[instIndex];  // get the resource blocks allocated to this application
-
-        appInst_.clear();  // clear the application instance vector
-        appInst_.resize(appIds_.size(), -1);  // resize the application instance vector with -1 (no instance selected)
     }
 
     // start iterating to find the best mapping and resource allocation
-    double newTotalUtility;  // variable to store the new total utility
+    // double newTotalUtility;  // variable to store the new total utility
     for (int iter = 0; iter < maxIter_; iter++) {
         // determine resource allocation with the selected mapping
         decideResourceAllocation();
 
-        // compute the new total utility
-        // if the total utility is larger than the previous one, update the solution
-        // otherwise, stop the iteration
-        newTotalUtility = 0.0;  // reset the new total utility for this iteration
-        for (int appIndex = 0; appIndex < appIds_.size(); appIndex++){
-            int instIdx = appInst_[appIndex];  // get the instance index for this application
-            if (instIdx >= 0) {     // if the instance index is valid
-                newTotalUtility += instUtility_[instIdx];  // accumulate the utility values for each application
-            }
-        }
-
-        if (newTotalUtility > totalUtility) {
-            totalUtility = newTotalUtility;  // update the total utility
-            tempSolution.clear();  // clear the temporary solution
-
-            // store the scheduled service instances in the solution vector
-            for (int appIndex = 0; appIndex < appIds_.size(); appIndex++) {
-                int instIdx = appInst_[appIndex];  // get the instance index for this application
-                if (instIdx >= 0) {     // if the instance index is valid
-                    tempSolution.push_back(instIdx);  // store the temporary solution
-                }
-            }
-        }
-        else {
-            EV << NOW << " AccuracyIterative::scheduleRequests - no improvement in utility, stopping iteration." 
-                << " Current iterative count " << (iter+1) << endl;
-            break;  // stop the iteration if no improvement in utility
-        }
-
         // decide the mapping for the next iteration given the current resource allocation
         decideMapping();
 
-        // compute the total utility of the current solution
-        // if the total utility is larger than the previous one, update the solution
-        // otherwise, stop the iteration
-        newTotalUtility = 0.0;  // reset the new total utility for the next iteration
-        for (int appIndex = 0; appIndex < appIds_.size(); appIndex++){
-            int instIdx = appInst_[appIndex];  // get the instance index for this application
-            if (instIdx >= 0) {     // if the instance index is valid
-                newTotalUtility += instUtility_[instIdx];  // accumulate the utility values for each application
+        // Step 3: re-run resource allocation under the updated mapping
+        decideResourceAllocation();
+
+        // evaluate the full-round solution
+        double newTotalUtility = 0.0;
+        vector<int> newTempSolution;
+        for (int appIndex = 0; appIndex < appIds_.size(); appIndex++) {
+            int instIdx = appInst_[appIndex];
+            if (instIdx >= 0) {
+                newTotalUtility += instUtility_[instIdx];
+                newTempSolution.push_back(instIdx);
             }
+        }
+
+        bool sameSolution = (newTempSolution.size() == tempSolution.size());
+        if (sameSolution) {
+            vector<int> oldSol = tempSolution;
+            vector<int> newSol = newTempSolution;
+            sort(oldSol.begin(), oldSol.end());
+            sort(newSol.begin(), newSol.end());
+            sameSolution = (oldSol == newSol);
         }
 
         if (newTotalUtility > totalUtility) {
-            totalUtility = newTotalUtility;  // update the total utility
-            tempSolution.clear();  // clear the temporary solution
-
-            // store the scheduled service instances in the solution vector
-            for (int appIndex = 0; appIndex < appIds_.size(); appIndex++) {
-                int instIdx = appInst_[appIndex];  // get the instance index for this application
-                if (instIdx >= 0) {     // if the instance index is valid
-                    tempSolution.push_back(instIdx);  // store the temporary solution
-                }
-            }
+            totalUtility = newTotalUtility;
+            tempSolution = newTempSolution;
+        }
+        else if (newTotalUtility == totalUtility && !sameSolution) {
+            tempSolution = newTempSolution;  // accept plateau move
         }
         else {
-            EV << NOW << " AccuracyIterative::scheduleRequests - no improvement in utility, stopping iteration." 
-                << " Current iterative count " << (iter+1) << endl;
-            break;  // stop the iteration if no improvement in utility
+            EV << NOW << " AccuracyIterative::scheduleRequests - converged after full round."
+            << " Current iterative count " << (iter + 1) << endl;
+            break;
         }
     }
 
@@ -372,8 +349,26 @@ void AccuracyIterative::decideResourceAllocation()
     }
 
     // sort candidateInst by utility in descending order
+    // sort(candidateInst.begin(), candidateInst.end(),
+    //      [&](int a, int b) { return instUtility_[a] > instUtility_[b]; });
+
+    // sort candidateInst by utility first, then prefer lighter resource usage
     sort(candidateInst.begin(), candidateInst.end(),
-         [&](int a, int b) { return instUtility_[a] > instUtility_[b]; });
+        [&](int a, int b) {
+            if (instUtility_[a] != instUtility_[b])
+                return instUtility_[a] > instUtility_[b];
+
+            int costA = instRBs_[a] + instCUs_[a];
+            int costB = instRBs_[b] + instCUs_[b];
+            if (costA != costB)
+                return costA < costB;
+
+            // additional tie-breaker: prefer smaller CU usage
+            if (instCUs_[a] != instCUs_[b])
+                return instCUs_[a] < instCUs_[b];
+
+            return instRBs_[a] < instRBs_[b];
+        });
 
     /***
      * iterate through the sorted instances and allocate resources
@@ -417,36 +412,83 @@ void AccuracyIterative::decideResourceAllocation()
 void AccuracyIterative::decideMapping()
 {
     /***
-     * determine the mapping under the given resource allocation
-     * we use a greedy approach to determine the mapping
+     * determine the mapping under the given resource allocation, but we allow a small tolerance instead of exact (RB, CU) matching.
+     * we use a greedy approach to determine the mapping, and use the current allocation as a soft preference:
+     *      when utilities are equal, prefer instances close to the current (RB, CU).
      * in each iteration, we choose the mapping for the application with the highest utility
      */
+    vector<int> prevAppInst = appInst_;
     appInst_.clear();  // clear the application instance vector
     appInst_.resize(appIds_.size(), -1);  // resize the application instance vector with -1 (no instance selected)
 
-    // collect all posssible instances index for the given resource allocation
-    vector<int> candidateInst;  // vector to store the indices of the instances
-    for (int appIndex = 0; appIndex < appIds_.size(); appIndex++)   // enumerate the applications
+    // tolerance for near-match
+    int rbTol = rbStep_ * 2;  // the tolerance for resource blocks, set to 2 steps
+    int cuTol = cuStep_ * 2;  // the tolerance for computing units, set to 2 steps
+
+    // collect all possible instances for all currently feasible mappings
+    vector<int> candidateInst;
+    for (int appIndex = 0; appIndex < appIds_.size(); appIndex++)
     {
-        int rb = appRb_[appIndex];  // get the resource blocks allocated to this application
-        int cu = appCu_[appIndex];  // get the computing units allocated to this application
-        // enumerate available mapping for this application
-        for (int rsuIndex : availMapping_[appIndex])   // enumerate the RSUs in the available mapping
+        int rb = appRb_[appIndex];
+        int cu = appCu_[appIndex];
+
+        bool selectedLastStep = (prevAppInst[appIndex] >= 0);
+        
+        for (int rsuIndex : availMapping_[appIndex])
         {
-            vector<int> & instances = instPerRSUPerApp_[appIndex][rsuIndex];  // get the instances for this application and RSU
-            for (int instIdx : instances)   // enumerate the instances for this application and RSU
+            vector<int> & instances = instPerRSUPerApp_[appIndex][rsuIndex];
+            for (int instIdx : instances)
             {
-                // check if the resource blocks and computing units match
-                if (instRBs_[instIdx] == rb && instCUs_[instIdx] == cu) {  
-                    candidateInst.push_back(instIdx);  // add the instance index to the candidate instances vector
+                if (!selectedLastStep) {
+                    // if not selected in previous allocation step,
+                    // consider all feasible instances so the app can re-enter
+                    candidateInst.push_back(instIdx);
+                }
+                else if (abs(instRBs_[instIdx] - rb) <= rbTol &&
+                         abs(instCUs_[instIdx] - cu) <= cuTol) {
+                    // if selected previously, prefer near-match instances
+                    candidateInst.push_back(instIdx);
                 }
             }
         }
     }
 
+    // fallback: if near-match gives too few candidates, allow all instances
+    if (candidateInst.empty()) {
+        for (int appIndex = 0; appIndex < appIds_.size(); appIndex++) {
+            for (int rsuIndex : availMapping_[appIndex]) {
+                vector<int> & instances = instPerRSUPerApp_[appIndex][rsuIndex];
+                candidateInst.insert(candidateInst.end(), instances.begin(), instances.end());
+            }
+        }
+    }
+
     // sort candidateInst by utility in descending order
+    // sort(candidateInst.begin(), candidateInst.end(),
+    //      [&](int a, int b) { return instUtility_[a] > instUtility_[b]; });
+
+    // sort by utility first; when tied, prefer instances closer to the current resource pair,
+    // and then prefer lighter resource usage
     sort(candidateInst.begin(), candidateInst.end(),
-         [&](int a, int b) { return instUtility_[a] > instUtility_[b]; });
+         [&](int a, int b) {
+             if (instUtility_[a] != instUtility_[b])
+                 return instUtility_[a] > instUtility_[b];
+
+             int appA = instAppIndex_[a];
+             int appB = instAppIndex_[b];
+
+             int distA = abs(instRBs_[a] - appRb_[appA]) + abs(instCUs_[a] - appCu_[appA]);
+             int distB = abs(instRBs_[b] - appRb_[appB]) + abs(instCUs_[b] - appCu_[appB]);
+             if (distA != distB)
+                 return distA < distB;
+
+             int costA = instRBs_[a] + instCUs_[a];
+             int costB = instRBs_[b] + instCUs_[b];
+             if (costA != costB)
+                 return costA < costB;
+
+             return instOffRsuIndex_[a] < instOffRsuIndex_[b];
+         });
 
     /***
      * iterate through the sorted instances and determine the mapping
@@ -456,8 +498,7 @@ void AccuracyIterative::decideMapping()
     vector<int> rsuRbTemp = rsuRBs_;  // temporary vector to store the resource blocks allocated to each application
     vector<int> rsuCuTemp = rsuCUs_;  // temporary vector to store the computing units allocated to each application
     set<int> consideredApps;  // set to store the applications that have been considered for resource allocation
-    for (int i = 0; i < candidateInst.size(); i++) {
-        auto instIdx = candidateInst[i];  // get the instance index
+    for (int instIdx: candidateInst) {
         int appIndex = instAppIndex_[instIdx];    // get the application index
         int rsuIndex = instOffRsuIndex_[instIdx];  // get the RSU index
         int rb = instRBs_[instIdx];  // get the resource blocks
@@ -473,12 +514,13 @@ void AccuracyIterative::decideMapping()
             continue;  // skip if the resource blocks or computing units are not available
         }
 
-        // determine the mapping for this application
-        appMapping_[appIndex] = rsuIndex;  // store the mapping to RSU for this application
-        appInst_[appIndex] = instIdx;  // store the instance index for this application
+        // update mapping and also allow the resource pair to change
+        appMapping_[appIndex] = rsuIndex;
+        appInst_[appIndex] = instIdx;
+        appRb_[appIndex] = rb;
+        appCu_[appIndex] = cu;
 
         consideredApps.insert(appIndex);  // add the application index to the considered applications set
-        // update the temporary resource blocks and computing units
         rsuRbTemp[rsuIndex] -= rb;  // subtract the resource blocks allocated to this application
         rsuCuTemp[rsuIndex] -= cu;  // subtract the computing units allocated to this application
     }

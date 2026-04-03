@@ -21,7 +21,6 @@ simple Scheduler like IApp
 		double offloadOverhead @unit(s) = default(0.001s);	// data offloading overhead, 1ms
 		string scheduleScheme = default("Greedy");
 		bool rescheduleAll = default(false);
-        bool countExeTime = default(true); // whether to count the execution time of schedule scheme, default is true
 		int numerologyIndex = default(0);
         int cuStep = default(1);  // the step for computing units, default is 1
         int rbStep = default(1);  // the step for resource blocks, default is 1
