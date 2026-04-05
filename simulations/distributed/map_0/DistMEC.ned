@@ -12,7 +12,7 @@
 // 
 
 
-package mecRT.simulations.distributed;
+package mecRT.simulations.distributed.map_0;
 
 import inet.networklayer.configurator.ipv4.Ipv4NetworkConfigurator;
 import inet.networklayer.ipv4.RoutingTableRecorder;
@@ -28,19 +28,19 @@ import simu5g.common.carrierAggregation.CarrierAggregation;
 import simu5g.nodes.backgroundCell.BackgroundCell;
 import simu5g.world.radio.LteChannelControl;
 
-
 //
 // This network represents the deployment option 3 in 3GPP 38.801
 //
 network DistMEC
 {
     parameters:
-        int numUe = default(1);
+        int numUe = default(80);
         int numGnb = default(15);
         int numBgCells = default(0);
         bool enableInitDebug = default(false); // enable debug info during initialization
         // int npcPort = default(29); // port used by the node packet controller of the gNodeB
         double scheduleInterval @unit(s) = default(1s); // in TTI, if the scheduler run periodically, specify the interval
+        string vehicleTraceFolder; // path of the trace file for the mobility of the UEs
 
         @display("i=block/network2;bgb=1319.256,1118.4559;bgi=map");
     submodules:
@@ -61,6 +61,7 @@ network DistMEC
         }
         database: Database {
             @display("p=1214.004,534.072;is=s");
+            numLinks = 25;
         }
         bandManager: BandManager {
             @display("p=1214.004,639.54004;is=s");

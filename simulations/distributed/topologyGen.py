@@ -35,8 +35,9 @@ def generate_connections_from_file(filename, channel="Eth100G", prefix="gnb"):
 
 
 if __name__ == "__main__":
-    filename = "./traffic/RSU15_graph.txt"
-    output_filename = "connections.txt"
+    map_size = 4    # 0 is default, 1 is 1km x 1km, 2 is 2km x 2km, 3 is 3km x 3km, 4 is 4km x 4km
+    filename = f"./map_{map_size}/ES_graph.txt"
+    output_filename = f"./map_{map_size}/connections.txt"
     result = generate_connections_from_file(filename)
 
     # save to output file

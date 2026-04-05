@@ -10,12 +10,12 @@ cd ${MEC_WORKSPACE}/mecRT/simulations/distributed
 # Run the simulation
 # -r 0: run the simulation for 0 iterations
 # -u Qtenv: "Qtenv" for GUI mode, use "Cmdenv" for command line mode
-# -c DistributedTest: specify the configuration to use  opp_run
+# -c [Uploading, CentralizedTest, DistributedTest]: specify the configuration to use opp_run 
 ${OMNETPP_ROOT}/bin/opp_run  \
   -r 0 \
   -m \
   -u Qtenv \
-  -c DistributedTest \
+  -c CentralizedTest \
   -n "../../src:..:../../../simu5g/emulation:../../../simu5g/simulations:../../../simu5g/src:../../../inet4.5/examples:../../../inet4.5/showcases:../../../inet4.5/src:../../../inet4.5/tests/validation:../../../inet4.5/tests/networks:../../../inet4.5/tutorials" \
   --image-path "../../images:../../../inet4.5/images:../../../simu5g/images" \
   -l "../../src/mecrt" \

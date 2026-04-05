@@ -104,7 +104,8 @@ void MecMobility::initialize(int stage)
             std::cout << "MecMobility::initialize - stage: INITSTAGE_SINGLE_MOBILITY - begins" << std::endl;
 
         vehIndex_ = getParentModule()->getIndex();
-        std::string filePath = "./path/" + std::to_string(vehIndex_) + ".txt";
+        std::string vehTraceFolder = getAncestorPar("vehicleTraceFolder").stringValue();
+        std::string filePath = vehTraceFolder + "/" + std::to_string(vehIndex_) + ".txt";
         EV << "MecMobility::initialize - reading waypoints from file: " << filePath << endl;
         readWaypointsFromFile(filePath.c_str());
 

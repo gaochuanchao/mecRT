@@ -88,7 +88,7 @@ class MecMobility : public MobilityBase
      *
      * The -1 value turns off sending a self message for the next mobility state change. */
     simtime_t nextChange_;	// the next change time in the provided file
-	simtime_t nextUpdate_;	// the next update time based on the updateInterval_
+	  simtime_t nextUpdate_;	// the next update time based on the updateInterval_
 
     bool faceForward_;
 
@@ -108,9 +108,9 @@ class MecMobility : public MobilityBase
      * Subclasses must override and update lastPosition, lastVelocity, lastUpdate, nextChange
      * and other state according to the mobility model.
      */
-	virtual void move(bool arriveTarget);
+    virtual void move(bool arriveTarget);
 
-	virtual void orient(bool arriveTarget);	
+    virtual void orient(bool arriveTarget);	
 
     virtual void setInitialPosition() override;
 
