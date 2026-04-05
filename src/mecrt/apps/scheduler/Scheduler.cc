@@ -905,6 +905,18 @@ void Scheduler::initializeSchedulingScheme()
         {
             if (schemeName_ == "DistIS")
                 scheme_ = new AccuracyDistIS(this);
+            else if (schemeName_ == "Greedy")
+                scheme_ = new AccuracyGreedy(this);
+            else if (schemeName_ == "GameTheory")
+                scheme_ = new AccuracyGameTheory(this);
+            else if (schemeName_ == "FastIS")
+                scheme_ = new AccuracyFastIS(this);
+            else if (schemeName_ == "SARound")
+                scheme_ = new AccuracySARound(this);
+            else if (schemeName_ == "Iterative")
+                scheme_ = new AccuracyIterative(this);
+            else if (schemeName_ == "IDAssign")
+                scheme_ = new AccuracyIDAssign(this);
             else
                 scheme_ = new SchemeBase(this);
         }
