@@ -42,6 +42,12 @@ network DistMEC
         // int npcPort = default(29); // port used by the node packet controller of the gNodeB
         double scheduleInterval @unit(s) = default(1s); // in TTI, if the scheduler run periodically, specify the interval
         string vehicleTraceFolder; // path of the trace file for the mobility of the UEs
+        double areaMinX @unit(m) = default(0m);
+        double areaMaxX @unit(m) = default(2400m);
+        double areaMinY @unit(m) = default(0m);
+        double areaMaxY @unit(m) = default(2400m);
+        double areaMinZ @unit(m) = default(0m);
+        double areaMaxZ @unit(m) = default(0m);
 
         @display("i=block/network2;bgb=1319.256,1118.4559;bgi=map");
     submodules:
@@ -69,6 +75,12 @@ network DistMEC
         }
         gnb[numGnb]: gNodeB {
             @display("p=642.56,536.136;is=l");
+            mobility.constraintAreaMinX = parent.areaMinX;
+            mobility.constraintAreaMinY = parent.areaMinY;
+            mobility.constraintAreaMaxX = parent.areaMaxX;
+            mobility.constraintAreaMaxY = parent.areaMaxY;
+            mobility.constraintAreaMinZ = parent.areaMinZ;
+            mobility.constraintAreaMaxZ = parent.areaMaxZ;
         }
         bgCell[numBgCells]: BackgroundCell {
             @display("p=1014.04,702.8;is=l");
@@ -76,6 +88,12 @@ network DistMEC
         ue[numUe]: NRUe {
             // @display("i=misc/car3;p=642.56,771.07196;is=n;or");
             @display("i=misc/car3;p=642.56,771.07196");
+            mobility.constraintAreaMinX = parent.areaMinX;
+            mobility.constraintAreaMinY = parent.areaMinY;
+            mobility.constraintAreaMaxX = parent.areaMaxX;
+            mobility.constraintAreaMaxY = parent.areaMaxY;
+            mobility.constraintAreaMinZ = parent.areaMinZ;
+            mobility.constraintAreaMaxZ = parent.areaMaxZ;
         }
     connections allowunconnected:
         gnb[0].pppg++ <--> Eth100G <--> gnb[1].pppg++;

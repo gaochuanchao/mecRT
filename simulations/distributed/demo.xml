@@ -1,4 +1,10 @@
 <config>
-    <interface hosts='*' address='10.x.x.x' netmask='255.255.255.0'/>
-    <!-- <route hosts="*"> -->
+    <!-- Cellular pool for UE and gNB radio interfaces; /19 supports 5k-scale runs -->
+    <interface hosts="*.ue[*] *.gnb[*]" names="cellular" address="10.x.x.x" netmask="255.255.224.0"/>
+
+    <!-- Point-to-point backhaul links between gNBs -->
+    <interface hosts="*.gnb[*]" names="ppp*" address="11.x.x.x" netmask="255.255.255.252"/>
+
+    <!-- Loopback interfaces -->
+    <interface hosts="*" names="lo*" address="127.x.x.x" netmask="255.0.0.0"/>
 </config>
