@@ -1,0 +1,322 @@
+==============================
+Running configuration 20
+==============================
+OMNeT++ Discrete Event Simulation  (C) 1992-2022 Andras Varga, OpenSim Ltd.
+Version: 6.0.3, build: 240223-17fcae5ef3, edition: Academic Public License -- NOT FOR COMMERCIAL USE
+See the license for distribution terms and warranty disclaimer
+
+Setting up Cmdenv...
+
+Loading NED files from ../../src:  31
+Loading NED files from ..:  10
+Loading NED files from ../../../simu5g/emulation:  7
+Loading NED files from ../../../simu5g/simulations:  20
+Loading NED files from ../../../simu5g/src:  93
+Loading NED files from ../../../inet4.5/examples:  185
+Loading NED files from ../../../inet4.5/showcases:  76
+Loading NED files from ../../../inet4.5/src:  1187
+Loading NED files from ../../../inet4.5/tests/validation:  5
+Loading NED files from ../../../inet4.5/tests/networks:  6
+Loading NED files from ../../../inet4.5/tutorials:  20
+
+Preparing for running configuration Centralized, run #20...
+Scenario: $mapScale=4, $scheme=GameTheory, $appCount=2, $repetition=0
+Assigned runID=Centralized-20-20260407-03:34:20-17041
+Setting up network "mecRT.simulations.distributed.map_4.DistMEC"...
+Initializing...
+
+<!> Error urban macrocell path loss model is valid for d<5000m only -- in module (UePhy) DistMEC.ue[7].cellularNic.nrPhy (id=9508), during network initialization
+[INFO]	** Signal at T=0 to DistMEC.gnb[1].ipv4.routingTable: interfaceStateChanged pppIf0 ID:101 MTU:409600 UP NOCARRIER MULTICAST POINTTOPOINT macAddr:n/a changed field: 0
+[INFO]	 
+[INFO]	** Signal at T=0 to DistMEC.gnb[0].ipv4.routingTable: interfaceStateChanged pppIf0 ID:101 MTU:409600 UP NOCARRIER MULTICAST POINTTOPOINT macAddr:n/a changed field: 0
+[INFO]	 
+[INFO]	** Signal at T=0 to DistMEC.gnb[2].ipv4.routingTable: interfaceStateChanged pppIf0 ID:101 MTU:409600 UP NOCARRIER MULTICAST POINTTOPOINT macAddr:n/a changed field: 0
+[INFO]	 
+[INFO]	** Signal at T=0 to DistMEC.gnb[0].ipv4.routingTable: interfaceStateChanged pppIf1 ID:102 MTU:409600 UP NOCARRIER MULTICAST POINTTOPOINT macAddr:n/a changed field: 0
+[INFO]	 
+[INFO]	** Signal at T=0 to DistMEC.gnb[7].ipv4.routingTable: interfaceStateChanged pppIf0 ID:101 MTU:409600 UP NOCARRIER MULTICAST POINTTOPOINT macAddr:n/a changed field: 0
+[INFO]	 
+[INFO]	** Signal at T=0 to DistMEC.gnb[0].ipv4.routingTable: interfaceStateChanged pppIf2 ID:103 MTU:409600 UP NOCARRIER MULTICAST POINTTOPOINT macAddr:n/a changed field: 0
+[INFO]	 
+[INFO]	** Signal at T=0 to DistMEC.gnb[8].ipv4.routingTable: interfaceStateChanged pppIf0 ID:101 MTU:409600 UP NOCARRIER MULTICAST POINTTOPOINT macAddr:n/a changed field: 0
+[INFO]	 
+[INFO]	** Signal at T=0 to DistMEC.gnb[0].ipv4.routingTable: interfaceStateChanged pppIf3 ID:104 MTU:409600 UP NOCARRIER MULTICAST POINTTOPOINT macAddr:n/a changed field: 0
+[INFO]	 
+./Run-Centralized.sh: line 4: 17041 Segmentation fault      (core dumped) ${OMNETPP_ROOT}/bin/opp_run -r $i -m -u Cmdenv -c Centralized -n "../../src:..:../../../simu5g/emulation:../../../simu5g/simulations:../../../simu5g/src:../../../inet4.5/examples:../../../inet4.5/showcases:../../../inet4.5/src:../../../inet4.5/tests/validation:../../../inet4.5/tests/networks:../../../inet4.5/tutorials" --image-path "../../images:../../../inet4.5/images:../../../simu5g/images" -l "../../src/mecrt" -l "../../../simu5g/src/simu5g" -l "../../../inet4.5/src/INET" omnetpp.ini --sim-time-limit=900s
+Finished run 20 for Centralized
+
+
+
+
+==============================
+Running configuration 20
+==============================
+OMNeT++ Discrete Event Simulation  (C) 1992-2022 Andras Varga, OpenSim Ltd.
+Version: 6.0.3, build: 240223-17fcae5ef3, edition: Academic Public License -- NOT FOR COMMERCIAL USE
+See the license for distribution terms and warranty disclaimer
+
+Setting up Cmdenv...
+
+Loading NED files from ../../src:  31
+Loading NED files from ..:  10
+Loading NED files from ../../../simu5g/emulation:  7
+Loading NED files from ../../../simu5g/simulations:  20
+Loading NED files from ../../../simu5g/src:  93
+Loading NED files from ../../../inet4.5/examples:  185
+Loading NED files from ../../../inet4.5/showcases:  76
+Loading NED files from ../../../inet4.5/src:  1187
+Loading NED files from ../../../inet4.5/tests/validation:  5
+Loading NED files from ../../../inet4.5/tests/networks:  6
+Loading NED files from ../../../inet4.5/tutorials:  20
+
+Preparing for running configuration Centralized, run #20...
+Scenario: $mapScale=4, $scheme=GameTheory, $appCount=2, $repetition=0
+Assigned runID=Centralized-20-20260407-10:36:43-20500
+Setting up network "mecRT.simulations.distributed.map_4.DistMEC"...
+Initializing...
+
+Running simulation...
+** Event #0   t=0   Elapsed: 1.2e-05s (0m 00s)  0% completed  (0% total)
+     Speed:     ev/sec=0   simsec/sec=0   ev/simsec=0
+     Messages:  created: 37974   present: 34902   in FES: 6846
+** Event #605440   t=0.008000672   Elapsed: 2.00029s (0m 02s)  0% completed  (0% total)
+     Speed:     ev/sec=302677   simsec/sec=0.00399976   ev/simsec=7.56738e+07
+     Messages:  created: 297318   present: 66424   in FES: 7372
+** Event #1076736   t=0.00800172736   Elapsed: 4.00231s (0m 04s)  0% completed  (0% total)
+     Speed:     ev/sec=235410   simsec/sec=5.27148e-07   ev/simsec=4.46574e+11
+     Messages:  created: 484606   present: 78046   in FES: 7581
+** Event #1536000   t=0.00800282704   Elapsed: 6.00326s (0m 06s)  0% completed  (0% total)
+     Speed:     ev/sec=229523   simsec/sec=5.49579e-07   ev/simsec=4.17634e+11
+     Messages:  created: 667090   present: 81551   in FES: 7526
+** Event #1991424   t=0.00800396456   Elapsed: 8.00357s (0m 08s)  0% completed  (0% total)
+     Speed:     ev/sec=227677   simsec/sec=5.68672e-07   ev/simsec=4.00366e+11
+     Messages:  created: 847822   present: 80882   in FES: 7233
+** Event #2434560   t=0.00800511696   Elapsed: 10.0042s (0m 10s)  0% completed  (0% total)
+     Speed:     ev/sec=221493   simsec/sec=5.76006e-07   ev/simsec=3.84533e+11
+     Messages:  created: 1024287   present: 75973   in FES: 7318
+** Event #2876416   t=0.00800636968   Elapsed: 12.0053s (0m 12s)  0% completed  (0% total)
+     Speed:     ev/sec=220813   simsec/sec=6.26034e-07   ev/simsec=3.52717e+11
+     Messages:  created: 1200333   present: 61919   in FES: 7228
+** Event #3175424   t=0.025   Elapsed: 14.512s (0m 14s)  0% completed  (0% total)
+     Speed:     ev/sec=119283   simsec/sec=0.00677926   ev/simsec=1.75953e+07
+     Messages:  created: 1316171   present: 32292   in FES: 4236
+** Event #3181749   t=0.029   Elapsed: 15.4019s (0m 15s)  0% completed  (0% total)
+     Speed:     ev/sec=7106.68   simsec/sec=0.00337189   ev/simsec=2.10762e+06
+     Messages:  created: 1318755   present: 32350   in FES: 4271
+
+<!> Error urban macrocell path loss model is valid for d<5000m only -- in module (GnbPhy) DistMEC.gnb[97].cellularNic.phy (id=8949), at t=0.029s, event #3181749
+[INFO]	** Signal at T=0.029 to DistMEC.gnb[1].ipv4.routingTable: interfaceStateChanged pppIf0 ID:101 MTU:409600 UP NOCARRIER MULTICAST POINTTOPOINT macAddr:n/a Ipv4:{inet_addr:11.0.0.2/30 mcastgrps:224.0.0.1,224.0.0.2,224.0.0.5} changed field: 0
+[INFO]	 
+
+
+** Event #3181749  t=0.029  DistMEC.gnb[97].cellularNic.phy (GnbPhy, id=8949)  on feedback_pkt (LteAirFrame, id=1319264)
+
+INFO: GnbPhy::handleMessage - new message received
+INFO: GnbPhy::handleAirFrame - received new LteAirFrame with ID 1319264 from channel
+INFO: GnbPhy::handleControlPkt - airFrame type: FEEDBACKPKT
+INFO: GnbPhy::handleFeedbackPkt - Handled Feedback Packet with ID 1319264
+INFO: 0.029 GnbPhy::requestFeedback
+INFO: ------------ GET SINR ----------------
+INFO: LteRealisticChannelModel::getSINR - srcId=2077 - destId=98 - DIR=UL - frameType=feedback
+INFO: MACRO - txPwr 50 - ueCoord[(3573.12, 4073.26, 0) m] - enbCoord[(3591.99, 4202.1, 0) m] - ueId[2077] - enbId[98]
+INFO: 	 using parameters - noiseFigure=5 - antennaGainTx=0 - antennaGainRx=18 - txPwr=50 - for ueId=2077
+INFO:  NRChannelModel_3GPP38_901::computeShadowing - shadowing att = -10.0971
+INFO: NRChannelModel::getAttenuation - computed attenuation at distance 130.215 for eNb is 92.1044
+INFO:  LteRealisticChannelModel::getSINR node 2077 FEEDBACK PACKET  band 0 recvPower -26.1044 direction UL antenna gain tx 0 antenna gain rx 18 noise figure 5 cable loss   2 attenuation (pathloss + shadowing) 92.1044 speed 0 thermal noise -104.5 fading attenuation -0.792284
+INFO:  LteRealisticChannelModel::getSINR node 2077 FEEDBACK PACKET  band 1 recvPower -26.1044 direction UL antenna gain tx 0 antenna gain rx 18 noise figure 5 cable loss   2 attenuation (pathloss + shadowing) 92.1044 speed 0 thermal noise -104.5 fading attenuation -6.62126
+INFO:  LteRealisticChannelModel::getSINR node 2077 FEEDBACK PACKET  band 2 recvPower -26.1044 direction UL antenna gain tx 0 antenna gain rx 18 noise figure 5 cable loss   2 attenuation (pathloss + shadowing) 92.1044 speed 0 thermal noise -104.5 fading attenuation -0.432295
+INFO:  LteRealisticChannelModel::getSINR node 2077 FEEDBACK PACKET  band 3 recvPower -26.1044 direction UL antenna gain tx 0 antenna gain rx 18 noise figure 5 cable loss   2 attenuation (pathloss + shadowing) 92.1044 speed 0 thermal noise -104.5 fading attenuation -3.71429
+INFO:  LteRealisticChannelModel::getSINR node 2077 FEEDBACK PACKET  band 4 recvPower -26.1044 direction UL antenna gain tx 0 antenna gain rx 18 noise figure 5 cable loss   2 attenuation (pathloss + shadowing) 92.1044 speed 0 thermal noise -104.5 fading attenuation -0.376559
+INFO:  LteRealisticChannelModel::getSINR node 2077 FEEDBACK PACKET  band 5 recvPower -26.1044 direction UL antenna gain tx 0 antenna gain rx 18 noise figure 5 cable loss   2 attenuation (pathloss + shadowing) 92.1044 speed 0 thermal noise -104.5 fading attenuation -9.29726
+INFO:  LteRealisticChannelModel::getSINR node 2077 FEEDBACK PACKET  band 6 recvPower -26.1044 direction UL antenna gain tx 0 antenna gain rx 18 noise figure 5 cable loss   2 attenuation (pathloss + shadowing) 92.1044 speed 0 thermal noise -104.5 fading attenuation -2.44669
+INFO:  LteRealisticChannelModel::getSINR node 2077 FEEDBACK PACKET  band 7 recvPower -26.1044 direction UL antenna gain tx 0 antenna gain rx 18 noise figure 5 cable loss   2 attenuation (pathloss + shadowing) 92.1044 speed 0 thermal noise -104.5 fading attenuation 4.54017
+INFO:  LteRealisticChannelModel::getSINR node 2077 FEEDBACK PACKET  band 8 recvPower -26.1044 direction UL antenna gain tx 0 antenna gain rx 18 noise figure 5 cable loss   2 attenuation (pathloss + shadowing) 92.1044 speed 0 thermal noise -104.5 fading attenuation 3.74349
+INFO:  LteRealisticChannelModel::getSINR node 2077 FEEDBACK PACKET  band 9 recvPower -26.1044 direction UL antenna gain tx 0 antenna gain rx 18 noise figure 5 cable loss   2 attenuation (pathloss + shadowing) 92.1044 speed 0 thermal noise -104.5 fading attenuation 0.0565327
+INFO:  LteRealisticChannelModel::getSINR node 2077 FEEDBACK PACKET  band 10 recvPower -26.1044 direction UL antenna gain tx 0 antenna gain rx 18 noise figure 5 cable loss   2 attenuation (pathloss + shadowing) 92.1044 speed 0 thermal noise -104.5 fading attenuation 3.56232
+INFO:  LteRealisticChannelModel::getSINR node 2077 FEEDBACK PACKET  band 11 recvPower -26.1044 direction UL antenna gain tx 0 antenna gain rx 18 noise figure 5 cable loss   2 attenuation (pathloss + shadowing) 92.1044 speed 0 thermal noise -104.5 fading attenuation -2.33804
+INFO:  LteRealisticChannelModel::getSINR node 2077 FEEDBACK PACKET  band 12 recvPower -26.1044 direction UL antenna gain tx 0 antenna gain rx 18 noise figure 5 cable loss   2 attenuation (pathloss + shadowing) 92.1044 speed 0 thermal noise -104.5 fading attenuation -1.22063
+INFO:  LteRealisticChannelModel::getSINR node 2077 FEEDBACK PACKET  band 13 recvPower -26.1044 direction UL antenna gain tx 0 antenna gain rx 18 noise figure 5 cable loss   2 attenuation (pathloss + shadowing) 92.1044 speed 0 thermal noise -104.5 fading attenuation -6.90205
+INFO:  LteRealisticChannelModel::getSINR node 2077 FEEDBACK PACKET  band 14 recvPower -26.1044 direction UL antenna gain tx 0 antenna gain rx 18 noise figure 5 cable loss   2 attenuation (pathloss + shadowing) 92.1044 speed 0 thermal noise -104.5 fading attenuation -1.42225
+INFO:  LteRealisticChannelModel::getSINR node 2077 FEEDBACK PACKET  band 15 recvPower -26.1044 direction UL antenna gain tx 0 antenna gain rx 18 noise figure 5 cable loss   2 attenuation (pathloss + shadowing) 92.1044 speed 0 thermal noise -104.5 fading attenuation -5.20991
+INFO:  LteRealisticChannelModel::getSINR node 2077 FEEDBACK PACKET  band 16 recvPower -26.1044 direction UL antenna gain tx 0 antenna gain rx 18 noise figure 5 cable loss   2 attenuation (pathloss + shadowing) 92.1044 speed 0 thermal noise -104.5 fading attenuation -10.8965
+INFO:  LteRealisticChannelModel::getSINR node 2077 FEEDBACK PACKET  band 17 recvPower -26.1044 direction UL antenna gain tx 0 antenna gain rx 18 noise figure 5 cable loss   2 attenuation (pathloss + shadowing) 92.1044 speed 0 thermal noise -104.5 fading attenuation -3.60827
+INFO: **** Uplink Interference for cellId[98] node[2077] ****
+INFO: 0.029 LteRealisticChannelModel::computeUplinkInterference - Final Band Interference Status:
+INFO: 	 band 0 int[0]
+INFO: 	 band 1 int[0]
+INFO: 	 band 2 int[0]
+INFO: 	 band 3 int[0]
+INFO: 	 band 4 int[0]
+INFO: 	 band 5 int[0]
+INFO: 	 band 6 int[0]
+INFO: 	 band 7 int[0]
+INFO: 	 band 8 int[0]
+INFO: 	 band 9 int[0]
+INFO: 	 band 10 int[0]
+INFO: 	 band 11 int[0]
+INFO: 	 band 12 int[0]
+INFO: 	 band 13 int[0]
+INFO: 	 band 14 int[0]
+INFO: 	 band 15 int[0]
+INFO: 	 band 16 int[0]
+INFO: 	 band 17 int[0]
+INFO: **** Background Cell Interference ****
+INFO: LteRealisticChannelModel::getSINR - distance from my eNb=130.215 - DIR=UL
+INFO: 	 bgCell[0] - ext[0] - multi[0] - recvPwr[2.0433e-06] - sinr[72.6033]
+INFO: 	 bgCell[0] - ext[0] - multi[0] - recvPwr[5.33869e-07] - sinr[66.7743]
+INFO: 	 bgCell[0] - ext[0] - multi[0] - recvPwr[2.21989e-06] - sinr[72.9633]
+INFO: 	 bgCell[0] - ext[0] - multi[0] - recvPwr[1.04263e-06] - sinr[69.6813]
+INFO: 	 bgCell[0] - ext[0] - multi[0] - recvPwr[2.24856e-06] - sinr[73.0191]
+INFO: 	 bgCell[0] - ext[0] - multi[0] - recvPwr[2.88293e-07] - sinr[64.0983]
+INFO: 	 bgCell[0] - ext[0] - multi[0] - recvPwr[1.39602e-06] - sinr[70.9489]
+INFO: 	 bgCell[0] - ext[0] - multi[0] - recvPwr[6.97554e-06] - sinr[77.9358]
+INFO: 	 bgCell[0] - ext[0] - multi[0] - recvPwr[5.80644e-06] - sinr[77.1391]
+INFO: 	 bgCell[0] - ext[0] - multi[0] - recvPwr[2.48436e-06] - sinr[73.4521]
+INFO: 	 bgCell[0] - ext[0] - multi[0] - recvPwr[5.5692e-06] - sinr[76.9579]
+INFO: 	 bgCell[0] - ext[0] - multi[0] - recvPwr[1.43139e-06] - sinr[71.0576]
+INFO: 	 bgCell[0] - ext[0] - multi[0] - recvPwr[1.85139e-06] - sinr[72.175]
+INFO: 	 bgCell[0] - ext[0] - multi[0] - recvPwr[5.00444e-07] - sinr[66.4936]
+INFO: 	 bgCell[0] - ext[0] - multi[0] - recvPwr[1.7674e-06] - sinr[71.9734]
+INFO: 	 bgCell[0] - ext[0] - multi[0] - recvPwr[7.38874e-07] - sinr[68.1857]
+INFO: 	 bgCell[0] - ext[0] - multi[0] - recvPwr[1.99487e-07] - sinr[62.4992]
+INFO: 	 bgCell[0] - ext[0] - multi[0] - recvPwr[1.0684e-06] - sinr[69.7873]
+INFO: ------------ GET SINR ----------------
+INFO: LteRealisticChannelModel::getSINR - srcId=2077 - destId=98 - DIR=DL - frameType=feedback
+INFO: MACRO - txPwr 1000 - ueCoord[(3573.12, 4073.26, 0) m] - enbCoord[(3591.99, 4202.1, 0) m] - ueId[2077] - enbId[98]
+INFO: 	 using parameters - noiseFigure=7 - antennaGainTx=18 - antennaGainRx=0 - txPwr=1000 - for ueId=2077
+INFO:  NRChannelModel_3GPP38_901::computeShadowing - shadowing att = 2.79555
+INFO: NRChannelModel::getAttenuation - computed attenuation at distance 130.215 for eNb is 104.997
+INFO:  LteRealisticChannelModel::getSINR node 2077 FEEDBACK PACKET  band 0 recvPower 911.003 direction DL antenna gain tx 18 antenna gain rx 0 noise figure 7 cable loss   2 attenuation (pathloss + shadowing) 104.997 speed 0 thermal noise -104.5 fading attenuation -3.09831
+INFO:  LteRealisticChannelModel::getSINR node 2077 FEEDBACK PACKET  band 1 recvPower 911.003 direction DL antenna gain tx 18 antenna gain rx 0 noise figure 7 cable loss   2 attenuation (pathloss + shadowing) 104.997 speed 0 thermal noise -104.5 fading attenuation -19.0487
+INFO:  LteRealisticChannelModel::getSINR node 2077 FEEDBACK PACKET  band 2 recvPower 911.003 direction DL antenna gain tx 18 antenna gain rx 0 noise figure 7 cable loss   2 attenuation (pathloss + shadowing) 104.997 speed 0 thermal noise -104.5 fading attenuation -5.33583
+INFO:  LteRealisticChannelModel::getSINR node 2077 FEEDBACK PACKET  band 3 recvPower 911.003 direction DL antenna gain tx 18 antenna gain rx 0 noise figure 7 cable loss   2 attenuation (pathloss + shadowing) 104.997 speed 0 thermal noise -104.5 fading attenuation -0.657111
+INFO:  LteRealisticChannelModel::getSINR node 2077 FEEDBACK PACKET  band 4 recvPower 911.003 direction DL antenna gain tx 18 antenna gain rx 0 noise figure 7 cable loss   2 attenuation (pathloss + shadowing) 104.997 speed 0 thermal noise -104.5 fading attenuation 4.50517
+INFO:  LteRealisticChannelModel::getSINR node 2077 FEEDBACK PACKET  band 5 recvPower 911.003 direction DL antenna gain tx 18 antenna gain rx 0 noise figure 7 cable loss   2 attenuation (pathloss + shadowing) 104.997 speed 0 thermal noise -104.5 fading attenuation -4.05987
+INFO:  LteRealisticChannelModel::getSINR node 2077 FEEDBACK PACKET  band 6 recvPower 911.003 direction DL antenna gain tx 18 antenna gain rx 0 noise figure 7 cable loss   2 attenuation (pathloss + shadowing) 104.997 speed 0 thermal noise -104.5 fading attenuation 0.709259
+INFO:  LteRealisticChannelModel::getSINR node 2077 FEEDBACK PACKET  band 7 recvPower 911.003 direction DL antenna gain tx 18 antenna gain rx 0 noise figure 7 cable loss   2 attenuation (pathloss + shadowing) 104.997 speed 0 thermal noise -104.5 fading attenuation -12.0137
+INFO:  LteRealisticChannelModel::getSINR node 2077 FEEDBACK PACKET  band 8 recvPower 911.003 direction DL antenna gain tx 18 antenna gain rx 0 noise figure 7 cable loss   2 attenuation (pathloss + shadowing) 104.997 speed 0 thermal noise -104.5 fading attenuation 2.60883
+INFO:  LteRealisticChannelModel::getSINR node 2077 FEEDBACK PACKET  band 9 recvPower 911.003 direction DL antenna gain tx 18 antenna gain rx 0 noise figure 7 cable loss   2 attenuation (pathloss + shadowing) 104.997 speed 0 thermal noise -104.5 fading attenuation 3.55048
+INFO:  LteRealisticChannelModel::getSINR node 2077 FEEDBACK PACKET  band 10 recvPower 911.003 direction DL antenna gain tx 18 antenna gain rx 0 noise figure 7 cable loss   2 attenuation (pathloss + shadowing) 104.997 speed 0 thermal noise -104.5 fading attenuation 1.85464
+INFO:  LteRealisticChannelModel::getSINR node 2077 FEEDBACK PACKET  band 11 recvPower 911.003 direction DL antenna gain tx 18 antenna gain rx 0 noise figure 7 cable loss   2 attenuation (pathloss + shadowing) 104.997 speed 0 thermal noise -104.5 fading attenuation -9.86389
+INFO:  LteRealisticChannelModel::getSINR node 2077 FEEDBACK PACKET  band 12 recvPower 911.003 direction DL antenna gain tx 18 antenna gain rx 0 noise figure 7 cable loss   2 attenuation (pathloss + shadowing) 104.997 speed 0 thermal noise -104.5 fading attenuation 1.64097
+INFO:  LteRealisticChannelModel::getSINR node 2077 FEEDBACK PACKET  band 13 recvPower 911.003 direction DL antenna gain tx 18 antenna gain rx 0 noise figure 7 cable loss   2 attenuation (pathloss + shadowing) 104.997 speed 0 thermal noise -104.5 fading attenuation -6.18075
+INFO:  LteRealisticChannelModel::getSINR node 2077 FEEDBACK PACKET  band 14 recvPower 911.003 direction DL antenna gain tx 18 antenna gain rx 0 noise figure 7 cable loss   2 attenuation (pathloss + shadowing) 104.997 speed 0 thermal noise -104.5 fading attenuation 2.61253
+INFO:  LteRealisticChannelModel::getSINR node 2077 FEEDBACK PACKET  band 15 recvPower 911.003 direction DL antenna gain tx 18 antenna gain rx 0 noise figure 7 cable loss   2 attenuation (pathloss + shadowing) 104.997 speed 0 thermal noise -104.5 fading attenuation -8.08803
+INFO:  LteRealisticChannelModel::getSINR node 2077 FEEDBACK PACKET  band 16 recvPower 911.003 direction DL antenna gain tx 18 antenna gain rx 0 noise figure 7 cable loss   2 attenuation (pathloss + shadowing) 104.997 speed 0 thermal noise -104.5 fading attenuation 1.4857
+INFO:  LteRealisticChannelModel::getSINR node 2077 FEEDBACK PACKET  band 17 recvPower 911.003 direction DL antenna gain tx 18 antenna gain rx 0 noise figure 7 cable loss   2 attenuation (pathloss + shadowing) 104.997 speed 0 thermal noise -104.5 fading attenuation 5.5743
+INFO: **** Downlink Interference ****
+INFO:  NRChannelModel_3GPP38_901::computeShadowing - shadowing att = 2.79555
+INFO: NRChannelModel::getAttenuation - computed attenuation at distance 2546.51 for eNb is 155.461
+INFO: EnbId [1] - attenuation [155.461] - shared bands [18]
+INFO: 	 band 0 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 1 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 2 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 3 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 4 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 5 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 6 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 7 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 8 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 9 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 10 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 11 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 12 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 13 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 14 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 15 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 16 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 17 occupied 0/pwr[1016]-int[0]
+INFO:  NRChannelModel_3GPP38_901::computeShadowing - shadowing att = 2.79555
+INFO: NRChannelModel::getAttenuation - computed attenuation at distance 2206.87 for eNb is 153.031
+INFO: EnbId [2] - attenuation [153.031] - shared bands [18]
+INFO: 	 band 0 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 1 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 2 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 3 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 4 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 5 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 6 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 7 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 8 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 9 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 10 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 11 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 12 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 13 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 14 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 15 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 16 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 17 occupied 0/pwr[1016]-int[0]
+INFO:  NRChannelModel_3GPP38_901::computeShadowing - shadowing att = 2.79555
+INFO: NRChannelModel::getAttenuation - computed attenuation at distance 2807.76 for eNb is 157.118
+INFO: EnbId [3] - attenuation [157.118] - shared bands [18]
+INFO: 	 band 0 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 1 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 2 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 3 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 4 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 5 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 6 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 7 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 8 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 9 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 10 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 11 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 12 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 13 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 14 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 15 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 16 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 17 occupied 0/pwr[1016]-int[0]
+INFO:  NRChannelModel_3GPP38_901::computeShadowing - shadowing att = 2.79555
+INFO: NRChannelModel::getAttenuation - computed attenuation at distance 3862.61 for eNb is 162.531
+INFO: EnbId [4] - attenuation [162.531] - shared bands [18]
+INFO: 	 band 0 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 1 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 2 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 3 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 4 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 5 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 6 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 7 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 8 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 9 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 10 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 11 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 12 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 13 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 14 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 15 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 16 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 17 occupied 0/pwr[1016]-int[0]
+INFO:  NRChannelModel_3GPP38_901::computeShadowing - shadowing att = 2.79555
+INFO: NRChannelModel::getAttenuation - computed attenuation at distance 4362.34 for eNb is 164.596
+INFO: EnbId [5] - attenuation [164.596] - shared bands [18]
+INFO: 	 band 0 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 1 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 2 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 3 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 4 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 5 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 6 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 7 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 8 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 9 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 10 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 11 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 12 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 13 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 14 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 15 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 16 occupied 0/pwr[1016]-int[0]
+INFO: 	 band 17 occupied 0/pwr[1016]-int[0]
+<!> Error urban macrocell path loss model is valid for d<5000m only -- in module (GnbPhy) DistMEC.gnb[97].cellularNic.phy (id=8949), at t=0.029s, event #3181749
+
+
+
+
+
+
+
+
+

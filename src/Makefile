@@ -80,6 +80,7 @@ OBJS = \
     $O/mecrt/nic/pdcp_rrc/MecPdcpRrcUe.o \
     $O/mecrt/nic/phy/GnbPhy.o \
     $O/mecrt/nic/phy/UePhy.o \
+    $O/mecrt/nic/phy/ChannelModel/MecChannelModel.o \
     $O/mecrt/nic/rlc/um/MecRlcUm.o \
     $O/mecrt/packets/apps/Grant2Veh.o \
     $O/mecrt/routing/MecOspf.o \

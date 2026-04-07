@@ -1,7 +1,7 @@
 #!/bin/bash
 cd ${MEC_WORKSPACE}/mecRT/simulations/distributed
 
-for i in {0..29}; do  # 30 configurations
+for i in {20..29}; do  # 30 configurations
   echo "=============================="
   echo "Running configuration $i"
   echo "=============================="

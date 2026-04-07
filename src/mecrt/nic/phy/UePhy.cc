@@ -296,6 +296,12 @@ void UePhy::initialize(int stage)
 
                 rsuSet_.insert(cellId);
 
+                // in NRChannelModel_3GPP38_901::computePathLoss(), the maximum distance is 5000m (hardcoded)
+                // to determine the candidateMasterId_, we constrain the distance within 1000m. 
+                double distance = cellPos.distance(getCoord());
+                if (distance > 1000)
+                    continue;
+
                 // build a control info
                 cInfo->setSourceId(cellId);
                 cInfo->setTxPower(cellTxPower);
@@ -633,7 +639,7 @@ void UePhy::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVector f
                     // this is to avoid sending feedback to RSUs that are not in the range of SRS
                     // and thus cannot receive the feedback
 
-                    EV << "UePhy::sendFeedback - RSU " << destId << " is too far (" << dist << " > " << srsDistance_ << "), skipping transmission" << endl;
+                    // EV << "UePhy::sendFeedback - RSU " << destId << " is too far (" << dist << " > " << srsDistance_ << "), skipping transmission" << endl;
                     continue;   // skip this RSU
                 }
                     

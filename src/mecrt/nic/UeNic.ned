@@ -14,11 +14,11 @@ import mecRT.mecrt.nic.mac.UeMac;
 import mecRT.mecrt.nic.pdcp_rrc.MecPdcpRrcUe;
 import mecRT.mecrt.nic.phy.UePhy;
 import mecRT.mecrt.nic.rlc.MecRlc;
+import mecRT.mecrt.nic.phy.ChannelModel.MecChannelModel;
 import simu5g.stack.ICellularNic;
 import simu5g.stack.packetFlowManager.NRPacketFlowManagerUe;
 import simu5g.stack.packetFlowManager.PacketFlowManagerUe;
 import simu5g.stack.phy.ChannelModel.LteRealisticChannelModel;
-import simu5g.stack.phy.ChannelModel.NRChannelModel_3GPP38_901;
 import simu5g.stack.rlc.LteRlc;
 
 
@@ -131,7 +131,7 @@ module UeNic extends NetworkInterface like ICellularNic
             // @class(LtePhyType);
         }
         // NR Channel Model 
-        nrChannelModel[numNRCarriers]: NRChannelModel_3GPP38_901 {
+        nrChannelModel[numNRCarriers]: MecChannelModel {
             @display("p=100,389");
         }
         // Feedback generator submodule

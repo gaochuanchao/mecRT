@@ -12,13 +12,13 @@ import mecRT.mecrt.nic.mac.GnbMac;
 import mecRT.mecrt.nic.pdcp_rrc.MecPdcpRrcEnb;
 import mecRT.mecrt.nic.phy.GnbPhy;
 import mecRT.mecrt.nic.rlc.MecRlc;
+import mecRT.mecrt.nic.phy.ChannelModel.MecChannelModel;
 import simu5g.stack.ICellularNic;
 import simu5g.stack.backgroundTrafficGenerator.BackgroundTrafficGenerator;
 import simu5g.stack.compManager.compManagerProportional.LteCompManagerProportional;
 import simu5g.stack.dualConnectivityManager.DualConnectivityManager;
 import simu5g.stack.handoverManager.LteHandoverManager;
 import simu5g.stack.packetFlowManager.NRPacketFlowManagerGnb;
-import simu5g.stack.phy.ChannelModel.NRChannelModel_3GPP38_901;
 import simu5g.x2.LteX2Manager;
 
 
@@ -91,7 +91,7 @@ module GnbNic extends NetworkInterface like ICellularNic
             @class(LtePhyType);
         }
 
-        channelModel[numCarriers]: NRChannelModel_3GPP38_901 {
+        channelModel[numCarriers]: MecChannelModel {
             @display("p=100,389");
         }
 
