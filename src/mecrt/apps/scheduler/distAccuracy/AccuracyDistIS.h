@@ -40,8 +40,7 @@ class AccuracyDistIS : public SchemeBase
     vector<double> instExeDelay_;  // execution delay for each service instance
 
     vector<string> instCategory_; // category for the service instances
-    vector<double> rbUtilization_;  // resource block utilization for the service instances
-    vector<double> cuUtilization_;  // computing unit utilization for the service instances
+    vector<double> instUtilizationSum_; // vector to store the sum of resource utilization for each instance
 
     double reductionRsu_; // reduction for the RSU
     vector<double> reductAppInRsu_; // vector to store the reduction of utility for each application in the RSU

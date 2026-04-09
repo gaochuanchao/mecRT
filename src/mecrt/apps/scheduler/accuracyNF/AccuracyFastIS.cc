@@ -31,8 +31,7 @@ void AccuracyFastIS::initializeData()
     AccuracyGreedy::initializeData();
     
     instCategory_.clear();
-    rbUtilization_.clear();
-    cuUtilization_.clear();
+    instUtilizationSum_.clear();
 }
 
 
@@ -120,13 +119,12 @@ void AccuracyFastIS::generateScheduleInstances()
                             instMaxOffTime_.push_back(period - exeDelay - offloadOverhead_);  // maximum offloading time for the instance
                             instServiceType_.push_back(serviceType);  // selected service type for the instance
                             instExeDelay_.push_back(exeDelay);  // execution delay for the instance
+                            double utilizationSum = double(resBlocks) / maxRB + double(minCU) / maxCU;  // sum of resource utilization for the instance
+                            instUtilizationSum_.push_back(utilizationSum);  // store the sum of resource
 
                             // define category for the instance
-                            rbUtilization_.push_back(double(resBlocks) / maxRB);
-                            cuUtilization_.push_back(double(minCU) / maxCU);
                             bool isLightRB = (resBlocks * 2 <= maxRB);
                             bool isLightCU = (minCU * 2 <= maxCU);
-
                             if (isLightRB && isLightCU)
                                 instCategory_.push_back("LI");
                             else
@@ -165,13 +163,12 @@ void AccuracyFastIS::generateScheduleInstances()
                             instMaxOffTime_.push_back(offloadTimeThreshold);  // maximum offloading time for the instance
                             instServiceType_.push_back(serviceType);  // selected service type for the instance
                             instExeDelay_.push_back(exeDelay);  // execution delay for the instance
+                            double utilizationSum = double(minRB) / maxRB + double(cmpUnits) / maxCU;  // sum of resource utilization for the instance
+                            instUtilizationSum_.push_back(utilizationSum);  // store the sum of resource utilization for the instance
 
                             // define category for the instance
-                            rbUtilization_.push_back(double(minRB) / maxRB);
-                            cuUtilization_.push_back(double(cmpUnits) / maxCU);
                             bool isLightRB = (minRB * 2 <= maxRB);
                             bool isLightCU = (cmpUnits * 2 <= maxCU);
-
                             if (isLightRB && isLightCU)
                                 instCategory_.push_back("LI");
                             else
@@ -243,14 +240,12 @@ void AccuracyFastIS::solutionGeneration(vector<int>& instIndices)
             int appIndex = instAppIndex_[instIdx];  // get the application index
             int rsuIndex = instOffRsuIndex_[instIdx];  // get the offload RSU index
 
-            double rbUtil = rbUtilization_[instIdx];  // RB utilization
-            double cuUtil = cuUtilization_[instIdx];  // CU utilization
             // check the updated utility
             double redApp = reductPerAppIndex[appIndex];  // reduction of utility for the application
             // reduction of utility for the RSU
             double redRsu = reductPerRsuIndex[rsuIndex] - reductAppInRsu[appIndex][rsuIndex];
 
-            double utility = instUtility_[instIdx] - redApp - 2 * redRsu * (rbUtil + cuUtil);  // updated utility
+            double utility = instUtility_[instIdx] - redApp - 2 * redRsu * instUtilizationSum_[instIdx];  // updated utility
             
             if (utility <= 0)
                 continue;  // skip if the updated utility is less than or equal to 0

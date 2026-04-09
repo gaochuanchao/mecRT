@@ -60,8 +60,7 @@ void AccuracyDistIS::initializeData()
     appServiceType_.clear();  // Clear the application service type vector
 
     instCategory_.clear(); // clear the category for the service instances
-    rbUtilization_.clear();  // clear the resource block utilization for the service instances
-    cuUtilization_.clear();  // clear the computing unit utilization for the service instances
+    instUtilizationSum_.clear(); // clear the sum of resource utilization for the service instances
 
     reductionRsu_ = 0; // reset the reduction for the RSU
     reductAppInRsu_ = vector<double>(appIds_.size(), 0.0); // clear the reduction of utility for each application in the RSU
@@ -140,8 +139,8 @@ void AccuracyDistIS::generateScheduleInstances()
                     instExeDelay_.push_back(exeDelay);  // execution delay for the instance
 
                     // define category for the instance
-                    rbUtilization_.push_back(double(resBlocks) / maxRB_);
-                    cuUtilization_.push_back(double(minCU) / maxCU_);
+                    double utilizationSum = double(resBlocks) / maxRB_ + double(minCU) / maxCU_;
+                    instUtilizationSum_.push_back(utilizationSum);  // store the sum of resource utilization for the instance
                     if ((resBlocks * 2 <= maxRB_) && (minCU * 2 <= maxCU_))
                         instCategory_.push_back("LI");
                     else
@@ -183,8 +182,8 @@ void AccuracyDistIS::generateScheduleInstances()
                     instExeDelay_.push_back(exeDelay);  // execution delay for the instance
 
                     // define category for the instance
-                    rbUtilization_.push_back(double(minRB) / maxRB_);
-                    cuUtilization_.push_back(double(cmpUnits) / maxCU_);
+                    double utilizationSum = double(minRB) / maxRB_ + double(cmpUnits) / maxCU_;
+                    instUtilizationSum_.push_back(utilizationSum);  // store the sum of resource utilization for the instance
                     if ((minRB * 2 <= maxRB_) && (cmpUnits * 2 <= maxCU_))
                         instCategory_.push_back("LI");
                     else
@@ -225,11 +224,9 @@ map<AppId, double> AccuracyDistIS::candidateSelection(map<AppId, double>& target
             if (instCategory_[instIdx] != targetCategory)
                 continue;  // only select candidates from the specified category
 
-            double rbUtil = rbUtilization_[instIdx];  // RB utilization
-            double cuUtil = cuUtilization_[instIdx];  // CU utilization
             double redRsu = reductionRsu_ - reductAppInRsu_[appIndex];  // reduction of utility for the RSU
 
-            double utility = instUtility_[instIdx] - redApp - 2 * redRsu * (rbUtil + cuUtil);  // updated utility
+            double utility = instUtility_[instIdx] - redApp - 2 * redRsu * instUtilizationSum_[instIdx];  // updated utility
 
             if (utility <= 0)
                 continue;  // skip if the updated utility is less than or equal to 0

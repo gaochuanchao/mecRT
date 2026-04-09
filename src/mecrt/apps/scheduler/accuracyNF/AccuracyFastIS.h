@@ -25,8 +25,7 @@ class AccuracyFastIS : public AccuracyGreedy
 {
   protected:
     vector<string> instCategory_;
-    vector<double> rbUtilization_;
-    vector<double> cuUtilization_;
+    vector<double> instUtilizationSum_; // vector to store the sum of resource utilization for each instance
 
   public:
     AccuracyFastIS(Scheduler *scheduler);
