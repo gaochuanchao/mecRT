@@ -312,6 +312,7 @@ void Scheduler::handleMessage(cMessage *msg)
         else if (!strcmp(msg->getName(), "DistInstGenTimer"))   // generate schedule instances in distributed scheduling
         {
             EV << NOW << " Scheduler::handleMessage - schedule instances generation complete!" << endl;
+            batchSchedulingOngoing_ = false;
             distStartTime_ = omnetpp::simTime(); // record the start time of distributed scheduling
             if (pvCounter_[targetPV_] == pv2Tokens_[distStage_][targetCategory_][targetPV_].size())
                 performBatchScheduling();
@@ -418,7 +419,7 @@ void Scheduler::handleDistributedScheduling()
     targetPV_ = pvMin_;
     targetCategory_ = "LI"; // initial target category for candidate selection
     distributedSchemeStarted_ = true;
-
+    
     // record the time for generating the schedule instances
     auto start = chrono::steady_clock::now();
     scheme_->generateScheduleInstances();
@@ -427,6 +428,7 @@ void Scheduler::handleDistributedScheduling()
     emit(vecInsGenerateTimeSignal_, insGenerateTime_.dbl());
 
     EV << NOW << " Scheduler::handleDistributedScheduling - schedule instances generation time: " << insGenerateTime_ << endl;
+    batchSchedulingOngoing_ = true; // ensure the batch scheduling will not start until the distInstGenTimer_ is completed
     scheduleAt(simTime() + insGenerateTime_, distInstGenTimer_);
 }
 
