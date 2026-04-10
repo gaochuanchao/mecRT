@@ -29,10 +29,11 @@ class DistToken;
  *     unsigned int appId; // the application id of the vehicle, 4 bytes
  *     double utilReduction;   // the accumulated utility reduction of the application, 8 bytes
  *     string targetCategory;	// the category of candidates to select, 4 bytes
+ *     string stage;        // the stage of scheduling, 4 bytes
  *     unsigned short preferenceValue;	// the preference value of the application for scheduling, 2 bytes
  *     bool isScheduled;		// whether the application has been scheduled, 1 byte
  * 
- *     chunkLength = inet::B(19);
+ *     chunkLength = inet::B(23);
  * }
  * </pre>
  */
@@ -42,6 +43,7 @@ class DistToken : public ::inet::FieldsChunk
     unsigned int appId = 0;
     double utilReduction = 0;
     omnetpp::opp_string targetCategory;
+    omnetpp::opp_string stage;
     unsigned short preferenceValue = 0;
     bool isScheduled_ = false;
 
@@ -68,6 +70,9 @@ class DistToken : public ::inet::FieldsChunk
 
     virtual const char * getTargetCategory() const;
     virtual void setTargetCategory(const char * targetCategory);
+
+    virtual const char * getStage() const;
+    virtual void setStage(const char * stage);
 
     virtual unsigned short getPreferenceValue() const;
     virtual void setPreferenceValue(unsigned short preferenceValue);

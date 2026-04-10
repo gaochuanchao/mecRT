@@ -154,7 +154,7 @@ Register_Class(DistToken)
 
 DistToken::DistToken() : ::inet::FieldsChunk()
 {
-    this->setChunkLength(inet::B(19));
+    this->setChunkLength(inet::B(23));
 
 }
 
@@ -180,6 +180,7 @@ void DistToken::copy(const DistToken& other)
     this->appId = other.appId;
     this->utilReduction = other.utilReduction;
     this->targetCategory = other.targetCategory;
+    this->stage = other.stage;
     this->preferenceValue = other.preferenceValue;
     this->isScheduled_ = other.isScheduled_;
 }
@@ -190,6 +191,7 @@ void DistToken::parsimPack(omnetpp::cCommBuffer *b) const
     doParsimPacking(b,this->appId);
     doParsimPacking(b,this->utilReduction);
     doParsimPacking(b,this->targetCategory);
+    doParsimPacking(b,this->stage);
     doParsimPacking(b,this->preferenceValue);
     doParsimPacking(b,this->isScheduled_);
 }
@@ -200,6 +202,7 @@ void DistToken::parsimUnpack(omnetpp::cCommBuffer *b)
     doParsimUnpacking(b,this->appId);
     doParsimUnpacking(b,this->utilReduction);
     doParsimUnpacking(b,this->targetCategory);
+    doParsimUnpacking(b,this->stage);
     doParsimUnpacking(b,this->preferenceValue);
     doParsimUnpacking(b,this->isScheduled_);
 }
@@ -237,6 +240,17 @@ void DistToken::setTargetCategory(const char * targetCategory)
     this->targetCategory = targetCategory;
 }
 
+const char * DistToken::getStage() const
+{
+    return this->stage.c_str();
+}
+
+void DistToken::setStage(const char * stage)
+{
+    handleChange();
+    this->stage = stage;
+}
+
 unsigned short DistToken::getPreferenceValue() const
 {
     return this->preferenceValue;
@@ -267,6 +281,7 @@ class DistTokenDescriptor : public omnetpp::cClassDescriptor
         FIELD_appId,
         FIELD_utilReduction,
         FIELD_targetCategory,
+        FIELD_stage,
         FIELD_preferenceValue,
         FIELD_isScheduled,
     };
@@ -335,7 +350,7 @@ const char *DistTokenDescriptor::getProperty(const char *propertyName) const
 int DistTokenDescriptor::getFieldCount() const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
-    return base ? 5+base->getFieldCount() : 5;
+    return base ? 6+base->getFieldCount() : 6;
 }
 
 unsigned int DistTokenDescriptor::getFieldTypeFlags(int field) const
@@ -350,10 +365,11 @@ unsigned int DistTokenDescriptor::getFieldTypeFlags(int field) const
         FD_ISEDITABLE,    // FIELD_appId
         FD_ISEDITABLE,    // FIELD_utilReduction
         FD_ISEDITABLE,    // FIELD_targetCategory
+        FD_ISEDITABLE,    // FIELD_stage
         FD_ISEDITABLE,    // FIELD_preferenceValue
         FD_ISEDITABLE,    // FIELD_isScheduled
     };
-    return (field >= 0 && field < 5) ? fieldTypeFlags[field] : 0;
+    return (field >= 0 && field < 6) ? fieldTypeFlags[field] : 0;
 }
 
 const char *DistTokenDescriptor::getFieldName(int field) const
@@ -368,10 +384,11 @@ const char *DistTokenDescriptor::getFieldName(int field) const
         "appId",
         "utilReduction",
         "targetCategory",
+        "stage",
         "preferenceValue",
         "isScheduled",
     };
-    return (field >= 0 && field < 5) ? fieldNames[field] : nullptr;
+    return (field >= 0 && field < 6) ? fieldNames[field] : nullptr;
 }
 
 int DistTokenDescriptor::findField(const char *fieldName) const
@@ -381,8 +398,9 @@ int DistTokenDescriptor::findField(const char *fieldName) const
     if (strcmp(fieldName, "appId") == 0) return baseIndex + 0;
     if (strcmp(fieldName, "utilReduction") == 0) return baseIndex + 1;
     if (strcmp(fieldName, "targetCategory") == 0) return baseIndex + 2;
-    if (strcmp(fieldName, "preferenceValue") == 0) return baseIndex + 3;
-    if (strcmp(fieldName, "isScheduled") == 0) return baseIndex + 4;
+    if (strcmp(fieldName, "stage") == 0) return baseIndex + 3;
+    if (strcmp(fieldName, "preferenceValue") == 0) return baseIndex + 4;
+    if (strcmp(fieldName, "isScheduled") == 0) return baseIndex + 5;
     return base ? base->findField(fieldName) : -1;
 }
 
@@ -398,10 +416,11 @@ const char *DistTokenDescriptor::getFieldTypeString(int field) const
         "unsigned int",    // FIELD_appId
         "double",    // FIELD_utilReduction
         "string",    // FIELD_targetCategory
+        "string",    // FIELD_stage
         "unsigned short",    // FIELD_preferenceValue
         "bool",    // FIELD_isScheduled
     };
-    return (field >= 0 && field < 5) ? fieldTypeStrings[field] : nullptr;
+    return (field >= 0 && field < 6) ? fieldTypeStrings[field] : nullptr;
 }
 
 const char **DistTokenDescriptor::getFieldPropertyNames(int field) const
@@ -487,6 +506,7 @@ std::string DistTokenDescriptor::getFieldValueAsString(omnetpp::any_ptr object, 
         case FIELD_appId: return ulong2string(pp->getAppId());
         case FIELD_utilReduction: return double2string(pp->getUtilReduction());
         case FIELD_targetCategory: return oppstring2string(pp->getTargetCategory());
+        case FIELD_stage: return oppstring2string(pp->getStage());
         case FIELD_preferenceValue: return ulong2string(pp->getPreferenceValue());
         case FIELD_isScheduled: return bool2string(pp->isScheduled());
         default: return "";
@@ -508,6 +528,7 @@ void DistTokenDescriptor::setFieldValueAsString(omnetpp::any_ptr object, int fie
         case FIELD_appId: pp->setAppId(string2ulong(value)); break;
         case FIELD_utilReduction: pp->setUtilReduction(string2double(value)); break;
         case FIELD_targetCategory: pp->setTargetCategory((value)); break;
+        case FIELD_stage: pp->setStage((value)); break;
         case FIELD_preferenceValue: pp->setPreferenceValue(string2ulong(value)); break;
         case FIELD_isScheduled: pp->setIsScheduled(string2bool(value)); break;
         default: throw omnetpp::cRuntimeError("Cannot set field %d of class 'DistToken'", field);
@@ -527,6 +548,7 @@ omnetpp::cValue DistTokenDescriptor::getFieldValue(omnetpp::any_ptr object, int 
         case FIELD_appId: return (omnetpp::intval_t)(pp->getAppId());
         case FIELD_utilReduction: return pp->getUtilReduction();
         case FIELD_targetCategory: return pp->getTargetCategory();
+        case FIELD_stage: return pp->getStage();
         case FIELD_preferenceValue: return (omnetpp::intval_t)(pp->getPreferenceValue());
         case FIELD_isScheduled: return pp->isScheduled();
         default: throw omnetpp::cRuntimeError("Cannot return field %d of class 'DistToken' as cValue -- field index out of range?", field);
@@ -548,6 +570,7 @@ void DistTokenDescriptor::setFieldValue(omnetpp::any_ptr object, int field, int 
         case FIELD_appId: pp->setAppId(omnetpp::checked_int_cast<unsigned int>(value.intValue())); break;
         case FIELD_utilReduction: pp->setUtilReduction(value.doubleValue()); break;
         case FIELD_targetCategory: pp->setTargetCategory(value.stringValue()); break;
+        case FIELD_stage: pp->setStage(value.stringValue()); break;
         case FIELD_preferenceValue: pp->setPreferenceValue(omnetpp::checked_int_cast<unsigned short>(value.intValue())); break;
         case FIELD_isScheduled: pp->setIsScheduled(value.boolValue()); break;
         default: throw omnetpp::cRuntimeError("Cannot set field %d of class 'DistToken'", field);

@@ -111,7 +111,6 @@ class UePhy : public NRPhyUe
     int accessibleRsuLimit_;  // the maximum number of accessible RSUs for each UE
     map<int, MacNodeId> pv2Rsu_;  // {pvId: rsuId}, the preference value assigned to each accessible RSU
     int pvMax_;  // the maximum preference value, i.e., the number of accessible RSUs
-    string distStage_;  // the stage of distributed scheduling, e.g., "CandiSel" or "SolSel"
     bool distReady_;  // whether the UE is ready for distributed scheduling
     
     virtual void createTokenForApp(inet::Packet *packet);

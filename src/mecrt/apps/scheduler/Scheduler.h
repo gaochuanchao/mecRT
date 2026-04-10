@@ -177,7 +177,7 @@ class Scheduler : public omnetpp::cSimpleModule
     bool distributedSchemeStarted_; // whether the distributed scheduling scheme has started
     bool batchSchedulingOngoing_; // whether the batch scheduling is ongoing
     string targetCategory_; // the target category for candidate selection, e.g., "LI", "HI"
-    map<string, map<int, vector<Ptr<DistToken>>>> pv2Tokens_;  // {category: {pv: vector of tokens}}
+    map<string, map<string, map<int, vector<Ptr<DistToken>>>>> pv2Tokens_;  // {stage: {category: {pv: vector of tokens}}}
     map<int, int> pvCounter_;  // {pv: count}, the count of received tokens for each preference value
     vector<double> distBatchTimes_; // the batch times for distributed scheduling, used for performance evaluation
     set<AppId> distUnscheduledApps_;  // the unscheduled apps in distributed scheduling, used to update unscheduledApps_

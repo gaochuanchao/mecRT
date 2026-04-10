@@ -1,15 +1,16 @@
 #!/bin/bash
 cd ${MEC_WORKSPACE}/mecRT/simulations/distributed
 
-for i in {0..29}; do  # 30 configurations
+for i in {0..5}; do  # 6 configurations
   echo "=============================="
   echo "Running configuration $i"
   echo "=============================="
+  begin_time=$(date +%s)
 
   ${OMNETPP_ROOT}/bin/opp_run \
     -r $i \
     -m -u Cmdenv \
-    -c Centralized \
+    -c Distributed \
     -n "../../src:..:../../../simu5g/emulation:../../../simu5g/simulations:../../../simu5g/src:../../../inet4.5/examples:../../../inet4.5/showcases:../../../inet4.5/src:../../../inet4.5/tests/validation:../../../inet4.5/tests/networks:../../../inet4.5/tutorials" \
     --image-path "../../images:../../../inet4.5/images:../../../simu5g/images" \
     -l "../../src/mecrt" \
@@ -18,7 +19,10 @@ for i in {0..29}; do  # 30 configurations
     omnetpp.ini \
     --sim-time-limit=900s
 
-  echo "Finished run $i for Centralized"
-done
+  echo "Finished run $i for Distributed"
 
+  end_time=$(date +%s)
+  elapsed_time=$((end_time - begin_time))
+  echo "Elapsed time for run $i: $elapsed_time seconds"
+done
 

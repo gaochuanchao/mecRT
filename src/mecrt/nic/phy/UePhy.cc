@@ -688,7 +688,6 @@ void UePhy::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVector f
                 pvMax_ = sortedAccessibleRsus_.size();
                 if (pvMax_ > 0)
                 {
-                    distStage_ = "CandiSel";
                     sendPreferenceValue();
                     sendInitTokenToRsu();
                     distReady_ = false;
@@ -1171,6 +1170,7 @@ void UePhy::createTokenForApp(inet::Packet *packet)
     token->setUtilReduction(0);
     token->setPreferenceValue(1);
     token->setTargetCategory("LI");
+    token->setStage("CandiSel");
     token->setIsScheduled(false);
 
     distTokens_[appId] = token;
@@ -1251,9 +1251,10 @@ void UePhy::forwardTokenToRsu(inet::Packet *packet)
     auto tokenPkt = packet->peekDataAt<DistToken>(ipv4Header->getChunkLength() + udpHeader->getChunkLength());
 
     string targetCategory = tokenPkt->getTargetCategory();
+    string distStage = tokenPkt->getStage();
     int pv = tokenPkt->getPreferenceValue();
 
-    if (distStage_ == "SolSel" && pv == 1 && targetCategory == "LI")
+    if (distStage == "SolSel" && pv == 1 && targetCategory == "LI")
     {
         EV << "UePhy::forwardTokenToRsu - solution selection is done, delete token!!!" << endl;
         distReady_ = true;
@@ -1262,10 +1263,10 @@ void UePhy::forwardTokenToRsu(inet::Packet *packet)
         
     auto newPkt = new inet::Packet("DistToken");
     auto tokenCopy = makeShared<DistToken>(*tokenPkt);
-    EV << "UePhy::forwardTokenToRsu - received distributed token, stage: " << distStage_ 
+    EV << "UePhy::forwardTokenToRsu - received distributed token, stage: " << distStage 
             << ", category: " << targetCategory << ", PV: " << pv << endl;
 
-    if (distStage_ == "CandiSel")
+    if (distStage == "CandiSel")
     {
         if (pv < pvMax_)
         {
@@ -1279,10 +1280,10 @@ void UePhy::forwardTokenToRsu(inet::Packet *packet)
         }
         else if (pv == pvMax_ && targetCategory == "HI")
         {
-            distStage_ = "SolSel";  // candidate selection is done, enter the solution selection stage
+            tokenCopy->setStage("SolSel");  // candidate selection is done, enter the solution selection stage
         }
     }
-    else if (distStage_ == "SolSel")
+    else if (distStage == "SolSel")
     {
         if (pv > 1)
         {
@@ -1296,7 +1297,7 @@ void UePhy::forwardTokenToRsu(inet::Packet *packet)
         }
     }
 
-    EV << "UePhy::forwardTokenToRsu - update token, new stage: " << distStage_ << ", new category: "
+    EV << "UePhy::forwardTokenToRsu - update token, new stage: " << tokenCopy->getStage() << ", new category: "
                 << tokenCopy->getTargetCategory() << ", new PV: " << pv << endl;
     
     tokenCopy->setPreferenceValue(pv);

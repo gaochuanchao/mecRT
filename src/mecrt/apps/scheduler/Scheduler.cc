@@ -313,11 +313,11 @@ void Scheduler::handleMessage(cMessage *msg)
         {
             EV << NOW << " Scheduler::handleMessage - schedule instances generation complete!" << endl;
             distStartTime_ = omnetpp::simTime(); // record the start time of distributed scheduling
-            if (pvCounter_[targetPV_] == pv2Tokens_[targetCategory_][targetPV_].size())
+            if (pvCounter_[targetPV_] == pv2Tokens_[distStage_][targetCategory_][targetPV_].size())
                 performBatchScheduling();
             else
                 EV << NOW << " Scheduler::handleDistributedScheduling - waiting for tokens for preference value " << targetPV_ << ", received " 
-                    << pv2Tokens_[targetCategory_][targetPV_].size() << "/" << pvCounter_[targetPV_] << endl;
+                    << pv2Tokens_[distStage_][targetCategory_][targetPV_].size() << "/" << pvCounter_[targetPV_] << endl;
         }
     }
     else if (!strcmp(msg->getName(), "SrvReq"))    // request from vehicle
@@ -439,15 +439,16 @@ void Scheduler::recordDistToken(cMessage *msg)
 
     int pv = distToken->getPreferenceValue();
     string category = distToken->getTargetCategory();
-    pv2Tokens_[category][pv].push_back(tokenCopy);
+    string stage = distToken->getStage();
+    pv2Tokens_[stage][category][pv].push_back(tokenCopy);
 
     EV << "Scheduler::recordDistToken - received distributed packet DistToken from app " << distToken->getAppId() 
-        << ", category " << distToken->getTargetCategory() << ", preference value " << pv << endl;
-    EV << "\t current received token count for category " << category << ", preference value " << pv << ": " 
-        << pv2Tokens_[category][pv].size() << "/" << pvCounter_[pv] << endl;
+        << ", stage " << stage << ", category " << distToken->getTargetCategory() << ", preference value " << pv << endl;
+    EV << "\t current received token count for stage " << stage << ", category " << category << ", preference value " << pv << ": " 
+        << pv2Tokens_[stage][category][pv].size() << "/" << pvCounter_[pv] << endl;
 
     // only schedule tokens after the scheduling starts and all the tokens for the target preference value are received
-    if (distributedSchemeStarted_ && !batchSchedulingOngoing_ && (pvCounter_[targetPV_] == pv2Tokens_[targetCategory_][targetPV_].size()))
+    if (distributedSchemeStarted_ && !batchSchedulingOngoing_ && (pvCounter_[targetPV_] == pv2Tokens_[distStage_][targetCategory_][targetPV_].size()))
     {
         EV << "\t received all tokens for preference value " << targetPV_ 
             << " and no batch scheduling is ongoing, proceeding to batch scheduling" << endl;
@@ -462,7 +463,7 @@ void Scheduler::performBatchScheduling()
     
     // collect the candidate apps for the current batch
     // the mechanism to update targetPV_ ensures there will be at least one token for the target preference value
-    vector<Ptr<DistToken>>& tokens = pv2Tokens_[targetCategory_][targetPV_];
+    vector<Ptr<DistToken>>& tokens = pv2Tokens_[distStage_][targetCategory_][targetPV_];
     simtime_t bacthExecTime = 0;
 
     EV << NOW << " Scheduler::performBatchScheduling - stage: " << distStage_ << ", preference value: " 
@@ -526,7 +527,7 @@ void Scheduler::performBatchScheduling()
 
 void Scheduler::postBatchScheduling()
 {   
-    auto& tokens = pv2Tokens_[targetCategory_][targetPV_];
+    auto& tokens = pv2Tokens_[distStage_][targetCategory_][targetPV_];
     EV << NOW << " Scheduler::postBatchScheduling - post batch scheduling" << ", stage: " << distStage_ << ", preference value: " 
         << targetPV_ << ", category: " << targetCategory_ << ", number of tokens: " << tokens.size() << endl;
 
@@ -639,7 +640,7 @@ void Scheduler::postBatchScheduling()
 
     batchSchedulingOngoing_ = false;
     // check if the next batch scheduling is ready to start (the tokens already received)
-    if (distributedSchemeStarted_ && !batchSchedulingOngoing_ && (pvCounter_[targetPV_] == pv2Tokens_[targetCategory_][targetPV_].size()))
+    if (distributedSchemeStarted_ && !batchSchedulingOngoing_ && (pvCounter_[targetPV_] == pv2Tokens_[distStage_][targetCategory_][targetPV_].size()))
     {
         EV << NOW << " Scheduler::postBatchScheduling - the next batch scheduling is ready to start, proceeding to batch scheduling" << endl;
         performBatchScheduling();
