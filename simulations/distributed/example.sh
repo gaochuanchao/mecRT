@@ -22,7 +22,7 @@ ${OMNETPP_ROOT}/bin/opp_run  \
   -l "../../../simu5g/src/simu5g" \
   -l "../../../inet4.5/src/INET" \
   omnetpp.ini \
-  --sim-time-limit=100s
+  --sim-time-limit=200s
 
 # Run the simulation in debug mode with gdb
 # -r 0: run the simulation for 0 iterations

@@ -416,6 +416,9 @@ void UePhy::initialize(int stage)
         enableDistScheme_ = nodeInfo_->getEnableDistScheme();
         WATCH(enableDistScheme_);
 
+        scheduleInterval_ = nodeInfo_->getScheduleInterval();
+        WATCH(scheduleInterval_);
+
         if (isNr_)
         {
             MecMobility *mobility = check_and_cast<MecMobility*>(getParentModule()->getParentModule()->getSubmodule("mobility"));
@@ -1174,7 +1177,6 @@ void UePhy::createTokenForApp(inet::Packet *packet)
     token->setIsScheduled(false);
 
     distTokens_[appId] = token;
-    appTermnationTime_[appId] = srvReqPkt->getStopTime();
 }
 
 void UePhy::sendPreferenceValue()
@@ -1189,7 +1191,7 @@ void UePhy::sendPreferenceValue()
     for (auto& tokenPair : distTokens_)
     {        
         AppId appId = tokenPair.first;
-        if (simTime() >= appTermnationTime_[appId])
+        if (simTime() >= (moveStoptime_ - scheduleInterval_ - TTI)) // align with scheduler side
         {            
             terminatedApps.push_back(appId);
             EV << "UePhy::SendPreferenceValue - application " << appId << " terminates, remove it from distTokens_" << endl;
@@ -1198,7 +1200,6 @@ void UePhy::sendPreferenceValue()
     for (AppId appId : terminatedApps)
     {
         distTokens_.erase(appId);
-        appTermnationTime_.erase(appId);
     }
 
     // assign preference value to each accessible RSU and send the preference value to the RSU for each application

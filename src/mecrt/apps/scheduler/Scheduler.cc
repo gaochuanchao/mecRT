@@ -652,16 +652,6 @@ void Scheduler::postBatchScheduling()
 
 void Scheduler::handlePreSchedulingCheck()
 {    
-    // check if the stop time is reached for the allocated applications
-    for (AppId appId : allocatedApps_)
-    {
-        if (simTime() >= appInfo_[appId].stopTime - appInfo_[appId].period)
-        {
-            EV << NOW << " Scheduler::handlePreSchedulingCheck - stop the expired application " << appId << endl;
-            stopService(appId);
-        }
-    }
-    
     if (rescheduleAll_)
     {
         // stop the service in initialization status
@@ -671,6 +661,18 @@ void Scheduler::handlePreSchedulingCheck()
         // stop the running service
         for (AppId appId : allocatedApps_)
             stopService(appId);
+    }
+    else
+    {
+        // check if the stop time is reached for the allocated applications
+        for (AppId appId : allocatedApps_)
+        {
+            if (simTime() >= appInfo_[appId].stopTime - appInfo_[appId].period)
+            {
+                EV << NOW << " Scheduler::handlePreSchedulingCheck - stop the expired application " << appId << endl;
+                stopService(appId);
+            }
+        }
     }
 }
 

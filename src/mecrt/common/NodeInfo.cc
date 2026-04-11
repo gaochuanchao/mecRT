@@ -127,6 +127,7 @@ void NodeInfo::initialize(int stage)
         // initialize default values
         nodeType_ = par("nodeType").stdstringValue();
         enableDistScheme_ = par("enableDistScheme").boolValue();
+        scheduleInterval_ = getAncestorPar("scheduleInterval"); // for ue to use, gnb scheduler will set this parameter later
 
         // ifFailTime_ = par("ifFailTime").doubleValue();
         // nodeFailTime_ = par("nodeFailTime").doubleValue();
