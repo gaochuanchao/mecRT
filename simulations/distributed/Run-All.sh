@@ -1,15 +1,18 @@
 #!/bin/bash
 cd ${MEC_WORKSPACE}/mecRT/simulations/distributed
 
-for i in {0..23}; do  # 24 configurations
-  echo "===================================="
-  echo "Running Normal configuration $i"
-  echo "===================================="
+
+# Run Centralized configuration
+for i in {0..29}; do  # 30 configurations
+  echo "=============================="
+  echo "Running configuration $i"
+  echo "=============================="
+  begin_time=$(date +%s)
 
   ${OMNETPP_ROOT}/bin/opp_run \
     -r $i \
     -m -u Cmdenv \
-    -c Normal \
+    -c Centralized \
     -n "../../src:..:../../../simu5g/emulation:../../../simu5g/simulations:../../../simu5g/src:../../../inet4.5/examples:../../../inet4.5/showcases:../../../inet4.5/src:../../../inet4.5/tests/validation:../../../inet4.5/tests/networks:../../../inet4.5/tutorials" \
     --image-path "../../images:../../../inet4.5/images:../../../simu5g/images" \
     -l "../../src/mecrt" \
@@ -18,19 +21,25 @@ for i in {0..23}; do  # 24 configurations
     omnetpp.ini \
     --sim-time-limit=900s
 
-  echo "Finished run $i for Normal"
+  echo "Finished run $i for Centralized"
+  
+  end_time=$(date +%s)
+  elapsed_time=$((end_time - begin_time))
+  echo "Elapsed time for run $i: $elapsed_time seconds"
 done
 
 
+# Run Distributed configuration
 for i in {0..5}; do  # 6 configurations
-  echo "========================================="
-  echo "Running Ablation-FWD configuration $i"
-  echo "========================================="
+  echo "=============================="
+  echo "Running configuration $i"
+  echo "=============================="
+  begin_time=$(date +%s)
 
   ${OMNETPP_ROOT}/bin/opp_run \
     -r $i \
     -m -u Cmdenv \
-    -c Ablation-FWD \
+    -c Distributed \
     -n "../../src:..:../../../simu5g/emulation:../../../simu5g/simulations:../../../simu5g/src:../../../inet4.5/examples:../../../inet4.5/showcases:../../../inet4.5/src:../../../inet4.5/tests/validation:../../../inet4.5/tests/networks:../../../inet4.5/tutorials" \
     --image-path "../../images:../../../inet4.5/images:../../../simu5g/images" \
     -l "../../src/mecrt" \
@@ -39,19 +48,25 @@ for i in {0..5}; do  # 6 configurations
     omnetpp.ini \
     --sim-time-limit=900s
 
-  echo "Finished run $i for Normal"
+  echo "Finished run $i for Distributed"
+
+  end_time=$(date +%s)
+  elapsed_time=$((end_time - begin_time))
+  echo "Elapsed time for run $i: $elapsed_time seconds"
 done
 
 
-for i in {0..5}; do  # 6 configurations
-  echo "========================================="
-  echo "Running Ablation-ND configuration $i"
-  echo "========================================="
+# Run DistTestMode configuration
+for i in {0..11}; do  # 12 configurations
+  echo "=============================="
+  echo "Running configuration $i"
+  echo "=============================="
+  begin_time=$(date +%s)
 
   ${OMNETPP_ROOT}/bin/opp_run \
     -r $i \
     -m -u Cmdenv \
-    -c Ablation-ND \
+    -c DistTestMode \
     -n "../../src:..:../../../simu5g/emulation:../../../simu5g/simulations:../../../simu5g/src:../../../inet4.5/examples:../../../inet4.5/showcases:../../../inet4.5/src:../../../inet4.5/tests/validation:../../../inet4.5/tests/networks:../../../inet4.5/tutorials" \
     --image-path "../../images:../../../inet4.5/images:../../../simu5g/images" \
     -l "../../src/mecrt" \
@@ -60,69 +75,10 @@ for i in {0..5}; do  # 6 configurations
     omnetpp.ini \
     --sim-time-limit=900s
 
-  echo "Finished run $i for Normal"
+  echo "Finished run $i for DistTestMode"
+
+  end_time=$(date +%s)
+  elapsed_time=$((end_time - begin_time))
+  echo "Elapsed time for run $i: $elapsed_time seconds"
 done
-
-
-echo "============================================="
-echo "Running for FailureBase"
-echo "============================================="
-
-${OMNETPP_ROOT}/bin/opp_run \
-  -r 0 \
-  -m -u Cmdenv \
-  -c FailureBase \
-  -n "../../src:..:../../../simu5g/emulation:../../../simu5g/simulations:../../../simu5g/src:../../../inet4.5/examples:../../../inet4.5/showcases:../../../inet4.5/src:../../../inet4.5/tests/validation:../../../inet4.5/tests/networks:../../../inet4.5/tutorials" \
-  --image-path "../../images:../../../inet4.5/images:../../../simu5g/images" \
-  -l "../../src/mecrt" \
-  -l "../../../simu5g/src/simu5g" \
-  -l "../../../inet4.5/src/INET" \
-  omnetpp-fault.ini \
-  --sim-time-limit=900s
-
-echo "Finished run for FailureBase"
-
-
-for i in {0..5}; do  # 6 configurations
-  echo "============================================="
-  echo "Running configuration $i for LinkFailure"
-  echo "============================================="
-
-  ${OMNETPP_ROOT}/bin/opp_run \
-    -r $i \
-    -m -u Cmdenv \
-    -c LinkFailure \
-    -n "../../src:..:../../../simu5g/emulation:../../../simu5g/simulations:../../../simu5g/src:../../../inet4.5/examples:../../../inet4.5/showcases:../../../inet4.5/src:../../../inet4.5/tests/validation:../../../inet4.5/tests/networks:../../../inet4.5/tutorials" \
-    --image-path "../../images:../../../inet4.5/images:../../../simu5g/images" \
-    -l "../../src/mecrt" \
-    -l "../../../simu5g/src/simu5g" \
-    -l "../../../inet4.5/src/INET" \
-    omnetpp-fault.ini \
-    --sim-time-limit=900s
-
-  echo "Finished run $i for LinkFailure"
-done
-
-
-for i in {0..5}; do  # 6 configurations
-  echo "============================================="
-  echo "Running configuration $i for NodeFailure"
-  echo "============================================="
-
-  ${OMNETPP_ROOT}/bin/opp_run \
-    -r $i \
-    -m -u Cmdenv \
-    -c NodeFailure \
-    -n "../../src:..:../../../simu5g/emulation:../../../simu5g/simulations:../../../simu5g/src:../../../inet4.5/examples:../../../inet4.5/showcases:../../../inet4.5/src:../../../inet4.5/tests/validation:../../../inet4.5/tests/networks:../../../inet4.5/tutorials" \
-    --image-path "../../images:../../../inet4.5/images:../../../simu5g/images" \
-    -l "../../src/mecrt" \
-    -l "../../../simu5g/src/simu5g" \
-    -l "../../../inet4.5/src/INET" \
-    omnetpp-fault.ini \
-    --sim-time-limit=900s
-
-  echo "Finished run $i for NodeFailure"
-done
-
-
 
