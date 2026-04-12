@@ -35,7 +35,7 @@ import simu5g.world.radio.LteChannelControl;
 network DistMEC
 {
     parameters:
-        int numUe = default(137);
+        int numUe = default(114);
         int numGnb = default(15);
         int numBgCells = default(0);
         bool enableInitDebug = default(false); // enable debug info during initialization

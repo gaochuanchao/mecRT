@@ -35,10 +35,10 @@ import simu5g.world.radio.LteChannelControl;
 network DistMEC
 {
     parameters:
-        // TODO: we actually have 1078 UEs in the trace file, but Simu5g limites the maximum number of UEs to 1024
+        // TODO: Simu5g limites the maximum number of UEs to 1024
         // Specified in simu5g/LteCommon.h, used by Binder to assign MacNodeId to UEs. 
-        // so here we set numUe to 1024. In the future, consider to remove the LTE mac and phy from the UE.
-        int numUe = default(1024);  
+        // In the future, consider to remove the LTE mac and phy from the UE.
+        int numUe = default(960);  
         int numGnb = default(100);
         int numBgCells = default(0);
         bool enableInitDebug = default(false); // enable debug info during initialization
