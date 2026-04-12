@@ -81,7 +81,7 @@ void UeApp::initialize(int stage)
         localPort_ = par("localPort");
         // schedulerPort_ = par("schedulerPort");
 
-        startOffset_ = intuniform(0, 50) * TTI; // 0~50ms
+        startOffset_ = intuniform(0, 30) * TTI; // 0~30ms
         serviceGranted_ = false;
         txBytes_ = 0;
 

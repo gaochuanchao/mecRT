@@ -94,6 +94,13 @@ GnbMac::~GnbMac()
         conflictGraph_ = nullptr;
     }
 
+    // delete grantList_
+    for (auto& grant : grantList_)
+    {
+        delete grant;
+    }
+    grantList_.clear();
+
     if (enableInitDebug_)
         std::cout << "GnbMac::~GnbMac - destroying MAC protocol done!\n";
 }

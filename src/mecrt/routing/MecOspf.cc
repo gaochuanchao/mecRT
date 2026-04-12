@@ -137,7 +137,8 @@ void MecOspf::initialize(int stage)
         try {
             nodeInfo_ = getModuleFromPar<NodeInfo>(par("nodeInfoModulePath"), this);
             enableDistScheme_ = nodeInfo_->getEnableDistScheme();
-            if (enableDistScheme_)  // if the distributed scheduling scheme is enabled, skip route update
+            distTestMode_ = nodeInfo_->getDistTestMode();
+            if (enableDistScheme_ || distTestMode_)  // if the distributed scheduling scheme is enabled, skip route update
                 routeUpdate_ = false;
             else
                 routeUpdate_ = nodeInfo_->getRouteUpdate();
@@ -338,7 +339,7 @@ void MecOspf::handleSelfTimer(cMessage *msg)
         EV_INFO << "MecOspf::handleSelfTimer - LSA timer fired at " << simTime() << "\n";
 
         // if distributed scheduling scheme is enabled, skip LSA synchronization
-        if (enableDistScheme_)
+        if (enableDistScheme_ || distTestMode_)
         {
             EV << "MecOspf::handleSelfTimer - distributed scheduling scheme enabled, skip LSA synchronization\n";
             distInitializeLocalScheduler(); // initialize local scheduler for distributed scheme

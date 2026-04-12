@@ -128,6 +128,7 @@ void NodeInfo::initialize(int stage)
         nodeType_ = par("nodeType").stdstringValue();
         enableDistScheme_ = par("enableDistScheme").boolValue();
         scheduleInterval_ = getAncestorPar("scheduleInterval"); // for ue to use, gnb scheduler will set this parameter later
+        distTestMode_ = par("distTestMode").boolValue();
 
         // ifFailTime_ = par("ifFailTime").doubleValue();
         // nodeFailTime_ = par("nodeFailTime").doubleValue();
@@ -168,6 +169,7 @@ void NodeInfo::initialize(int stage)
         WATCH(nodeRecoverTime_);
         WATCH_VECTOR(failedIfIds_);
         WATCH(enableDistScheme_);
+        WATCH(distTestMode_);
 
         if (enableInitDebug_)
             std::cout << "NodeInfo:initialize - stage: INITSTAGE_LOCAL - ends\n";
@@ -577,7 +579,7 @@ void NodeInfo::setGlobalSchedulerAddr(inet::Ipv4Address addr)
     // then start the rsuStatusTimer_ to periodically update the new global scheduler
     globalSchedulerAddr_ = addr;
 
-    if (!enableDistScheme_)
+    if (!enableDistScheme_ && !distTestMode_)
         EV_INFO << "NodeInfo: setGlobalSchedulerAddr - the new global scheduler address is " << globalSchedulerAddr_ << "\n";
 
     if (globalSchedulerAddr_ == nodeAddr_)
@@ -586,7 +588,7 @@ void NodeInfo::setGlobalSchedulerAddr(inet::Ipv4Address addr)
         if (scheduler_)
             scheduler_->globalSchedulerInit();
 
-        if (!enableDistScheme_ && hasGUI())
+        if (!enableDistScheme_ && !distTestMode_ && hasGUI())
             enableGlobalSchedulerIcon();
     }
 
@@ -602,7 +604,8 @@ void NodeInfo::setGlobalSchedulerAddr(inet::Ipv4Address addr)
         EV_INFO << "NodeInfo: setGlobalSchedulerAddr - cancelled the rsuStatusTimer to reset the timer\n";
     }
 
-    if (!enableDistScheme_)
+    // schedule the rsuStatusTimer_ to update the RSU status to the new global scheduler periodically
+    if (!enableDistScheme_ && !distTestMode_)
     {
         double timeNow = int(simTime().dbl() * 1000) / 1000.0;
         double nextUpdateTime = timeNow + scheduleInterval_;

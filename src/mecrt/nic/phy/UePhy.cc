@@ -636,15 +636,12 @@ void UePhy::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVector f
                                             : check_and_cast<LtePhyBase *>(receiver->getSubmodule("cellularNic")->getSubmodule("phy"));
                 double dist = recvPhy->getCoord().distance(getCoord());
                 
-                if (srsDistanceCheck_ && (dist > srsDistance_) && grantedRsus_.find(destId) == grantedRsus_.end())
-                {
-                    // if the RSU is too far and no service currently running on it, skip it
-                    // this is to avoid sending feedback to RSUs that are not in the range of SRS
-                    // and thus cannot receive the feedback
-
-                    // EV << "UePhy::sendFeedback - RSU " << destId << " is too far (" << dist << " > " << srsDistance_ << "), skipping transmission" << endl;
-                    continue;   // skip this RSU
-                }
+                // if the RSU is too far and no service currently running on it, skip it
+                // this is to avoid sending feedback to RSUs that are not in the range of SRS
+                // and thus cannot receive the feedback
+                // EV << "UePhy::sendFeedback - RSU " << destId << " is too far (" << dist << " > " << srsDistance_ << "), skipping transmission" << endl;
+                if (srsDistanceCheck_ && (dist > srsDistance_))
+                    continue;
                     
                 accessibleRsuMap[destId] = dist;
             }
@@ -672,8 +669,27 @@ void UePhy::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVector f
             }
 
             // send the feedback packet
+            // first send to the granted RSUs
+            for (MacNodeId destId : grantedRsus_)
+            {
+                LteAirFrame* carrierFrame = frame->dup();
+                UserControlInfo* carrierInfo = uinfo->dup();
+                carrierInfo->setCarrierFrequency(carrierFrequency);
+                carrierInfo->setDestId(destId);
+                carrierInfo->setIsBroadcast(true);
+                carrierFrame->setControlInfo(carrierInfo);
+
+                EV << "UePhy::sendFeedback - " << nodeTypeToA(nodeType_) << " with id "
+                    << nodeId_ << " sending feedback to RSU " << destId << endl;
+                sendUnicast(carrierFrame);
+            }
+            // then send to the other accessible RSUs that is in range
             for (MacNodeId destId : sortedAccessibleRsus_)
             {
+                // if the broadcast to the RSU has been sent, skip it
+                if (grantedRsus_.find(destId) != grantedRsus_.end())
+                    continue;
+
                 LteAirFrame* carrierFrame = frame->dup();
                 UserControlInfo* carrierInfo = uinfo->dup();
                 carrierInfo->setCarrierFrequency(carrierFrequency);

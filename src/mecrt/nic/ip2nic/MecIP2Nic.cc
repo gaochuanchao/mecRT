@@ -169,7 +169,7 @@ void MecIP2Nic::registerInterface()
         // specified in the omnetpp.ini file: 
         //      *.configurator.config = xmldoc("./demo.xml")
         Ipv4Route *defaultRoute = new Ipv4Route();
-        defaultRoute->setDestination(Ipv4Address("10.0.0.0")); // specified in "demo.xml"
+        defaultRoute->setDestination(Ipv4Address("11.0.0.0")); // specified in "demo.xml"
         defaultRoute->setNetmask(Ipv4Address("255.0.0.0"));    // specified in "demo.xml"
         defaultRoute->setInterface(networkIf);
         defaultRoute->setSourceType(Ipv4Route::MANUAL);

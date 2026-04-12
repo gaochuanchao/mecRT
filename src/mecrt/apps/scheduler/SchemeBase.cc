@@ -17,7 +17,7 @@
 SchemeBase::SchemeBase(Scheduler *scheduler)
     : scheduler_(scheduler),
       db_(scheduler->db_),
-      unscheduledApps_(scheduler->unscheduledApps_),
+      pendingScheduleApps_(scheduler->pendingScheduleApps_),
       appInfo_(scheduler->appInfo_),
       rsuStatus_(scheduler->rsuStatus_),
       vehAccessRsu_(scheduler->vehAccessRsu_),

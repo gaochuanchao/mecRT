@@ -25,13 +25,13 @@ class SchemeBase
     // Protected members to access VecScheduler's data structures
     Scheduler *scheduler_;  // pointer to the VecScheduler instance
     Database *db_;  // pointer to the VecDatabase instance
-    set<AppId> & unscheduledApps_;  // reference to the set of unscheduled applications
-    map<AppId, RequestMeta> & appInfo_;  // reference to the application information
-    map<MacNodeId, RsuResource> & rsuStatus_;  // reference to the RSU resource status
-    map<MacNodeId, set<MacNodeId>> & vehAccessRsu_;  // reference to the vehicle access RSU mapping
+    set<AppId> & pendingScheduleApps_;  // reference to the set of unscheduled applications
+    unordered_map<AppId, RequestMeta> & appInfo_;  // reference to the application information
+    unordered_map<MacNodeId, RsuResource> & rsuStatus_;  // reference to the RSU resource status
+    unordered_map<MacNodeId, set<MacNodeId>> & vehAccessRsu_;  // reference to the vehicle access RSU mapping
     map<tuple<MacNodeId, MacNodeId>, int> & veh2RsuRate_;  // reference to the vehicle to RSU rate mapping
-    map<MacNodeId, int> & rsuOnholdRbs_;    // reference to the RSU onhold resource blocks
-    map<MacNodeId, int> & rsuOnholdCus_;    // reference to the RSU onhold computing units
+    unordered_map<MacNodeId, int> & rsuOnholdRbs_;    // reference to the RSU onhold resource blocks
+    unordered_map<MacNodeId, int> & rsuOnholdCus_;    // reference to the RSU onhold computing units
     double ttiPeriod_ = 0.001; // duration for each TTI
     double offloadOverhead_ = 0;    // the overhead for offloading
     int cuStep_ = 1;  // the step for computing units, default is 1

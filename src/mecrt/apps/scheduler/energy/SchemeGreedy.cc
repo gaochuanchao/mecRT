@@ -33,8 +33,8 @@ void SchemeGreedy::initializeData()
     // initialize the apps vector, using vector index number to represent the real application ID
     appIds_.clear();
     appId2Index_.clear();  // clear the mapping from application ID to index
-    appIds_.reserve(unscheduledApps_.size());  // reserve memory for the apps vector
-    for (AppId appId : unscheduledApps_)    // enumerate the unscheduled apps
+    appIds_.reserve(pendingScheduleApps_.size());  // reserve memory for the apps vector
+    for (AppId appId : pendingScheduleApps_)    // enumerate the unscheduled apps
     {
         appIds_.push_back(appId);
         appId2Index_[appId] = appIds_.size() - 1;  // map the application ID to the index in the apps vector

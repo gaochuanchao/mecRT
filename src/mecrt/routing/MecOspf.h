@@ -88,6 +88,7 @@ class MecOspf : public omnetpp::cSimpleModule
 	bool enableInitDebug_ = false;
 
     bool enableDistScheme_ = false; // whether to enable the distributed scheduling scheme
+    bool distTestMode_ = false; // whether to enable the testing mode for distributed scheduling
     
     bool routeUpdate_ = true;
 

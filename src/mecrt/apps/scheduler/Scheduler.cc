@@ -257,9 +257,9 @@ void Scheduler::initialize(int stage)
 
         newAppPending_ = false;
             
+        WATCH_SET(pendingScheduleApps_);
         WATCH_SET(allocatedApps_);
         WATCH_SET(unscheduledApps_);
-        WATCH_SET(bufferedApps_);
         WATCH_SET(appsWaitInitFb_);
         WATCH(localPort_);
         WATCH(socketId_);
@@ -388,12 +388,12 @@ void Scheduler::handleDistributedScheduling()
     EV << NOW << " Scheduler::handleDistributedScheduling - start distributed scheduling, scheme: " << schemeName_ << endl;
 
     // remove the outdated information (RSU status, UE-RSU connection, etc.)
-    unscheduledApps_ = distUnscheduledApps_;  // update the unscheduled apps for scheduling
     removeOutdatedInfo();
-    emit(vecPendingAppCountSignal_, int(unscheduledApps_.size()));
-    EV << NOW << " Scheduler::handleDistributedScheduling - pending scheduled app count: " << unscheduledApps_.size() << endl;
+    pendingScheduleApps_ = distUnscheduledApps_;  // update the unscheduled apps for scheduling
+    emit(vecPendingAppCountSignal_, int(pendingScheduleApps_.size()));
+    EV << NOW << " Scheduler::handleDistributedScheduling - pending scheduled app count: " << pendingScheduleApps_.size() << endl;
 
-    if (unscheduledApps_.size() == 0)
+    if (pendingScheduleApps_.size() == 0)
     {
         EV << NOW << " Scheduler::handleDistributedScheduling - no request to schedule" << endl;
 
@@ -540,6 +540,10 @@ void Scheduler::postBatchScheduling()
         tokens.pop_back();
         // get the ue address and the app id from the token
         AppId appId = token->getAppId();
+        // check if the appId is valid and the app information is available
+        if (appInfo_.find(appId) == appInfo_.end())
+            throw cRuntimeError("Scheduler::postBatchScheduling - appId %d in the token is not found in the appInfo", appId);
+        
         Ipv4Address ueAddr = Ipv4Address(appInfo_[appId].ueIpv4Address);
         int appPort = MacCidToLcid(appId);
 
@@ -568,7 +572,7 @@ void Scheduler::postBatchScheduling()
 
         EV << "Scheduler::postBatchScheduling - distributed scheduling finished! " << "instance generation time: " 
             << insGenerateTime_ << ", scheme execution time: " << schemeExecTime_ << ", selected " << selectedIns.size()
-            << "/" << unscheduledApps_.size() << " apps" << endl;
+            << "/" << pendingScheduleApps_.size() << " apps" << endl;
         
         collectSchedulingResults(selectedIns);
         scheduleAt(simTime(), schedComplete_);
@@ -580,7 +584,7 @@ void Scheduler::postBatchScheduling()
         pv2Tokens_.clear();
         pvCounter_.clear();
         distUnscheduledApps_.clear();
-        unscheduledApps_.clear();
+        pendingScheduleApps_.clear();
         distBatchTimes_.clear();
         pvMax_ = 0;
         pvMin_ = 0;
@@ -677,6 +681,19 @@ void Scheduler::handlePreSchedulingCheck()
 }
 
 
+void Scheduler::determinePendingScheduleApps()
+{
+    // determine all vehicles that have access to any of the RSU
+    pendingScheduleApps_.clear();
+    for (auto& rsuVehPair : vehAccessRsu_)
+    {
+        MacNodeId vehId = rsuVehPair.first;
+        if (vehAccessRsu_[vehId].size() > 0)
+            pendingScheduleApps_.insert(veh2AppIds_[vehId].begin(), veh2AppIds_[vehId].end());
+    }
+}
+
+
 void Scheduler::handleCentralizedScheduling()
 {
     EV << NOW << " Scheduler::handleCentralizedScheduling - start centralized scheduling, scheme: " << schemeName_ << endl;
@@ -691,12 +708,13 @@ void Scheduler::handleCentralizedScheduling()
 
     // remove the outdated information (RSU status, UE-RSU connection, etc.)
     removeOutdatedInfo();
-    emit(vecPendingAppCountSignal_, int(unscheduledApps_.size()));
-    EV << NOW << " Scheduler::handleCentralizedScheduling - start scheduling, unscheduled app count: " << unscheduledApps_.size() << endl;
+    determinePendingScheduleApps();  // determine the pending scheduled apps based on the updated information
+    emit(vecPendingAppCountSignal_, int(pendingScheduleApps_.size()));
+    EV << NOW << " Scheduler::handleCentralizedScheduling - start scheduling, unscheduled app count: " << pendingScheduleApps_.size() << endl;
 
     // generate the schedule instances and execute the scheduling scheme
     vector<srvInstance> selectedIns;
-    if (unscheduledApps_.size() > 0)
+    if (pendingScheduleApps_.size() > 0)
     {
         // record the time for generating the schedule instances
         auto start = chrono::steady_clock::now();
@@ -894,8 +912,6 @@ void Scheduler::initializeSchedulingScheme()
                 scheme_ = new AccuracyGameTheory(this);
             else if (schemeName_ == "GraphMatch")
                 scheme_ = new AccuracyGraphMatch(this);
-            else if (schemeName_ == "FastIS")
-                scheme_ = new AccuracyFastIS(this);
             else
                 scheme_ = new SchemeBase(this);
         }
@@ -1060,8 +1076,8 @@ void Scheduler::recordVehRequest(cMessage *msg)
     reqMeta.offloadPower = vecReq->getOffloadPower();
     reqMeta.ueIpv4Address = vecReq->getUeIpAddress();
     appInfo_[appId] = reqMeta;
+    veh2AppIds_[vehId].insert(appId);
     unscheduledApps_.insert(appId);
-    bufferedApps_.insert(appId);
 
     EV << NOW << " Scheduler::recordVehRequest - request from Veh[nodeId=" << vehId << "] is received, appId: " << appId
         << ", inputSize: " << reqMeta.inputSize << ", outputSize: " << reqMeta.outputSize
@@ -1300,8 +1316,6 @@ void Scheduler::checkLostGrant()
 }
 
 
-
-
 void Scheduler::removeOutdatedInfo()
 {
     EV << NOW << " Scheduler::removeOutdatedInfo - remove any expired request and outdated UE-GNB connection info" << endl;
@@ -1336,11 +1350,13 @@ void Scheduler::removeOutdatedInfo()
     for (AppId appId : toRemove)
     {
         unscheduledApps_.erase(appId);
+        MacNodeId vehId = appInfo_[appId].vehId;
+        veh2AppIds_[vehId].erase(appId);
         appInfo_.erase(appId);
     }
 
     // ======== remove the outdated UE-RSU connection ============
-    map<MacNodeId, set<MacNodeId>> vehAccessRsuCopy = vehAccessRsu_;
+    unordered_map<MacNodeId, set<MacNodeId>> vehAccessRsuCopy = vehAccessRsu_;
     for (auto const&vr : vehAccessRsuCopy)
     {
         MacNodeId vehId = vr.first;

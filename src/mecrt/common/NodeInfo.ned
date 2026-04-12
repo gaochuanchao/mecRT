@@ -28,6 +28,7 @@ simple NodeInfo
         double nodeRecoverTime = default(0.0); // time when the node is up
 
         bool enableDistScheme = default(false); // whether to enable distributed scheduling, default is false
+        bool distTestMode = default(false); // whether to enable the testing mode for distributed scheduling, default is false
 
         @signal[linkStateChanged](type="double");   // record the time when link state changed
         @statistic[linkStateChanged](title="link state changed time"; source="linkStateChanged"; record=vector);

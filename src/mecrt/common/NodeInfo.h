@@ -39,6 +39,7 @@ class NodeInfo : public omnetpp::cSimpleModule
         bool enableInitDebug_ = false;
 
         bool enableDistScheme_ = false; // whether to enable the distributed scheduling scheme
+        bool distTestMode_ = false; // whether to enable the testing mode for distributed scheduling
         // =========== Basic node information ===========
         std::string nodeType_;
         bool nodeState_; // whether this node is active (true) or inactive (false), used for fault simulation
@@ -119,6 +120,7 @@ class NodeInfo : public omnetpp::cSimpleModule
         bool isNodeActive() {return nodeState_;}
 
         bool getEnableDistScheme() {return enableDistScheme_;}
+        bool getDistTestMode() {return distTestMode_;}
 
         // methods to set/get routing related information
         void setNodeAddr(inet::Ipv4Address addr) {nodeAddr_ = addr;}
