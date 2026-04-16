@@ -17,15 +17,14 @@ import csv
 
 # === Configurable Parameters ===
 WORKING_DIR = os.path.dirname(os.path.abspath(__file__))
-INPUT_DIR = os.path.join(WORKING_DIR, "results/Normal")
-OUTPUT_DIR = os.path.join(WORKING_DIR, "result-analysis/normal")
+INPUT_DIR = os.path.join(WORKING_DIR, "results/EXP1")
+OUTPUT_DIR = os.path.join(WORKING_DIR, "result-analysis/EXP1")
 # Ensure output directory exists
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # Regex patterns to extract fields from filename
-# file name example:  Greedy-interval-10-appCount-3.sca, Greedy-interval-10-appCount-3.vec
-match_pattern = re.compile(r'^([^-]+)-interval-([0-9]+)-appCount-([0-9]+)')
-
+# file name example:  Greedy-mapScale-2-appCount-3.sca, Greedy-mapScale-2-appCount-3.vec
+MATCH_PATTERN = re.compile(r'^([^-]+)-mapScale-([0-9]+)-appCount-([0-9]+)')
 
 def extract_expected_utility():
     scalar_name = "schemeUtility:mean"
@@ -33,7 +32,7 @@ def extract_expected_utility():
 
     with open(output_csv, mode='w', newline='') as csvfile:
         csv_writer = csv.writer(csvfile)
-        csv_writer.writerow(["algorithm", "interval", "utility"])
+        csv_writer.writerow(["algorithm", "mapScale", "appCount", "utility"])
 
         # Loop through .sca files in INPUT_DIR
         for filename in os.listdir(INPUT_DIR):
@@ -41,17 +40,18 @@ def extract_expected_utility():
                 continue
 
             # Parse filename parameters
-            file_match = match_pattern.search(filename)
+            file_match = MATCH_PATTERN.search(filename)
 
             if not file_match:
                 continue
 
             algorithm = file_match.group(1)
-            interval = file_match.group(2)
+            mapScale = file_match.group(2)
+            appCount = file_match.group(3)
 
             # Read the file and extract scalar value line
             filepath = os.path.join(INPUT_DIR, filename)
-            value = None
+            value = 0
             with open(filepath, 'r') as f:
                 for line in f:
                     # line format: scalar <module> <name> <value>
@@ -59,10 +59,9 @@ def extract_expected_utility():
                     if line.startswith("scalar") and scalar_name in line:
                         parts = line.strip().split()
                         if len(parts) >= 4 and parts[2] == scalar_name and parts[3] != "-nan":
-                            value = parts[3]
-                            break  # stop after first match
+                            value += float(parts[3])
 
-            csv_writer.writerow([algorithm, interval, value])
+            csv_writer.writerow([algorithm, mapScale, appCount, value])
 
     print(f"\t expected energy extraction complete.\n\t saved to: {output_csv}")
 
@@ -73,7 +72,7 @@ def extract_expected_job_count():
 
     with open(output_csv, mode='w', newline='') as csvfile:
         csv_writer = csv.writer(csvfile)
-        csv_writer.writerow(["algorithm", "interval", "job_count"])
+        csv_writer.writerow(["algorithm", "mapScale", "appCount", "job_count"])
 
         # Loop through .sca files in INPUT_DIR
         for filename in os.listdir(INPUT_DIR):
@@ -81,17 +80,18 @@ def extract_expected_job_count():
                 continue
 
             # Parse filename parameters
-            file_match = match_pattern.search(filename)
+            file_match = MATCH_PATTERN.search(filename)
 
             if not file_match:
                 continue
 
             algorithm = file_match.group(1)
-            interval = file_match.group(2)
+            mapScale = file_match.group(2)
+            appCount = file_match.group(3)
 
             # Read the file and extract scalar value line
             filepath = os.path.join(INPUT_DIR, filename)
-            value = None
+            value = 0
             with open(filepath, 'r') as f:
                 for line in f:
                     # line format: scalar <module> <name> <value>
@@ -99,10 +99,9 @@ def extract_expected_job_count():
                     if line.startswith("scalar") and scalar_name in line:
                         parts = line.strip().split()
                         if len(parts) >= 4 and parts[2] == scalar_name and parts[3] != "-nan":
-                            value = parts[3]
-                            break  # stop after first match
+                            value += float(parts[3])
 
-            csv_writer.writerow([algorithm, interval, value])
+            csv_writer.writerow([algorithm, mapScale, appCount, value])
 
     print(f"\t expected energy extraction complete.\n\t saved to: {output_csv}")
 
@@ -113,7 +112,7 @@ def extract_improved_utility():
 
     with open(output_csv, mode='w', newline='') as csvfile:
         csv_writer = csv.writer(csvfile)
-        csv_writer.writerow(["algorithm", "interval", "utility:mean", "meetDlPkt:mean", "jobGeneratedSinceGranted:mean"])
+        csv_writer.writerow(["algorithm", "mapScale", "appCount", "utility:mean", "meetDlPkt:mean", "jobGeneratedSinceGranted:mean"])
 
         # Loop through .vec files in INPUT_DIR
         for filename in os.listdir(INPUT_DIR):
@@ -121,13 +120,15 @@ def extract_improved_utility():
                 continue
 
             # Parse filename parameters
-            file_match = match_pattern.search(filename)
+            file_match = MATCH_PATTERN.search(filename)
 
             if not file_match:
                 continue
 
             algorithm = file_match.group(1)
-            interval = file_match.group(2)
+            mapScale = file_match.group(2)
+            appCount = file_match.group(3)
+
 
             # Read the file and extract scalar value lines
             filepath = os.path.join(INPUT_DIR, filename)
@@ -158,7 +159,7 @@ def extract_improved_utility():
             for param in params_list:
                 values[param] /= total_sim_time
 
-            csv_writer.writerow([algorithm, interval] + [values[param] for param in params_list])
+            csv_writer.writerow([algorithm, mapScale, appCount] + [values[param] for param in params_list])
 
     print(f"\t improved utility extraction complete.\n\t saved to: {output_csv}")
 

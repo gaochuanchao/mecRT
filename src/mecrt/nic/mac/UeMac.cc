@@ -671,7 +671,7 @@ void UeMac::vecHandleVehicularGrant(cPacket* pktAux)
             EV << "\t Warning: New grant received for AppId: " << appId << ", but this app has already been granted before!" << endl;
 
             // check if the offload gNB ID is the same
-            auto existingGrant = vecGrant_[appId];
+            auto existingGrant = vecGrant_.at(appId);
             if (existingGrant->getOffloadGnbId() != grant->getOffloadGnbId())
             {
                 EV << "\t existing grant offload gNB ID: " << existingGrant->getOffloadGnbId()
@@ -718,6 +718,10 @@ void UeMac::vecHandleVehicularGrant(cPacket* pktAux)
         {
             EV << "\t First time receives the grant for AppId: " << appId << ". Current CQI is low, pause the grant first" << endl;
             grantedApp_.insert(appId);
+            // store received grant
+            double carrierFrequency = pkt->getTag<UserControlInfo>()->getCarrierFrequency();
+            vecGrant_[appId] = makeShared<Grant2Veh>(*grant);
+            grantFrequency_[appId] = carrierFrequency;
             // ensure the PHY stack will keep sending feedback to the RSU
             check_and_cast<UePhy*>(phy_)->addGrantedRsu(grant->getOffloadGnbId());
             
@@ -728,7 +732,7 @@ void UeMac::vecHandleVehicularGrant(cPacket* pktAux)
         else
         {
             // check if the offload gNB ID is the same
-            auto existingGrant = vecGrant_[appId];
+            auto existingGrant = vecGrant_.at(appId);
             if (existingGrant->getOffloadGnbId() != grant->getOffloadGnbId())
             {
                 EV << "\t existing grant offload gNB ID: " << existingGrant->getOffloadGnbId()

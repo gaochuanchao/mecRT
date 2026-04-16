@@ -1,5 +1,15 @@
+.PHONY: all release debug clean cleanall makefiles checkmakefiles
+
+MODE ?= release
+
 all: checkmakefiles
-	cd src && $(MAKE)
+	cd src && $(MAKE) MODE=$(MODE)
+
+release: checkmakefiles
+	cd src && $(MAKE) MODE=release
+
+debug: checkmakefiles
+	cd src && $(MAKE) MODE=debug
 
 clean: checkmakefiles
 	cd src && $(MAKE) clean
@@ -19,17 +29,9 @@ makefiles:
 	-KINET_PROJ=$(INET_PROJ) -KSIMU5G_PROJ=$(SIMU5G_PROJ) \
 	-DINET_IMPORT -DSIMU5G_IMPORT \
 	-I. \
-	-I$(INET_PROJ)/src -L$(INET_PROJ)/src -lINET \
-	-I$(SIMU5G_PROJ)/src -L$(SIMU5G_PROJ)/src -lsimu5g \
+	-I$$\(INET_PROJ\)/src -L$$\(INET_PROJ\)/src -lINET$$\(D\) \
+	-I$$\(SIMU5G_PROJ\)/src -L$$\(SIMU5G_PROJ\)/src -lsimu5g$$\(D\) \
 	-I$(GUROBI_INC) -L$(GUROBI_LIB) -lgurobi_c++ -lgurobi$(GUROBI_VER)
-# 	@cd src && opp_makemake --make-so -f --deep -o mecrt -O out \
-# 	-KINET_PROJ=$(INET_PROJ) -KSIMU5G_PROJ=$(SIMU5G_PROJ) \
-# 	-DINET_IMPORT -DSIMU5G_IMPORT \
-# 	-I. \
-# 	-I$(INET_PROJ)/src -L$(INET_PROJ)/src -lINET_dbg \
-# 	-I$(SIMU5G_PROJ)/src -L$(SIMU5G_PROJ)/src -lsimu5g_dbg \
-# 	-I$(GUROBI_INC) -L$(GUROBI_LIB) -lgurobi_c++ -lgurobi$(GUROBI_VER)
-	
 
 checkmakefiles:
 	@if [ ! -f src/Makefile ]; then \

@@ -169,7 +169,7 @@ void Database::handleMessage(omnetpp::cMessage *msg)
                 totalUtility += entry.second;
             }
             emit(grantedAppUtilitySignal_, totalUtility);
-            emit(grantedAppCountSignal_, grantedAppUtility_.size());
+            emit(grantedAppCountSignal_, int(grantedAppUtility_.size()));
 
             // clear the granted application utility map for the next scheduling cycle
             grantedAppUtility_.clear();

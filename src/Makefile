@@ -2,7 +2,7 @@
 # OMNeT++/OMNEST Makefile for $(LIB_PREFIX)mecrt
 #
 # This file was generated with the command:
-#  opp_makemake --make-so -f --deep -o mecrt -O out -KINET_PROJ=../../inet4.5 -KSIMU5G_PROJ=../../simu5g -DINET_IMPORT -DSIMU5G_IMPORT -I. -I../../inet4.5/src -L../../inet4.5/src -lINET -I../../simu5g/src -L../../simu5g/src -lsimu5g -I/home/chuanchao/gurobi1203/linux64/include -L/home/chuanchao/gurobi1203/linux64/lib -lgurobi_c++ -lgurobi120
+#  opp_makemake --make-so -f --deep -o mecrt -O out -KINET_PROJ=../../inet4.5 -KSIMU5G_PROJ=../../simu5g -DINET_IMPORT -DSIMU5G_IMPORT -I. -I$(INET_PROJ)/src -L$(INET_PROJ)/src -lINET$(D) -I$(SIMU5G_PROJ)/src -L$(SIMU5G_PROJ)/src -lsimu5g$(D) -I/home/chuanchao/gurobi1203/linux64/include -L/home/chuanchao/gurobi1203/linux64/lib -lgurobi_c++ -lgurobi120
 #
 
 # Name of target to be created (-o option)
@@ -14,13 +14,13 @@ TARGET_IMPDEF = $(TARGET_NAME)$(IMPDEF_SUFFIX)
 TARGET_FILES = $(TARGET_DIR)/$(TARGET)
 
 # C++ include paths (with -I)
-INCLUDE_PATH = -I. -I../../inet4.5/src -I../../simu5g/src -I/home/chuanchao/gurobi1203/linux64/include
+INCLUDE_PATH = -I. -I$(INET_PROJ)/src -I$(SIMU5G_PROJ)/src -I/home/chuanchao/gurobi1203/linux64/include
 
 # Additional object and library files to link with
 EXTRA_OBJS =
 
 # Additional libraries (-L, -l options)
-LIBS = $(LDFLAG_LIBPATH)../../inet4.5/src $(LDFLAG_LIBPATH)../../simu5g/src $(LDFLAG_LIBPATH)/home/chuanchao/gurobi1203/linux64/lib  -lINET -lsimu5g -lgurobi_c++ -lgurobi120
+LIBS = $(LDFLAG_LIBPATH)$(INET_PROJ)/src $(LDFLAG_LIBPATH)$(SIMU5G_PROJ)/src $(LDFLAG_LIBPATH)/home/chuanchao/gurobi1203/linux64/lib  -lINET$(D) -lsimu5g$(D) -lgurobi_c++ -lgurobi120
 
 # Output directory
 PROJECT_OUTPUT_DIR = ../out
@@ -135,7 +135,7 @@ include $(CONFIGFILE)
 # Simulation kernel and user interface libraries
 OMNETPP_LIBS = -loppenvir$D $(KERNEL_LIBS) $(SYS_LIBS)
 ifneq ($(PLATFORM),win32)
-LIBS += -Wl,-rpath,$(abspath ../../inet4.5/src) -Wl,-rpath,$(abspath ../../simu5g/src) -Wl,-rpath,$(abspath /home/chuanchao/gurobi1203/linux64/lib)
+LIBS += -Wl,-rpath,$(abspath $(INET_PROJ)/src) -Wl,-rpath,$(abspath $(SIMU5G_PROJ)/src) -Wl,-rpath,$(abspath /home/chuanchao/gurobi1203/linux64/lib)
 endif
 
 COPTS = $(CFLAGS) $(IMPORT_DEFINES) -DINET_IMPORT -DSIMU5G_IMPORT $(INCLUDE_PATH) -I$(OMNETPP_INCL_DIR)

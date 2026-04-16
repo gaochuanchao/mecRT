@@ -23,6 +23,6 @@ for i in {0..11}; do  # 12 configurations
 
   end_time=$(date +%s)
   elapsed_time=$((end_time - begin_time))
-  echo "Elapsed time for run $i: $elapsed_time seconds"
+  echo "Elapsed time for run $i: ${elapsed_time}s ($((elapsed_time / 60)) minutes)"
 done
 
