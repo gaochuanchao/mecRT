@@ -95,35 +95,38 @@ void AccuracyDistIS::generateScheduleInstances()
             EV << "\t period: " << period << ", RSU " << rsuId_ << 
             " (maxRB: " << maxRB_ << ", maxCU: " << maxCU_ << ")" << endl;
 
-        for (int resBlocks = 1; resBlocks <= maxRB_; resBlocks += rbStep_)
+        // if maxRB/rbStep_ is smaller than maxCU/cuStep_, enumerate RB
+        if (maxRB_ / rbStep_ < maxCU_ / cuStep_)
         {
-            double offloadDelay = computeOffloadDelay(vehId, rsuId_, resBlocks, appInfo_[appId].inputSize);
-            if (debugMode)
+            for (int resBlocks = 1; resBlocks <= maxRB_; resBlocks += rbStep_)
             {
-                EV << "\t\tenumerate resBlocks " << resBlocks << ", offloadDelay: " << offloadDelay << "s" << endl;
-            }
-                
-            if (offloadDelay + offloadOverhead_ >= period)
-                continue;  // if the forwarding delay is too long, break
-
-            // enumerate all possible service types for the application
-            set<string> serviceTypes = db_->getGnbServiceTypes();
-            for (const string& serviceType : serviceTypes)
-            {
-                for (int cmpUnits = 1; cmpUnits <= maxCU_; cmpUnits += cuStep_)
+                double offloadDelay = computeOffloadDelay(vehId, rsuId_, resBlocks, appInfo_[appId].inputSize);
+                if (debugMode)
                 {
-                    double exeDelay = computeExeDelay(rsuId_, cmpUnits, serviceType);
-                    if (exeDelay < 0)
-                        continue;  // if the execution delay cannot be computed due to invalid parameters, skip
+                    EV << "\t\tenumerate resBlocks " << resBlocks << ", offloadDelay: " << offloadDelay << "s" << endl;
+                }
+                    
+                if (offloadDelay + offloadOverhead_ >= period)
+                    continue;  // if the forwarding delay is too long, break
 
+                double exeDelayThreshold = period - offloadDelay - offloadOverhead_;
+                // enumerate all possible service types for the application
+                set<string> serviceTypes = db_->getGnbServiceTypes();
+                for (const string& serviceType : serviceTypes)
+                {
+                    int minCU = computeMinRequiredCUs(rsuId_, exeDelayThreshold, serviceType);
                     if (debugMode)
                     {
-                        EV << "\t\t\tservice type " << serviceType << ", cmpUnits: " << cmpUnits << ", exeDelay: " << exeDelay << endl;
+                        EV << "\t\t\tservice type " << serviceType << ", minCU: " << minCU << ", exeDelayThreshold: " << exeDelayThreshold << endl;
                         debugMode = false;  // only print once
                     }
 
-                    if (offloadDelay + offloadOverhead_ + exeDelay > period)
-                        continue;  // if the total execution and forwarding time is too long, skip
+                    if (minCU > maxCU_)
+                        continue;  // if the minimum computing units required is larger than the maximum computing units available, skip
+
+                    double exeDelay = computeExeDelay(rsuId_, minCU, serviceType);
+                    if (exeDelay <= 0)
+                        continue;  // if the execution delay is invalid, skip
 
                     double utility = computeUtility(appId, serviceType) / period;   // utility per second
                     if (utility <= 0)   // if the saved energy is less than 0, skip
@@ -132,16 +135,62 @@ void AccuracyDistIS::generateScheduleInstances()
                     // AppInstance instance = {appIndex, offRsuIndex, procRsuIndex, resBlocks, cmpUnits};
                     instAppIndex_.push_back(appIndex);
                     instRBs_.push_back(resBlocks);
-                    instCUs_.push_back(cmpUnits);
+                    instCUs_.push_back(minCU);
                     instUtility_.push_back(utility);  // energy savings for the instance
                     instMaxOffTime_.push_back(period - exeDelay - offloadOverhead_);  // maximum offloading time for the instance
                     instServiceType_.push_back(serviceType);  // selected service type for the instance
                     instExeDelay_.push_back(exeDelay);  // execution delay for the instance
 
                     // define category for the instance
-                    double utilizationSum = double(resBlocks) / maxRB_ + double(cmpUnits) / maxCU_;
+                    double utilizationSum = double(resBlocks) / maxRB_ + double(minCU) / maxCU_;
                     instUtilizationSum_.push_back(utilizationSum);  // store the sum of resource utilization for the instance
-                    if ((resBlocks * 2 <= maxRB_) && (cmpUnits * 2 <= maxCU_))
+                    if ((resBlocks * 2 <= maxRB_) && (minCU * 2 <= maxCU_))
+                        instCategory_.push_back("LI");
+                    else
+                        instCategory_.push_back("HI");
+
+                    instIndex++;
+                }
+            }
+        }
+        else    // else enumerate CUs
+        {
+            // enumerate all possible service types for the application
+            set<string> serviceTypes = db_->getGnbServiceTypes();
+            for (const string& serviceType : serviceTypes)
+            {
+                for (int cmpUnits = 1; cmpUnits <= maxCU_; cmpUnits += cuStep_)
+                {
+                    double exeDelay = computeExeDelay(rsuId_, cmpUnits, serviceType);
+                    if (exeDelay <= 0)
+                        continue;  // if the execution delay is invalid, skip
+
+                    if (exeDelay + offloadOverhead_ >= period)
+                        continue;  // if the total execution and forwarding time is too long, skip
+
+                    // determine the smallest resource blocks required to meet the deadline
+                    double offloadTimeThreshold = period - exeDelay - offloadOverhead_;
+                    int minRB = computeMinRequiredRBs(vehId, rsuId_, offloadTimeThreshold, appInfo_[appId].inputSize);
+                    if (minRB > maxRB_)
+                        continue;  // if the minimum resource blocks required is larger than the maximum resource blocks available, continue
+
+                    double utility = computeUtility(appId, serviceType) / period;   // utility per second
+                    if (utility <= 0)   // if the saved energy is less than 0, skip
+                        continue;
+
+                    // AppInstance instance = {appIndex, offRsuIndex, procRsuIndex, resBlocks, cmpUnits, serviceType};
+                    instAppIndex_.push_back(appIndex);
+                    instRBs_.push_back(minRB);
+                    instCUs_.push_back(cmpUnits);
+                    instUtility_.push_back(utility);  // energy savings for the instance
+                    instMaxOffTime_.push_back(offloadTimeThreshold);  // maximum offloading time for the instance
+                    instServiceType_.push_back(serviceType);  // selected service type for the instance
+                    instExeDelay_.push_back(exeDelay);  // execution delay for the instance
+
+                    // define category for the instance
+                    double utilizationSum = double(minRB) / maxRB_ + double(cmpUnits) / maxCU_;
+                    instUtilizationSum_.push_back(utilizationSum);  // store the sum of resource utilization for the instance
+                    if ((minRB * 2 <= maxRB_) && (cmpUnits * 2 <= maxCU_))
                         instCategory_.push_back("LI");
                     else
                         instCategory_.push_back("HI");

@@ -761,6 +761,12 @@ void Scheduler::collectSchedulingResults(vector<srvInstance> &selectedIns)
     for (srvInstance ins : selectedIns)
     {
         AppId appId = get<0>(ins);
+        double exeTime = scheme_->getAppExeDelay(appId);
+        if (exeTime <= 0)
+        {
+            throw cRuntimeError("%f Scheduler::collectSchedulingResults - application %d has %f execution time, please check the scheduling scheme", simTime().dbl(), appId, exeTime);
+        }
+
         MacNodeId offloadGnbId = get<1>(ins);
         MacNodeId processGnbId = get<2>(ins);
         
@@ -770,7 +776,7 @@ void Scheduler::collectSchedulingResults(vector<srvInstance> &selectedIns)
         srv.processGnbId = processGnbId;
         srv.bands = get<3>(ins);
         srv.cmpUnits = get<4>(ins);
-        srv.exeTime = scheme_->getAppExeDelay(appId);
+        srv.exeTime = exeTime;
         srv.utility = scheme_->getAppUtility(appId);
         srv.serviceType = scheme_->getAppAssignedService(appId);
 

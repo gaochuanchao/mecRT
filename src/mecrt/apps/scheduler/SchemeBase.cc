@@ -134,7 +134,7 @@ double SchemeBase::getAppExeDelay(AppId appId)
     if (it != appExeDelay_.end())
         return it->second;  // return the execution delay for the application
     else
-        return INFINITY;  // if not found, return infinity
+        return -1;  // if not found, return -1
 }
 
 
