@@ -119,14 +119,8 @@ void Scheduler::initialize(int stage)
             std::cout << "Scheduler::initialize - stage: INITSTAGE_LOCAL - begins" << std::endl;
         
         periodicScheduling_ = par("periodicScheduling");
-
-        schedulingInterval_ = getAncestorPar("scheduleInterval");
         grantAckInterval_ = par("grantAckInterval");
 
-        appStopInterval_ = par("appStopInterval");
-        if (appStopInterval_ >= periodicScheduling_)
-            appStopInterval_ = periodicScheduling_/2;
-        
         faultRecoveryMargin_ = par("faultRecoveryMargin");
         rescheduleAll_ = par("rescheduleAll");
         offloadOverhead_ = par("offloadOverhead");
@@ -157,6 +151,7 @@ void Scheduler::initialize(int stage)
         WATCH(schedulingInterval_);
         WATCH(periodicScheduling_);
         WATCH(appStopInterval_);
+        WATCH(appFeedbackInterval_);
         WATCH(rescheduleAll_);
         WATCH(enableBackhaul_);
         WATCH(optimizeObjective_);
@@ -186,14 +181,16 @@ void Scheduler::initialize(int stage)
         {
             nodeInfo_ = getModuleFromPar<NodeInfo>(par("nodeInfoModulePath"), this);
             nodeInfo_->setLocalSchedulerPort(localPort_);
-            nodeInfo_->setScheduleInterval(schedulingInterval_);
-            nodeInfo_->setAppStopInterval(appStopInterval_);
             nodeInfo_->setLocalSchedulerSocketId(socketId_);
 
             nodeInfo_->setScheduler(this);
 
             rsuId_ = nodeInfo_->getNodeId();
             enableDistScheme_ = nodeInfo_->getEnableDistScheme();
+
+            schedulingInterval_ = nodeInfo_->getScheduleInterval();
+            appStopInterval_ = nodeInfo_->getAppStopInterval();
+            appFeedbackInterval_ = nodeInfo_->getAppFeedbackInterval();
 
             if (enableDistScheme_)
             {
@@ -219,8 +216,7 @@ void Scheduler::initialize(int stage)
         }
         catch (std::exception &e)
         {
-            EV_WARN << "Scheduler::initialize - cannot find the NodeInfo module" << endl;
-            nodeInfo_ = nullptr;
+            throw cRuntimeError("Scheduler::initialize - failed to get nodeInfo module: %s", e.what());
         }
 
         db_ = check_and_cast<Database*>(getSimulation()->getModuleByPath("database"));
@@ -972,7 +968,7 @@ void Scheduler::globalSchedulerInit()
         if (NEXT_SCHEDULING_TIME > 100000)  // the simulation just starts, initialize the NEXT_SCHEDULING_TIME
         {
             EV << "Scheduler::globalSchedulerInit - the system is initialized, set the first scheduling time" << std::endl;
-            NEXT_SCHEDULING_TIME = appStopInterval_ + timeNow;
+            NEXT_SCHEDULING_TIME = appStopInterval_ + appFeedbackInterval_ + timeNow;
         }
         else if (simTime() > NEXT_SCHEDULING_TIME)  // the first global scheduler reset after failure.
         {
@@ -980,7 +976,7 @@ void Scheduler::globalSchedulerInit()
             // in case of network being partitioned
             // faultRecoveryMargin_ needs to be smaller than connOutdateInterval_
             EV << "Scheduler::globalSchedulerInit - the scheduling time is first updated after recovery" << std::endl;
-            NEXT_SCHEDULING_TIME = appStopInterval_ + timeNow + faultRecoveryMargin_;
+            NEXT_SCHEDULING_TIME = appStopInterval_ + appFeedbackInterval_ + timeNow + faultRecoveryMargin_;
         }
         else
         {
@@ -1356,6 +1352,7 @@ void Scheduler::removeOutdatedInfo()
         appInfo_.erase(appId);
     }
 
+    double expireInterval = appStopInterval_ + appFeedbackInterval_ + faultRecoveryMargin_;
     // ======== remove the outdated UE-RSU connection ============
     unordered_map<MacNodeId, set<MacNodeId>> vehAccessRsuCopy = vehAccessRsu_;
     for (auto const&vr : vehAccessRsuCopy)
@@ -1364,7 +1361,8 @@ void Scheduler::removeOutdatedInfo()
         for (MacNodeId rsuId : vr.second)
         {
             auto link = make_tuple(vehId, rsuId);
-            if ((simTime() - veh2RsuTime_[link] > appStopInterval_ + faultRecoveryMargin_) || (veh2RsuRate_[link] <= 0))
+            
+            if ((simTime() - veh2RsuTime_[link] > expireInterval) || (veh2RsuRate_[link] <= 0))
             {
                 EV << NOW << " Scheduler::removeOutdatedInfo - connection between vehicle[nodeId=" << vehId 
                     << "] and RSU[nodeId=" << rsuId << "] expired, remove the connection info" << endl;
@@ -1386,14 +1384,14 @@ void Scheduler::removeOutdatedInfo()
         simtime_t lastBandUpdateTime = res.second.bandUpdateTime;
         simtime_t lastCmpUpdateTime = res.second.cmpUpdateTime;
 
-        if ((simTime() - lastBandUpdateTime) > (appStopInterval_ + faultRecoveryMargin_))
+        if ((simTime() - lastBandUpdateTime) > expireInterval)
         {
             EV << NOW << " Scheduler::removeOutdatedInfo - RSU[nodeId=" << res.first << "] bands information expired" << endl;
             res.second.bands = 0;  // the NIC may be turned off, so set the bands to 0
         }
             
 
-        if ((simTime() - lastCmpUpdateTime) > (appStopInterval_ + faultRecoveryMargin_))
+        if ((simTime() - lastCmpUpdateTime) > expireInterval)
         {
             EV << NOW << " Scheduler::removeOutdatedInfo - RSU[nodeId=" << res.first << "] computing units information expired" << endl;
             res.second.cmpUnits = 0;  // the computing unit may be turned off, so set the cmpUnits to 0

@@ -39,7 +39,7 @@ network DistMEC
         int numBgCells = default(0);
         bool enableInitDebug = default(false); // enable debug info during initialization
         // int npcPort = default(29); // port used by the node packet controller of the gNodeB
-        double scheduleInterval @unit(s) = default(1s); // in TTI, if the scheduler run periodically, specify the interval
+        
         string vehicleTraceFolder; // path of the trace file for the mobility of the UEs
         double areaMinX @unit(m) = default(0m);
         double areaMaxX @unit(m) = default(1500m);

@@ -409,6 +409,7 @@ void UePhy::initialize(int stage)
 
         try {
             nodeInfo_ = getModuleFromPar<NodeInfo>(par("nodeInfoModulePath"), this);
+            appStopInterval_ = nodeInfo_->getAppStopInterval();
         } catch (cException &e) {
             throw cRuntimeError("UeMac::initialize - cannot find nodeInfo module\n");
         }
@@ -611,7 +612,9 @@ void UePhy::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVector f
          */
         EV << "UePhy::sendFeedback - NOW: " << NOW << ", fbPeriod_: " << fbPeriod_ 
             << ", NEXT_SCHEDULING_TIME: " << NEXT_SCHEDULING_TIME << endl;
-        if ((NOW + fbPeriod_ + 5 * TTI > NEXT_SCHEDULING_TIME) && (NOW + 5 * TTI <= NEXT_SCHEDULING_TIME))     
+        
+        double timeGap = appStopInterval_ + 5 * TTI;
+        if ((NOW + fbPeriod_ + timeGap > NEXT_SCHEDULING_TIME) && (NOW + timeGap <= NEXT_SCHEDULING_TIME))     
         {
             EV << "UePhy::sendFeedback - broadcast feedback to the air channel for carrier " << carrierFrequency << endl;
 

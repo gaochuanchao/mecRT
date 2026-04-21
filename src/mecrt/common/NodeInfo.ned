@@ -27,6 +27,10 @@ simple NodeInfo
         double nodeFailTime = default(0.0); // time when the node is down
         double nodeRecoverTime = default(0.0); // time when the node is up
 
+        double scheduleInterval @unit(s) = default(10s); // in TTI, if the scheduler run periodically, specify the interval
+        double appStopInterval @unit(s) = default(0.02s);	// 10ms
+        double appFeedbackInterval @unit(s) = default(0.05s);	// 50ms, the interval for the UE to send feedback to the scheduler, only used when distributed scheduling is enabled
+
         bool enableDistScheme = default(false); // whether to enable distributed scheduling, default is false
         bool distTestMode = default(false); // whether to enable the testing mode for distributed scheduling, default is false
 

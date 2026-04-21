@@ -67,6 +67,7 @@ class NodeInfo : public omnetpp::cSimpleModule
         int localSchedulerSocketId_; // [Scheduler] the socket id used by the local scheduler module
         double scheduleInterval_; // in seconds
         double appStopInterval_; // in seconds
+        double appFeedbackInterval_; // in seconds, the interval for the UE to send feedback to the scheduler
 
         // =========== reference to other modules ===========
         GnbMac* gnbMac_ = nullptr;
@@ -165,6 +166,8 @@ class NodeInfo : public omnetpp::cSimpleModule
         int getLocalSchedulerSocketId() {return localSchedulerSocketId_;}
         void setAppStopInterval(double interval) {appStopInterval_ = interval;}
         double getAppStopInterval() {return appStopInterval_;}
+        void setAppFeedbackInterval(double interval) {appFeedbackInterval_ = interval;}
+        double getAppFeedbackInterval() {return appFeedbackInterval_;}
 
         // modules reference related methods
         void setGnbMac(GnbMac* mac) {gnbMac_ = mac;}

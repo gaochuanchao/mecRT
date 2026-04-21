@@ -163,6 +163,7 @@ class Scheduler : public omnetpp::cSimpleModule
     omnetpp::simtime_t grantAckInterval_;    /// the interval for sending the grant again
     double schedulingInterval_;  
 	  double appStopInterval_;    /// the interval for stopping the running application
+    double appFeedbackInterval_;    /// the interval for checking the feedback of the running application
     double faultRecoveryMargin_; // the margin for recovering from the fault
 
     omnetpp::cMessage *schedStarter_;   /// start the scheduling

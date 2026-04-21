@@ -47,7 +47,7 @@ NodeInfo::NodeInfo()
     localSchedulerPort_ = -1;
     globalSchedulerAddr_ = inet::Ipv4Address::UNSPECIFIED_ADDRESS;
     scheduleInterval_ = 10.0; // default 10 seconds
-    appStopInterval_ = 0.05; // default 0.05 seconds
+    appStopInterval_ = 0.02; // default 0.02 seconds
     localSchedulerSocketId_ = -1;
 
     gnbMac_ = nullptr;
@@ -127,8 +127,13 @@ void NodeInfo::initialize(int stage)
         // initialize default values
         nodeType_ = par("nodeType").stdstringValue();
         enableDistScheme_ = par("enableDistScheme").boolValue();
-        scheduleInterval_ = getAncestorPar("scheduleInterval"); // for ue to use, gnb scheduler will set this parameter later
+        scheduleInterval_ = par("scheduleInterval"); // for ue to use, gnb scheduler will set this parameter later
+        appStopInterval_ = par("appStopInterval");
+        appFeedbackInterval_ = par("appFeedbackInterval");
         distTestMode_ = par("distTestMode").boolValue();
+
+        if (appStopInterval_ >= scheduleInterval_)
+            throw cRuntimeError("NodeInfo::initialize - appStopInterval must be smaller than scheduleInterval!");
 
         // ifFailTime_ = par("ifFailTime").doubleValue();
         // nodeFailTime_ = par("nodeFailTime").doubleValue();
@@ -526,7 +531,7 @@ void NodeInfo::handleNodeStatusTimer()
     if (!globalSchedulerAddr_.isUnspecified())
     {
         // check if the time is too early (the NEXT_SCHEDULING_TIME might be updated by other global scheduler)
-        double nextUpdateTime = NEXT_SCHEDULING_TIME - appStopInterval_;
+        double nextUpdateTime = NEXT_SCHEDULING_TIME - appStopInterval_/2.0;
 
         if (gnbMac_)
             gnbMac_->mecRecoverRsuStatus();
@@ -607,11 +612,12 @@ void NodeInfo::setGlobalSchedulerAddr(inet::Ipv4Address addr)
     // schedule the rsuStatusTimer_ to update the RSU status to the new global scheduler periodically
     if (!enableDistScheme_ && !distTestMode_)
     {
+        // if NEXT_SCHEDULING_TIME has not been updated by any global scheduler
         double timeNow = int(simTime().dbl() * 1000) / 1000.0;
-        double nextUpdateTime = timeNow + scheduleInterval_;
+        double nextUpdateTime = timeNow + scheduleInterval_ + appFeedbackInterval_ + appStopInterval_/2.0;
         // the global scheduler has updated the NEXT_SCHEDULING_TIME, for RSUs that invoked after the global RSU
         if (timeNow < NEXT_SCHEDULING_TIME && NEXT_SCHEDULING_TIME <= nextUpdateTime) 
-            nextUpdateTime = NEXT_SCHEDULING_TIME + scheduleInterval_ - appStopInterval_; 
+            nextUpdateTime = NEXT_SCHEDULING_TIME + scheduleInterval_ - appStopInterval_/2.0;
 
         scheduleAt(nextUpdateTime, rsuStatusTimer_);
         EV_INFO << "NodeInfo: setGlobalSchedulerAddr - scheduled the rsuStatusTimer at " << nextUpdateTime << "\n";

@@ -1056,10 +1056,6 @@ void GnbMac::mecFeedbackRsuStatus(double carrierFreq, MacNodeId ueId, bool isBro
     // ===== handle broadcast feedback =====
     if (isBroadcast)
     {
-        /***
-         * in scheduleAll mode, all service are stopped before the broadcast feedback
-         * in scheduleRemain mode, active apps are not stopped, all paused apps are terminated
-         */
         EV << "GnbMac::mecFeedbackRsuStatus - broadcast feedback from vehicle " << ueId << endl;
 
         // first check all active apps
@@ -1068,7 +1064,6 @@ void GnbMac::mecFeedbackRsuStatus(double carrierFreq, MacNodeId ueId, bool isBro
         {
             if (MacCidToNodeId(appId) == ueId)
             {
-                // broadcast feedback, service still running means in scheduleRemain mode
                 int oldBands = rbManagerUl_->getAppAllocatedBands(appId);
                 bool result = rbManagerUl_->scheduleActiveApp(appId);
                 if (result)    // the granted bands are enough for the app
@@ -1085,7 +1080,7 @@ void GnbMac::mecFeedbackRsuStatus(double carrierFreq, MacNodeId ueId, bool isBro
                 {
                     EV << "GnbMac::mecFeedbackRsuStatus - broadcast feedback, active app " << appId 
                         << " cannot be scheduled, terminate it." << endl;
-                    terminateService(appId);
+                    terminateService(appId);    // for scheduleRemain mode
                 }
             }
         }

@@ -102,6 +102,7 @@ class UePhy : public NRPhyUe
     // ========= for distributed scheduling scheme =========
     // =====================================================
     NodeInfo *nodeInfo_;  // the node information of the vehicle
+    double appStopInterval_;
     bool enableDistScheme_; // whether to enable the distributed scheduling scheme, default is false
     // the distributed scheduling tokens for apps running on this UE
     map<AppId, inet::Ptr<DistToken>> distTokens_;
