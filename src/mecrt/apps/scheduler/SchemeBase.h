@@ -36,6 +36,7 @@ class SchemeBase
     double offloadOverhead_ = 0;    // the overhead for offloading
     int cuStep_ = 1;  // the step for computing units, default is 1
     int rbStep_ = 1;  // the step for resource blocks, default is 1
+    int resourceSlack_ = 2; // the resource slack for schedule instance generation, default is 2
     double srvTimeScale_ = 1.0; // the scale for app execution time on servers with full resource, default is 1.0
     int maxHops_ = 1; // the maximum number of hops for task forwarding in the backhaul network, default is 1
     map<MacNodeId, map<MacNodeId, int>> reachableRsus_; // {srcRsu: {reachableRsu: hops}}, the reachable RSUs within maxHops_

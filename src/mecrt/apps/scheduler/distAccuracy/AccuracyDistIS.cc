@@ -95,9 +95,6 @@ void AccuracyDistIS::generateScheduleInstances()
             EV << "\t period: " << period << ", RSU " << rsuId_ << 
             " (maxRB: " << maxRB_ << ", maxCU: " << maxCU_ << ")" << endl;
 
-        // if maxRB/rbStep_ is smaller than maxCU/cuStep_, enumerate RB
-        if (maxRB_ / rbStep_ < maxCU_ / cuStep_)
-        {
             for (int resBlocks = 1; resBlocks <= maxRB_; resBlocks += rbStep_)
             {
                 double offloadDelay = computeOffloadDelay(vehId, rsuId_, resBlocks, appInfo_[appId].inputSize);
@@ -124,81 +121,39 @@ void AccuracyDistIS::generateScheduleInstances()
                     if (minCU > maxCU_)
                         continue;  // if the minimum computing units required is larger than the maximum computing units available, skip
 
-                    double exeDelay = computeExeDelay(rsuId_, minCU, serviceType);
-                    if (exeDelay <= 0)
-                        continue;  // if the execution delay is invalid, skip
+                    // set a cap for the computing units to balance instance count and time slack
+                    int capCU = min(minCU + resourceSlack_, maxCU_);
+                    for (int cmpUnits = minCU; cmpUnits <= capCU; cmpUnits += cuStep_)
+                    {
+                        double exeDelay = computeExeDelay(rsuId_, cmpUnits, serviceType);
+                        if (exeDelay <= 0)
+                            continue;  // if the execution delay is invalid, skip
 
-                    double utility = computeUtility(appId, serviceType) / period;   // utility per second
-                    if (utility <= 0)   // if the saved energy is less than 0, skip
-                        continue;
+                        double utility = computeUtility(appId, serviceType) / period;   // utility per second
+                        if (utility <= 0)   // if the saved energy is less than 0, skip
+                            continue;
 
-                    // AppInstance instance = {appIndex, offRsuIndex, procRsuIndex, resBlocks, cmpUnits};
-                    instAppIndex_.push_back(appIndex);
-                    instRBs_.push_back(resBlocks);
-                    instCUs_.push_back(minCU);
-                    instUtility_.push_back(utility);  // energy savings for the instance
-                    instMaxOffTime_.push_back(period - exeDelay - offloadOverhead_);  // maximum offloading time for the instance
-                    instServiceType_.push_back(serviceType);  // selected service type for the instance
-                    instExeDelay_.push_back(exeDelay);  // execution delay for the instance
+                        // AppInstance instance = {appIndex, offRsuIndex, procRsuIndex, resBlocks, cmpUnits};
+                        instAppIndex_.push_back(appIndex);
+                        instRBs_.push_back(resBlocks);
+                        instCUs_.push_back(cmpUnits);
+                        instUtility_.push_back(utility);  // energy savings for the instance
+                        instMaxOffTime_.push_back(period - exeDelay - offloadOverhead_);  // maximum offloading time for the instance
+                        instServiceType_.push_back(serviceType);  // selected service type for the instance
+                        instExeDelay_.push_back(exeDelay);  // execution delay for the instance
 
-                    // define category for the instance
-                    double utilizationSum = double(resBlocks) / maxRB_ + double(minCU) / maxCU_;
-                    instUtilizationSum_.push_back(utilizationSum);  // store the sum of resource utilization for the instance
-                    if ((resBlocks * 2 <= maxRB_) && (minCU * 2 <= maxCU_))
-                        instCategory_.push_back("LI");
-                    else
-                        instCategory_.push_back("HI");
+                        // define category for the instance
+                        double utilizationSum = double(resBlocks) / maxRB_ + double(cmpUnits) / maxCU_;
+                        instUtilizationSum_.push_back(utilizationSum);  // store the sum of resource utilization for the instance
+                        if ((resBlocks * 2 <= maxRB_) && (cmpUnits * 2 <= maxCU_))
+                            instCategory_.push_back("LI");
+                        else
+                            instCategory_.push_back("HI");
 
-                    instIndex++;
+                        instIndex++;
+                    }
                 }
             }
-        }
-        else    // else enumerate CUs
-        {
-            // enumerate all possible service types for the application
-            set<string> serviceTypes = db_->getGnbServiceTypes();
-            for (const string& serviceType : serviceTypes)
-            {
-                for (int cmpUnits = 1; cmpUnits <= maxCU_; cmpUnits += cuStep_)
-                {
-                    double exeDelay = computeExeDelay(rsuId_, cmpUnits, serviceType);
-                    if (exeDelay <= 0)
-                        continue;  // if the execution delay is invalid, skip
-
-                    if (exeDelay + offloadOverhead_ >= period)
-                        continue;  // if the total execution and forwarding time is too long, skip
-
-                    // determine the smallest resource blocks required to meet the deadline
-                    double offloadTimeThreshold = period - exeDelay - offloadOverhead_;
-                    int minRB = computeMinRequiredRBs(vehId, rsuId_, offloadTimeThreshold, appInfo_[appId].inputSize);
-                    if (minRB > maxRB_)
-                        continue;  // if the minimum resource blocks required is larger than the maximum resource blocks available, continue
-
-                    double utility = computeUtility(appId, serviceType) / period;   // utility per second
-                    if (utility <= 0)   // if the saved energy is less than 0, skip
-                        continue;
-
-                    // AppInstance instance = {appIndex, offRsuIndex, procRsuIndex, resBlocks, cmpUnits, serviceType};
-                    instAppIndex_.push_back(appIndex);
-                    instRBs_.push_back(minRB);
-                    instCUs_.push_back(cmpUnits);
-                    instUtility_.push_back(utility);  // energy savings for the instance
-                    instMaxOffTime_.push_back(offloadTimeThreshold);  // maximum offloading time for the instance
-                    instServiceType_.push_back(serviceType);  // selected service type for the instance
-                    instExeDelay_.push_back(exeDelay);  // execution delay for the instance
-
-                    // define category for the instance
-                    double utilizationSum = double(minRB) / maxRB_ + double(cmpUnits) / maxCU_;
-                    instUtilizationSum_.push_back(utilizationSum);  // store the sum of resource utilization for the instance
-                    if ((minRB * 2 <= maxRB_) && (cmpUnits * 2 <= maxCU_))
-                        instCategory_.push_back("LI");
-                    else
-                        instCategory_.push_back("HI");
-
-                    instIndex++;
-                }
-            }
-        }
 
         instAppEndIndex_[appIndex] = instIndex;  // set the end index of the application's service instances
     }

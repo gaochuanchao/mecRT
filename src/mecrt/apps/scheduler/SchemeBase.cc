@@ -28,6 +28,7 @@ SchemeBase::SchemeBase(Scheduler *scheduler)
       offloadOverhead_(scheduler->offloadOverhead_),
       cuStep_(scheduler->cuStep_),
       rbStep_(scheduler->rbStep_),
+      resourceSlack_(scheduler->resourceSlack_),
       srvTimeScale_(scheduler->srvTimeScale_),
       maxHops_(scheduler->maxHops_)
 {

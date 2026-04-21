@@ -23,6 +23,7 @@ simple Scheduler like IApp
 		int numerologyIndex = default(0);
         int cuStep = default(1);  // the step for computing units, default is 1
         int rbStep = default(1);  // the step for resource blocks, default is 1
+        int resourceSlack = default(2); // the resource slack for schedule instance generation, default is 2
         double srvTimeScale = default(1.0); // the scale for app execution time on servers with full resource, default is 1.0
         bool enableBackhaul = default(true); // whether to enable the backhaul network, default is true
         string optimizeObjective = default("accuracy"); // the optimization objective for scheduling scheme, default is "accuracy"

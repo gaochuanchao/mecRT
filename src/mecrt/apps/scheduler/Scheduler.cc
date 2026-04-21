@@ -126,6 +126,7 @@ void Scheduler::initialize(int stage)
         offloadOverhead_ = par("offloadOverhead");
         cuStep_ = par("cuStep");
         rbStep_ = par("rbStep");
+        resourceSlack_ = par("resourceSlack");
         srvTimeScale_ = par("srvTimeScale");
         enableBackhaul_ = par("enableBackhaul");
         optimizeObjective_ = par("optimizeObjective").stringValue();
@@ -148,6 +149,7 @@ void Scheduler::initialize(int stage)
         WATCH(cuStep_);
         WATCH(rbStep_);
         WATCH(fairFactor_);
+        WATCH(resourceSlack_);
         WATCH(schedulingInterval_);
         WATCH(periodicScheduling_);
         WATCH(appStopInterval_);

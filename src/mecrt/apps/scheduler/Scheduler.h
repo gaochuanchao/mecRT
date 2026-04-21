@@ -105,6 +105,7 @@ class Scheduler : public omnetpp::cSimpleModule
     double offloadOverhead_;    // the overhead for offloading
     int cuStep_ = 1;  // the step for computing units, default is 1
     int rbStep_ = 1;  // the step for resource blocks, default is 1
+    int resourceSlack_ = 2; // the resource slack for schedule instance generation, default is 2
     double srvTimeScale_; // the scale for app execution time on servers with full resource, default is 1.0
     double virtualLinkRate_; // the rate of the virtual link in the backhaul network
     double fairFactor_; // the fairness factor for scheduling scheme with forwarding, default is 1.0
