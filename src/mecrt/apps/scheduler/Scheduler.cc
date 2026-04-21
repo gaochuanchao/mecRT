@@ -389,6 +389,7 @@ void Scheduler::handleDistributedScheduling()
     removeOutdatedInfo();
     pendingScheduleApps_ = distUnscheduledApps_;  // update the unscheduled apps for scheduling
     emit(vecPendingAppCountSignal_, int(pendingScheduleApps_.size()));
+    db_->addPendingScheduleApps(pendingScheduleApps_);
     EV << NOW << " Scheduler::handleDistributedScheduling - pending scheduled app count: " << pendingScheduleApps_.size() << endl;
 
     if (pendingScheduleApps_.size() == 0)

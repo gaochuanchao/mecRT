@@ -91,69 +91,82 @@ void AccuracyDistIS::generateScheduleInstances()
         }
 
         MacNodeId vehId = appInfo_[appId].vehId;
+        if (vehAccessRsu_.find(vehId) == vehAccessRsu_.end())     // if there exists RSU in access
+            continue;  // if there is no RSU in access, skip the application
+
         if (debugMode)
             EV << "\t period: " << period << ", RSU " << rsuId_ << 
             " (maxRB: " << maxRB_ << ", maxCU: " << maxCU_ << ")" << endl;
 
-            for (int resBlocks = 1; resBlocks <= maxRB_; resBlocks += rbStep_)
+        for (int resBlocks = 1; resBlocks <= maxRB_; resBlocks += rbStep_)
+        {
+            double offloadDelay = computeOffloadDelay(vehId, rsuId_, resBlocks, appInfo_[appId].inputSize);
+
+            if (offloadDelay < 0)
+                throw cRuntimeError("AccuracyDistIS::generateScheduleInstances - invalid offload delay: %f for appId %d, vehId %d, rsuId %d, resBlocks %d, dataSize %d", offloadDelay, appId, vehId, rsuId_, resBlocks, appInfo_[appId].inputSize);
+
+            if (debugMode)
             {
-                double offloadDelay = computeOffloadDelay(vehId, rsuId_, resBlocks, appInfo_[appId].inputSize);
+                EV << "\t\tenumerate resBlocks " << resBlocks << ", offloadDelay: " << offloadDelay << "s" << endl;
+            }
+                
+            if (offloadDelay + offloadOverhead_ >= period)
+                continue;  // if the forwarding delay is too long, break
+
+            double exeDelayThreshold = period - offloadDelay - offloadOverhead_;
+            if (exeDelayThreshold <= 0)
+                continue;  // if the execution delay threshold is less than or equal to 0, skip
+            
+            // enumerate all possible service types for the application
+            set<string> serviceTypes = db_->getGnbServiceTypes();
+            for (const string& serviceType : serviceTypes)
+            {
+                int minCU = computeMinRequiredCUs(rsuId_, exeDelayThreshold, serviceType);
                 if (debugMode)
                 {
-                    EV << "\t\tenumerate resBlocks " << resBlocks << ", offloadDelay: " << offloadDelay << "s" << endl;
+                    EV << "\t\t\tservice type " << serviceType << ", minCU: " << minCU << ", exeDelayThreshold: " << exeDelayThreshold << endl;
+                    debugMode = false;  // only print once
                 }
-                    
-                if (offloadDelay + offloadOverhead_ >= period)
-                    continue;  // if the forwarding delay is too long, break
 
-                double exeDelayThreshold = period - offloadDelay - offloadOverhead_;
-                // enumerate all possible service types for the application
-                set<string> serviceTypes = db_->getGnbServiceTypes();
-                for (const string& serviceType : serviceTypes)
+                if (minCU > maxCU_)
+                    continue;  // if the minimum computing units required is larger than the maximum computing units available, skip
+
+                // set a cap for the computing units to balance instance count and time slack
+                int capCU = min(minCU + resourceSlack_, maxCU_);
+                for (int cmpUnits = minCU; cmpUnits <= capCU; cmpUnits += cuStep_)
                 {
-                    int minCU = computeMinRequiredCUs(rsuId_, exeDelayThreshold, serviceType);
-                    if (debugMode)
-                    {
-                        EV << "\t\t\tservice type " << serviceType << ", minCU: " << minCU << ", exeDelayThreshold: " << exeDelayThreshold << endl;
-                        debugMode = false;  // only print once
-                    }
+                    double exeDelay = computeExeDelay(rsuId_, cmpUnits, serviceType);
+                    if (exeDelay <= 0)
+                        continue;  // if the execution delay is invalid, skip
 
-                    if (minCU > maxCU_)
-                        continue;  // if the minimum computing units required is larger than the maximum computing units available, skip
+                    double utility = computeUtility(appId, serviceType) / period;   // utility per second
+                    if (utility <= 0)   // if the saved energy is less than 0, skip
+                        continue;
 
-                    // set a cap for the computing units to balance instance count and time slack
-                    int capCU = min(minCU + resourceSlack_, maxCU_);
-                    for (int cmpUnits = minCU; cmpUnits <= capCU; cmpUnits += cuStep_)
-                    {
-                        double exeDelay = computeExeDelay(rsuId_, cmpUnits, serviceType);
-                        if (exeDelay <= 0)
-                            continue;  // if the execution delay is invalid, skip
+                    if (period - exeDelay - offloadOverhead_ <= 0)
+                        continue;  // if the maximum offloading time is less than or equal to 0, skip
 
-                        double utility = computeUtility(appId, serviceType) / period;   // utility per second
-                        if (utility <= 0)   // if the saved energy is less than 0, skip
-                            continue;
+                    // AppInstance instance = {appIndex, offRsuIndex, procRsuIndex, resBlocks, cmpUnits};
+                    instAppIndex_.push_back(appIndex);
+                    instRBs_.push_back(resBlocks);
+                    instCUs_.push_back(cmpUnits);
+                    instUtility_.push_back(utility);  // energy savings for the instance
+                    instMaxOffTime_.push_back(period - exeDelay - offloadOverhead_);  // maximum offloading time for the instance
+                    instServiceType_.push_back(serviceType);  // selected service type for the instance
+                    instExeDelay_.push_back(exeDelay);  // execution delay for the instance
 
-                        // AppInstance instance = {appIndex, offRsuIndex, procRsuIndex, resBlocks, cmpUnits};
-                        instAppIndex_.push_back(appIndex);
-                        instRBs_.push_back(resBlocks);
-                        instCUs_.push_back(cmpUnits);
-                        instUtility_.push_back(utility);  // energy savings for the instance
-                        instMaxOffTime_.push_back(period - exeDelay - offloadOverhead_);  // maximum offloading time for the instance
-                        instServiceType_.push_back(serviceType);  // selected service type for the instance
-                        instExeDelay_.push_back(exeDelay);  // execution delay for the instance
+                    // define category for the instance
+                    double utilizationSum = double(resBlocks) / maxRB_ + double(cmpUnits) / maxCU_;
+                    instUtilizationSum_.push_back(utilizationSum);  // store the sum of resource utilization for the instance
+                    if ((resBlocks * 2 <= maxRB_) && (cmpUnits * 2 <= maxCU_))
+                        instCategory_.push_back("LI");
+                    else
+                        instCategory_.push_back("HI");
 
-                        // define category for the instance
-                        double utilizationSum = double(resBlocks) / maxRB_ + double(cmpUnits) / maxCU_;
-                        instUtilizationSum_.push_back(utilizationSum);  // store the sum of resource utilization for the instance
-                        if ((resBlocks * 2 <= maxRB_) && (cmpUnits * 2 <= maxCU_))
-                            instCategory_.push_back("LI");
-                        else
-                            instCategory_.push_back("HI");
-
-                        instIndex++;
-                    }
+                    instIndex++;
                 }
             }
+        }
 
         instAppEndIndex_[appIndex] = instIndex;  // set the end index of the application's service instances
     }
@@ -311,7 +324,7 @@ int AccuracyDistIS::computeMinRequiredCUs(MacNodeId rsuId, double exeTimeThresho
     }
 
     if (rsuStatus_[rsuId].cmpCapacity <= 0 || exeTimeThreshold <= 0) {
-        return std::numeric_limits<int>::max();
+        return maxCU_ + 1;
     }
 
     return ceil(baseExeTime * rsuStatus_[rsuId].cmpCapacity / exeTimeThreshold);
