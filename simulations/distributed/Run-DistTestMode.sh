@@ -19,10 +19,15 @@ for i in {0..11}; do  # 12 configurations
     omnetpp.ini \
     --sim-time-limit=900s
 
+  if [ $? -ne 0 ]; then
+    echo "Run $i for DistTestMode: Error occurred" >> errorLog.txt
+  fi
+
   echo "Finished run $i for DistTestMode"
 
   end_time=$(date +%s)
   elapsed_time=$((end_time - begin_time))
   echo "Elapsed time for run $i: ${elapsed_time}s ($((elapsed_time / 60)) minutes)"
+  echo "Run $i for DistTestMode: Elapsed time ${elapsed_time}s ($((elapsed_time / 60)) minutes)" >> runLog.txt
 done
 

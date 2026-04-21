@@ -51,8 +51,10 @@ simple Database
 
         @signal[databaseGrantedAppUtility](type="double");
         @signal[databaseGrantedAppCount](type="int");
+        @signal[pendingScheduleAppCount](type="int");
         @statistic[databaseGrantedAppUtility](title="granted app utility collected by database"; source="databaseGrantedAppUtility"; record=vector, mean, sum);
         @statistic[databaseGrantedAppCount](title="granted app count collected by database"; source="databaseGrantedAppCount"; record=vector, mean, sum);
+        @statistic[pendingScheduleAppCount](title="pending scheduled app count collected by database"; source="pendingScheduleAppCount"; record=vector, mean, sum);
 
         @display("i=block/cogwheel");
 }

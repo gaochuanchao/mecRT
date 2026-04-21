@@ -91,6 +91,8 @@ void AccuracyFastSANF::generateScheduleInstances()
                                 continue;  // if the minimum computing units required is larger than the maximum computing units available, skip
 
                             double exeDelay = computeExeDelay(offRsuId, minCU, serviceType);
+                            if (exeDelay < 0)
+                                continue;  // if the execution delay cannot be computed due to invalid parameters, skip
                             double utility = computeUtility(appId, serviceType) / period;   // utility per second
                             if (utility <= 0)   // if the saved energy is less than 0, skip
                                 continue;
@@ -117,6 +119,8 @@ void AccuracyFastSANF::generateScheduleInstances()
                         for (int cmpUnits = 1; cmpUnits <= maxCU; cmpUnits += cuStep_)
                         {
                             double exeDelay = computeExeDelay(offRsuId, cmpUnits, serviceType);
+                            if (exeDelay < 0)
+                                continue;  // if the execution delay cannot be computed due to invalid parameters, skip
                             if (exeDelay + fwdDelay + offloadOverhead_ >= period)
                                 break;  // if the total execution and forwarding time is too long, skip
 

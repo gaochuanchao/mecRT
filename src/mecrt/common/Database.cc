@@ -108,7 +108,9 @@ void Database::initialize(int stage)
         collectGrantedAppInfoTimer_ = new omnetpp::cMessage("collectGrantedAppInfoTimer");
         grantedAppUtilitySignal_ = registerSignal("databaseGrantedAppUtility");
         grantedAppCountSignal_ = registerSignal("databaseGrantedAppCount");
+        pendingScheduleAppSignal_ = registerSignal("pendingScheduleAppCount");
         grantedAppUtility_.clear();
+        pendingScheduleApps_.clear();
 
         WATCH(numLinks_);
         WATCH(linkErrorInjection_);
@@ -125,6 +127,7 @@ void Database::initialize(int stage)
         WATCH_SET(failedGnbs_);
         WATCH(routeUpdate_);
         WATCH_MAP(grantedAppUtility_);
+        WATCH_SET(pendingScheduleApps_);
 
         if (enableInitDebug_)
             std::cout << "Database::initialize - stage: INITSTAGE_LOCAL - ends" << std::endl;
@@ -169,10 +172,12 @@ void Database::handleMessage(omnetpp::cMessage *msg)
                 totalUtility += entry.second;
             }
             emit(grantedAppUtilitySignal_, totalUtility);
-            emit(grantedAppCountSignal_, int(grantedAppUtility_.size()));
+            emit(grantedAppCountSignal_, grantedAppUtility_.size());
+            emit(pendingScheduleAppSignal_, pendingScheduleApps_.size());
 
             // clear the granted application utility map for the next scheduling cycle
             grantedAppUtility_.clear();
+            pendingScheduleApps_.clear();
         }
     }
     else
@@ -196,6 +201,16 @@ void Database::addGrantedAppInfo(map<AppId, double>& newGrantedAppUtility)
         // schedule the timer to collect granted application information after 20ms
         // which is enough for multiple schedulers to send their granted info
         scheduleAt(simTime() + 0.02, collectGrantedAppInfoTimer_);
+    }
+}
+
+void Database::addPendingScheduleApps(set<AppId>& newPendingScheduleApps)
+{
+    Enter_Method_Silent("Database::addPendingScheduleApps");
+
+    for (const auto& appId : newPendingScheduleApps)
+    {
+        pendingScheduleApps_.insert(appId);
     }
 }
 

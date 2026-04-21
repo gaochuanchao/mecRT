@@ -710,6 +710,7 @@ void Scheduler::handleCentralizedScheduling()
     removeOutdatedInfo();
     determinePendingScheduleApps();  // determine the pending scheduled apps based on the updated information
     emit(vecPendingAppCountSignal_, int(pendingScheduleApps_.size()));
+    db_->addPendingScheduleApps(pendingScheduleApps_);
     EV << NOW << " Scheduler::handleCentralizedScheduling - start scheduling, unscheduled app count: " << pendingScheduleApps_.size() << endl;
 
     // generate the schedule instances and execute the scheduling scheme
@@ -786,7 +787,7 @@ void Scheduler::collectSchedulingResults(vector<srvInstance> &selectedIns)
         double appMaxoffloadTime = scheme_->getMaxOffloadTime(appId);
         if (appMaxoffloadTime <= 0)
         {
-            throw cRuntimeError("%f Scheduler::collectSchedulingResults - application %d has 0 max offload time, please check the scheduling scheme", simTime().dbl(), appId);
+            throw cRuntimeError("%f Scheduler::collectSchedulingResults - application %d has %f max offload time, please check the scheduling scheme", simTime().dbl(), appId, appMaxoffloadTime);
         }
 
         srv.maxOffloadTime = appMaxoffloadTime;

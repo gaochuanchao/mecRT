@@ -72,9 +72,11 @@ class Database : public omnetpp::cSimpleModule
     // collect granted application information (when multiple schedulers exist, 
     // remove the duplicates for more accurate statistics)
     map<AppId, double> grantedAppUtility_;
+    set<AppId> pendingScheduleApps_; // store the pending scheduled apps for scheduling
     omnetpp::cMessage* collectGrantedAppInfoTimer_;
     omnetpp::simsignal_t grantedAppUtilitySignal_;
     omnetpp::simsignal_t grantedAppCountSignal_;
+    omnetpp::simsignal_t pendingScheduleAppSignal_;
 
     // define a map for application deadline
     const map<string, double> appDeadline = {
@@ -135,6 +137,8 @@ class Database : public omnetpp::cSimpleModule
 
     // collect granted application information
     void addGrantedAppInfo(map<AppId, double>& newGrantedAppUtility);
+
+    void addPendingScheduleApps(set<AppId>& newPendingScheduleApps);
 };
 
 #endif  // _MEC_DATABASE_H_

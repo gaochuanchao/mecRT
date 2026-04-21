@@ -147,6 +147,8 @@ void AccuracyGraphMatch::generateScheduleInstances()
                                     continue;  // if the minimum computing units required is larger than the maximum computing units available, skip
 
                                 double exeDelay = computeExeDelay(procRsuId, minCU, serviceType);
+                                if (exeDelay < 0)
+                                    continue;  // if the execution delay cannot be computed due to invalid parameters, skip
                                 double utility = computeUtility(appId, serviceType) / period;   // utility per second
                                 if (utility <= 0)   // if the saved energy is less than 0, skip
                                     continue;
@@ -178,6 +180,8 @@ void AccuracyGraphMatch::generateScheduleInstances()
                             for (int cmpUnits = maxCU; cmpUnits > 0; cmpUnits -= cuStep_)
                             {
                                 double exeDelay = computeExeDelay(procRsuId, cmpUnits, serviceType);
+                                if (exeDelay < 0)
+                                    continue;  // if the execution delay cannot be computed due to invalid parameters, skip
                                 if (exeDelay + fwdDelay + offloadOverhead_ >= period)
                                     break;  // if the total execution and forwarding time is too long, skip
 
@@ -813,6 +817,8 @@ vector<srvInstance> AccuracyGraphMatch::fractionalLocalRatioMethod(TripartiteGra
         // compute the maximum offload delay
         AppId appId = appIds_[appIdx];
         double processDelay = computeExeDelay(rsuIds_[proRsuIdx], cuDemand, serviceType);
+        if (processDelay < 0)
+            continue;
         MacNodeId srcId = rsuIds_[offRsuIdx];
         MacNodeId dstId = rsuIds_[proRsuIdx];
         int hopCount = reachableRsus_[srcId][dstId];
