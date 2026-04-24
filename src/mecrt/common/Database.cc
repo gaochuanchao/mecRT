@@ -200,7 +200,13 @@ void Database::addGrantedAppInfo(map<AppId, double>& newGrantedAppUtility)
     {
         // schedule the timer to collect granted application information after 20ms
         // which is enough for multiple schedulers to send their granted info
-        scheduleAt(simTime() + 0.02, collectGrantedAppInfoTimer_);
+        scheduleAt(simTime() + 0.1, collectGrantedAppInfoTimer_);
+    }
+    else
+    {
+        // if the timer is already scheduled, we can reschedule it to a later time to wait for more granted info
+        cancelEvent(collectGrantedAppInfoTimer_);
+        scheduleAt(simTime() + 0.1, collectGrantedAppInfoTimer_);
     }
 }
 

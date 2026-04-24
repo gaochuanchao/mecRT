@@ -1,11 +1,14 @@
 #!/bin/bash
 cd ${MEC_WORKSPACE}/mecRT/simulations/distributed
+mkdir -p errorLog
 
 for i in {0..11}; do  # 12 configurations
   echo "=============================="
   echo "Running configuration $i"
   echo "=============================="
   begin_time=$(date +%s)
+  log_file="errorLog/DistTestMode_run_${i}.log"
+  tmp_log=$(mktemp)
 
   ${OMNETPP_ROOT}/bin/opp_run \
     -r $i \
@@ -17,10 +20,16 @@ for i in {0..11}; do  # 12 configurations
     -l "../../../simu5g/src/simu5g" \
     -l "../../../inet4.5/src/INET" \
     omnetpp.ini \
-    --sim-time-limit=900s
+    --sim-time-limit=900s \
+    > "$tmp_log" 2>&1
 
-  if [ $? -ne 0 ]; then
-    echo "Run $i for DistTestMode: Error occurred" >> errorLog.txt
+  status=$?
+
+  if [ $status -ne 0 ]; then
+    mv "$tmp_log" "$log_file"
+    echo "Run $i for DistTestMode failed with exit code $status. See $log_file for details." >> errorLog.txt
+  else
+    rm -f "$tmp_log"
   fi
 
   echo "Finished run $i for DistTestMode"

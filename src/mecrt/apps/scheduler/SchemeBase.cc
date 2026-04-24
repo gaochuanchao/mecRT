@@ -111,6 +111,9 @@ double SchemeBase::computeOffloadDelay(MacNodeId vehId, MacNodeId rsuId, int ban
      *      - RlcSdu header (2B) : RLC_HEADER_UM
      *      - MacPdu header (2B) : MAC_HEADER
      */
+    if (veh2RsuRate_.find(make_tuple(vehId, rsuId)) == veh2RsuRate_.end())
+        return -1;  // if the rate is not found, return -1 to indicate an error
+
     double rate = veh2RsuRate_[make_tuple(vehId, rsuId)] * bands;  // byte per TTI
     double actualSize = dataSize + 33;
     int numTTI = ceil(actualSize / rate);

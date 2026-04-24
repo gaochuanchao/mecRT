@@ -101,6 +101,8 @@ void AccuracyDistIS::generateScheduleInstances()
         for (int resBlocks = 1; resBlocks <= maxRB_; resBlocks += rbStep_)
         {
             double offloadDelay = computeOffloadDelay(vehId, rsuId_, resBlocks, appInfo_[appId].inputSize);
+            if (offloadDelay < 0)
+                continue;  // if the offloading delay cannot be computed due to invalid parameters, skip
 
             if (offloadDelay < 0)
                 throw cRuntimeError("AccuracyDistIS::generateScheduleInstances - invalid offload delay: %f for appId %d, vehId %d, rsuId %d, resBlocks %d, dataSize %d", offloadDelay, appId, vehId, rsuId_, resBlocks, appInfo_[appId].inputSize);

@@ -18,131 +18,16 @@ import pandas as pd
 
 # === Configurable Parameters ===
 WORKING_DIR = os.path.dirname(os.path.abspath(__file__))
-INPUT_DIR = os.path.join(WORKING_DIR, "results/EXP1")
-OUTPUT_DIR = os.path.join(WORKING_DIR, "result-analysis/EXP1")
+INPUT_DIR = os.path.join(WORKING_DIR, "results/EXP3")
+OUTPUT_DIR = os.path.join(WORKING_DIR, "result-analysis/EXP3")
 # Ensure output directory exists
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # Regex patterns to extract fields from filename
-# file name example:  Greedy-mapScale-2-appCount-3.sca, Greedy-mapScale-2-appCount-3.vec
-MATCH_PATTERN = re.compile(r'^([^-]+)-mapScale-([0-9]+)-appCount-([0-9]+)')
-CENTRALIZED_ALG = ["GameTheory", "FastIS", "SARound", "Iterative", "IDAssign"]
+# file name example:  DistIS-mapScale-2-capLimit-3.sca, DistIS-mapScale-2-capLimit-3.vec
+MATCH_PATTERN = re.compile(r'^([^-]+)-mapScale-([0-9]+)-capLimit-([0-9]+)')
 INTERVAL = 10 # seconds, to average measured utility over this interval
 ST_OFFSET = 0.07 # to align the utility time with scheduling time
-
-
-def centralized_summary_app_count():
-    output_csv = os.path.join(OUTPUT_DIR, f"centralized_app_count_summary.csv")
-
-    params_list = ["pendingAppCount:vector", "schemeUtility:vector", "schedulingTime:vector"]
-
-    with open(output_csv, mode='w', newline='') as csvfile:
-        csv_writer = csv.writer(csvfile)
-        csv_writer.writerow(["mapScale", "appCount", "time", "algorithm"] + params_list + ["measured_utility"])
-
-        # Loop through .vec files in INPUT_DIR
-        for filename in os.listdir(INPUT_DIR):
-            if not filename.endswith(".vec"):
-                continue
-
-            # Parse filename parameters
-            scheAll_match = MATCH_PATTERN.search(filename)
-            if not scheAll_match:
-                continue
-
-            algorithm = scheAll_match.group(1) if scheAll_match else "Unknown"
-            mapScale = scheAll_match.group(2) if scheAll_match else "Unknown"
-            appCount = scheAll_match.group(3) if scheAll_match else "Unknown"
-            if algorithm not in CENTRALIZED_ALG:
-                continue
-
-            print(f"\tProcessing file: {filename}")
-            # === Step 1: Parse vector IDs ===
-            # Read the file and extract scalar value line
-            filepath = os.path.join(INPUT_DIR, filename)
-            vector_id2params = {}  # name -> id
-            set_id2measured = set()  # id -> measured value
-            with open(filepath, 'r') as f:
-                # read line sequentially
-                # find the line that starts with "vector"
-                # e.g., vector 8 DistMEC.gnb[1].scheduler globalSchedulerReady:vector ETV
-                #       8 -> vector id, globalSchedulerReady:vector -> vector name
-                #                   8	    4907	0.003	0.003
-                #                   vector_id, event_id, time, value
-                for line in f:
-                    if line.startswith("vector"):
-                        parts = line.strip().split()
-                        if len(parts) >= 4:
-                            vec_id, vec_name = parts[1], parts[3]
-                            for param in params_list:
-                                if vec_name == param:
-                                    vector_id2params[vec_id] = param
-                            
-                            if vec_name == "utility:vector":    # this is collected from server side
-                                set_id2measured.add(vec_id)
-
-                    # if line starts with 0, then break
-                    if line.startswith("0"):
-                        break
-
-            # === Step 2: Extract vector values ===
-            # e.g., "pendingAppCount:vector": 1	1006866	70.058	29
-            # where 1 is the vector id, 1006866 is the event id, 70.058 is the time, and 29 is the value
-            data = {key: {} for key in params_list}
-            measured_data = {}
-            timeSet = set()  # to collect all unique time values
-            with open(filepath, 'r') as f:
-                for line in f:
-                    if re.match(r'^\d+\s+\d+', line):  # numeric line
-                        parts = line.strip().split()
-                        vec_id = parts[0]
-                        if vec_id in vector_id2params:
-                            t = float(parts[2])
-                            t = int(t)
-                            v = float(parts[3])
-                            param = vector_id2params[vec_id]
-                            data[param][t] = v
-                            timeSet.add(t)
-                        if vec_id in set_id2measured:
-                            t = float(parts[2])
-                            t = int(t - ST_OFFSET)  # align with scheduling time
-                            v = float(parts[3])
-                            value = measured_data.get(t, 0)
-                            value += v
-                            measured_data[t] = value
-
-            # === Step 3: writing rows to CSV ===
-            timeList = sorted(timeSet)
-            for t in timeList:
-                row = [mapScale, appCount, t, algorithm]
-                for param in params_list:
-                    row.append(data[param].get(t, 0))
-                
-                utility = 0
-                for t in range(t, t + INTERVAL):
-                    utility += measured_data.get(t, 0)
-
-                row.append(utility/INTERVAL)  # average over interval
-                csv_writer.writerow(row)
-
-    print(f"\t Centralized App count summary extraction complete.\n\t saved to: {output_csv}")
-
-
-def extract_pending_app_count():
-    input_csv = os.path.join(OUTPUT_DIR, f"centralized_app_count_summary.csv")
-    output_csv = os.path.join(OUTPUT_DIR, f"pending_app_count_summary.csv")
-    df = pd.read_csv(input_csv)
-    # using FastIS to extract pending app count
-    with open(output_csv, mode='w', newline='') as csvfile:
-        csv_writer = csv.writer(csvfile)
-        csv_writer.writerow(["mapScale", "appCount", "time", "pendingAppCount"])
-
-        for index, row in df.iterrows():
-            if row["algorithm"] == "FastIS":
-                csv_writer.writerow([row["mapScale"], row["appCount"], row["time"], int(row["pendingAppCount:vector"])])
-
-    print(f"\t pending app count extraction complete.\n\t saved to: {output_csv}")
-
 
 def distributed_summary_app_count():
     output_csv = os.path.join(OUTPUT_DIR, f"distributed_app_count_summary.csv")
@@ -150,7 +35,7 @@ def distributed_summary_app_count():
     vector_name_list = {"pendingScheduleAppCount:vector", "schemeUtility:vector", "schedulingTime:vector", "schemeTime:vector", "distSchemeExecTime:vector"}
     with open(output_csv, mode='w', newline='') as csvfile:
         csv_writer = csv.writer(csvfile)
-        csv_writer.writerow(["mapScale", "appCount", "time", "algorithm"] + params_list)
+        csv_writer.writerow(["mapScale", "capLimit", "time", "algorithm"] + params_list)
 
         # Loop through .vec files in INPUT_DIR
         for filename in os.listdir(INPUT_DIR):
@@ -164,9 +49,7 @@ def distributed_summary_app_count():
 
             algorithm = scheAll_match.group(1) if scheAll_match else "Unknown"
             mapScale = scheAll_match.group(2) if scheAll_match else "Unknown"
-            appCount = scheAll_match.group(3) if scheAll_match else "Unknown"
-            if algorithm in CENTRALIZED_ALG:
-                continue
+            capLimit = scheAll_match.group(3) if scheAll_match else "Unknown"
 
             print(f"\tProcessing file: {filename}")
             # === Step 1: Parse vector IDs ===
@@ -256,7 +139,7 @@ def distributed_summary_app_count():
             # === Step 3: writing rows to CSV ===
             timeList = sorted(timeSet)
             for t in timeList:
-                row = [mapScale, appCount, t, algorithm]
+                row = [mapScale, capLimit, t, algorithm]
                 for param in params_list:
                     row.append(data[param].get(t, 0))
                 csv_writer.writerow(row)
@@ -265,6 +148,5 @@ def distributed_summary_app_count():
 
 
 if __name__ == "__main__":
-    centralized_summary_app_count()
     distributed_summary_app_count()
     print(">>> All tasks completed successfully.")

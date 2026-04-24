@@ -103,6 +103,9 @@ void SchemeGreedy::generateScheduleInstances()
                     for (int resBlocks = rsuRBs_[rsuIndex]; resBlocks > 0; resBlocks -= rbStep_)   // enumerate the resource blocks, counting down
                     {
                         double offloadDelay = computeOffloadDelay(vehId, rsuId, resBlocks, appInfo_[appId].inputSize);
+                        if (offloadDelay < 0)
+                            continue;  // if the offloading delay cannot be computed due to invalid parameters, skip
+
                         double totalDelay = offloadDelay + exeDelay + offloadOverhead_;
                         if (totalDelay > period)   // if the offload delay is larger than the period, skip
                             break;

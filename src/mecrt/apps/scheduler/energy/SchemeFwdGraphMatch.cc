@@ -110,6 +110,8 @@ void SchemeFwdGraphMatch::generateScheduleInstances()
                 for (int resBlocks = maxRB; resBlocks > 0; resBlocks -= rbStep_)   // enumerate the resource blocks, counting down
                 {
                     double offloadDelay = computeOffloadDelay(vehId, offRsuId, resBlocks, appInfo_[appId].inputSize);
+                    if (offloadDelay < 0)
+                        continue;  // if the offloading delay cannot be computed due to invalid parameters, skip
 
                     if (offloadDelay + offloadOverhead_ > period)
                         break;  // if the offload delay is too long, break

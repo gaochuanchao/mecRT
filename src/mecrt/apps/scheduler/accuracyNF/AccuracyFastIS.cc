@@ -80,6 +80,9 @@ void AccuracyFastIS::generateScheduleInstances()
                 for (int resBlocks = 1; resBlocks <= maxRB; resBlocks += rbStep_)
                 {
                     double offloadDelay = computeOffloadDelay(vehId, rsuId, resBlocks, appInfo_[appId].inputSize);
+                    if (offloadDelay < 0)
+                        continue;  // if the offloading delay cannot be computed due to invalid parameters, skip
+                    
                     if (debugMode)
                     {
                         EV << "\t\tenumerate resBlocks " << resBlocks << ", offloadDelay: " << offloadDelay << "s" << endl;
