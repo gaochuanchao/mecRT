@@ -65,7 +65,7 @@ def draw_exe_time_avg_tokenTime():
 
             analyziz["mapScale"].append(SCALE_MAP[line[0]])
             analyziz["esLimit"].append("5")
-            analyziz["schemeTime"].append(float(line[6])*1000)
+            analyziz["schemeTime"].append(float(line[6])*1000)   # schedulingTime
             analyziz["tokenTime"].append(float(line[9])*1000)   # tokenTransferTimeAvg
 
     file_name2 = os.path.join(WORKING_DIR, "EXP3/distributed_app_count_summary.csv")
@@ -82,7 +82,7 @@ def draw_exe_time_avg_tokenTime():
             line = line.split(",")
             analyziz["mapScale"].append(SCALE_MAP[line[0]])
             analyziz["esLimit"].append(X_MAP[line[1]])
-            analyziz["schemeTime"].append(float(line[6])*1000)
+            analyziz["schemeTime"].append(float(line[6])*1000)   # schedulingTime
             analyziz["tokenTime"].append(float(line[9])*1000)   # tokenTransferTimeAvg
 
     # create a dataframe
@@ -97,6 +97,8 @@ def draw_exe_time_avg_tokenTime():
     plt.style.use(['science', 'no-latex', "grid", "light"])
     # Compute mean per interval if needed
     df_avg = df.groupby(["mapScale", "esLimit"], as_index=False)[["schemeTime", "tokenTime"]].mean()
+    # update schemeTime by reducing the tokenTime in df_avg
+    df_avg["schemeTime"] = df_avg["schemeTime"] - df_avg["tokenTime"]
 
     # Set up
     fig, ax = plt.subplots(figsize=(8, 4))
@@ -114,19 +116,19 @@ def draw_exe_time_avg_tokenTime():
         sub = df_avg[df_avg["mapScale"] == scale]
         x_pos = [xx + i * bar_width for xx in x]
         ax.bar(
-            x_pos, sub["schemeTime"], width=bar_width,
-            label=f"{scale}", 
-            color=light_colors[i], 
-            edgecolor="black", 
-            linewidth=0.5,
-        )
-        ax.bar(
             x_pos, sub["tokenTime"], width=bar_width,
-            # bottom=sub["schemeTime"], 
             label=f"{scale}-T", 
             facecolor=light_colors[i],
             hatch="////",   # fill style: horizontal lines
             edgecolor="black",       # colored outline
+            linewidth=0.5,
+        )
+        ax.bar(
+            x_pos, sub["schemeTime"], width=bar_width,
+            bottom=sub["tokenTime"],
+            label=f"{scale}-P", 
+            color=dense_colors[i], 
+            edgecolor="black", 
             linewidth=0.5,
         )
 
@@ -135,8 +137,8 @@ def draw_exe_time_avg_tokenTime():
     ax.set_xticklabels(df_avg["esLimit"].unique())
     # plt.tight_layout()
     ax.set_xlabel("Accessible ES Limit", fontsize=10, fontweight='bold')
-    ax.set_ylabel("Time (ms)", fontsize=9, fontweight='bold', labelpad=0.5)
-    ax.set_ylim(0, 14)
+    ax.set_ylabel("$\mathtt{DistIS}$ Execution Time (ms)", fontsize=9, fontweight='bold', labelpad=0.5)
+    ax.set_ylim(0, 15)
     plt.yticks(np.arange(0, 14, 2))
     plt.yticks(fontsize=9)
     plt.xticks(fontsize=9)
@@ -178,7 +180,7 @@ def draw_exe_time_max_tokenTime():
 
             analyziz["mapScale"].append(SCALE_MAP[line[0]])
             analyziz["esLimit"].append("5")
-            analyziz["schemeTime"].append(float(line[6])*1000)
+            analyziz["schemeTime"].append(float(line[6])*1000)   # schedulingTime
             analyziz["tokenTime"].append(float(line[9])*1000)   # tokenTransferTimeAvg
 
     file_name2 = os.path.join(WORKING_DIR, "EXP3/distributed_app_count_summary.csv")
@@ -195,7 +197,7 @@ def draw_exe_time_max_tokenTime():
             line = line.split(",")
             analyziz["mapScale"].append(SCALE_MAP[line[0]])
             analyziz["esLimit"].append(X_MAP[line[1]])
-            analyziz["schemeTime"].append(float(line[6])*1000)
+            analyziz["schemeTime"].append(float(line[6])*1000)   # schedulingTime
             analyziz["tokenTime"].append(float(line[9])*1000)   # tokenTransferTimeAvg
 
     # create a dataframe
@@ -209,8 +211,12 @@ def draw_exe_time_max_tokenTime():
     rc('font', weight='bold')
     plt.style.use(['science', 'no-latex', "grid", "light"])
     # Compute mean per interval if needed
-    # determine the max token time for each mapScale and esLimit, and also get the corresponding schemeTime for that max token time
-    df_max = df.groupby(["mapScale", "esLimit"], as_index=False).agg({"schemeTime": "mean", "tokenTime": "max"})
+    # determine the row with max tokenTime for each (mapScale, esLimit)
+    # so `schemeTime` is taken from the same sample that produced the max `tokenTime`.
+    idx = df.groupby(["mapScale", "esLimit"])['tokenTime'].idxmax()
+    df_max = df.loc[idx, ["mapScale", "esLimit", "schemeTime", "tokenTime"]].reset_index(drop=True)
+    # update schemeTime by reducing the tokenTime in df_max (schemeTime - tokenTime)
+    df_max["schemeTime"] = df_max["schemeTime"] - df_max["tokenTime"]
 
     # Set up
     fig, ax = plt.subplots(figsize=(8, 4))
@@ -228,19 +234,19 @@ def draw_exe_time_max_tokenTime():
         sub = df_max[df_max["mapScale"] == scale]
         x_pos = [xx + i * bar_width for xx in x]
         ax.bar(
-            x_pos, sub["schemeTime"], width=bar_width,
-            label=f"{scale}", 
-            color=light_colors[i], 
-            edgecolor="black", 
-            linewidth=0.5,
-        )
-        ax.bar(
             x_pos, sub["tokenTime"], width=bar_width,
-            # bottom=sub["schemeTime"], 
             label=f"{scale}-T", 
             facecolor=light_colors[i],
             hatch="////",   # fill style: horizontal lines
             edgecolor="black",       # colored outline
+            linewidth=0.5,
+        )
+        ax.bar(
+            x_pos, sub["schemeTime"], width=bar_width,
+            bottom=sub["tokenTime"],
+            label=f"{scale}-P", 
+            color=dense_colors[i], 
+            edgecolor="black", 
             linewidth=0.5,
         )
 
@@ -249,8 +255,8 @@ def draw_exe_time_max_tokenTime():
     ax.set_xticklabels(df_max["esLimit"].unique())
     # plt.tight_layout()
     ax.set_xlabel("Accessible ES Limit", fontsize=10, fontweight='bold')
-    ax.set_ylabel("Time (ms)", fontsize=9, fontweight='bold', labelpad=0.5)
-    ax.set_ylim(0, 14)
+    ax.set_ylabel("$\mathtt{DistIS}$ Execution Time (ms)", fontsize=9, fontweight='bold', labelpad=0.5)
+    ax.set_ylim(0, 15)
     plt.yticks(np.arange(0, 14, 2))
     plt.yticks(fontsize=9)
     plt.xticks(fontsize=9)
