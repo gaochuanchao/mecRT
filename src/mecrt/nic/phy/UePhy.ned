@@ -26,6 +26,7 @@ simple UePhy like LtePhy
         string nodeInfoModulePath = default("^.^.nodeInfo"); // path to the NodeInfo module
         bool capAccessibleRsus = default(false);  // whether limit the number of accessible RSUs for each UE
         int accessibleRsuLimit = default(5);  // the maximum number of accessible RSUs for each UE
+        string ueSortingScheme = default("distance");  // the sorting scheme for accessible RSUs, e.g., "distance", "random", "id"
         
         // ========================================== 
         // ========== For Channel Feedback ========== 

@@ -70,6 +70,7 @@ void UePhy::initialize(int stage)
         airFramePriority_ = -1; // smaller value means higher priority
 
         distReady_ = true;
+        ueSortingScheme_ = par("ueSortingScheme").stringValue();
 
         binder_ = getBinder();
         // get gate ids
@@ -656,8 +657,26 @@ void UePhy::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVector f
             {
                 sortedAccessibleRsus_.push_back(rsuPair.first);
             }
-            sort(sortedAccessibleRsus_.begin(), sortedAccessibleRsus_.end(), 
-                [&accessibleRsuMap](MacNodeId a, MacNodeId b) {return accessibleRsuMap.at(a) < accessibleRsuMap.at(b);});
+
+            // sort the accessible RSUs based on the sorting scheme
+            if (ueSortingScheme_ == "distance")   // sort the accessible RSUs by their distance to the UE
+            {
+                sort(sortedAccessibleRsus_.begin(), sortedAccessibleRsus_.end(), 
+                    [&accessibleRsuMap](MacNodeId a, MacNodeId b) {return accessibleRsuMap.at(a) < accessibleRsuMap.at(b);});
+            }
+            else if (ueSortingScheme_ == "id")    // sort the accessible RSUs by their IDs
+            {
+                sort(sortedAccessibleRsus_.begin(), sortedAccessibleRsus_.end());
+            }
+            else if (ueSortingScheme_ == "random")    // random shuffle the accessible RSUs
+            {
+                std::random_shuffle(sortedAccessibleRsus_.begin(), sortedAccessibleRsus_.end());
+            }
+            else    // default: sort by distance
+            {
+                sort(sortedAccessibleRsus_.begin(), sortedAccessibleRsus_.end(), 
+                    [&accessibleRsuMap](MacNodeId a, MacNodeId b) {return accessibleRsuMap.at(a) < accessibleRsuMap.at(b);});
+            }
 
             // if the number of accessible RSUs exceeds the limit, cap it to the limit by keeping the closest RSUs
             if (capAccessibleRsus_)

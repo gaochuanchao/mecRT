@@ -1,13 +1,13 @@
 #!/bin/bash
 cd ${MEC_WORKSPACE}/mecRT/simulations/distributed
-mkdir -p errorLog
+mkdir -p runLog
 
 for i in {0..5}; do  # 6 configurations
   echo "=============================="
   echo "Running configuration $i"
   echo "=============================="
   begin_time=$(date +%s)
-  log_file="errorLog/Distributed_run_${i}.log"
+  log_file="runLog/Distributed_run_${i}.log"
   tmp_log=$(mktemp)
 
   ${OMNETPP_ROOT}/bin/opp_run \
@@ -21,7 +21,7 @@ for i in {0..5}; do  # 6 configurations
     -l "../../../inet4.5/src/INET" \
     omnetpp.ini \
     --sim-time-limit=900s \
-    > "$tmp_log" 2>&1
+    2>&1 | tee "$tmp_log"
 
   status=$?
 

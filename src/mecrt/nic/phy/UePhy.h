@@ -106,14 +106,15 @@ class UePhy : public NRPhyUe
     bool enableDistScheme_; // whether to enable the distributed scheduling scheme, default is false
     // the distributed scheduling tokens for apps running on this UE
     map<AppId, inet::Ptr<DistToken>> distTokens_;
-    vector<MacNodeId> sortedAccessibleRsus_;  // the sorted list of accessible RSUs based on ascending distance
+    vector<MacNodeId> sortedAccessibleRsus_;  // the sorted list of accessible RSUs based on sortingScheme_
     bool capAccessibleRsus_;  // whether limit the number of accessible RSUs for each UE
     int accessibleRsuLimit_;  // the maximum number of accessible RSUs for each UE
     map<int, MacNodeId> pv2Rsu_;  // {pvId: rsuId}, the preference value assigned to each accessible RSU
     int pvMax_;  // the maximum preference value, i.e., the number of accessible RSUs
     bool distReady_;  // whether the UE is ready for distributed scheduling
     double scheduleInterval_;  // the scheduling interval
-    
+    string ueSortingScheme_;  // the sorting scheme for accessible RSUs, e.g., "distance", "random"
+
     virtual void createTokenForApp(inet::Packet *packet);
 
     virtual void sendPreferenceValue();

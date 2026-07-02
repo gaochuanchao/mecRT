@@ -20,3 +20,6 @@ simulations/distributed/result-analysis/EXP1
 simulations/distributed/result-analysis/EXP2
 simulations/distributed/result-analysis/EXP3
 simulations/distributed/results2/
+simulations/distributed/runLog.txt
+simulations/distributed/errorLog.txt
+simulations/distributed/runLog/
