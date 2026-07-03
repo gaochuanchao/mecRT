@@ -49,8 +49,8 @@ def distributed_summary_app_count():
             if not scheAll_match:
                 continue
 
-            mapScale = scheAll_match.group(1) if scheAll_match else "Unknown"
-            interval = scheAll_match.group(2) if scheAll_match else "Unknown"
+            mapScale = scheAll_match.group(1)
+            interval = scheAll_match.group(2)
 
             print(f"\tProcessing file: {filename}")
             # === Step 1: Parse vector IDs ===
