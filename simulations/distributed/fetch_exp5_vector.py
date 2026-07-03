@@ -50,7 +50,7 @@ def distributed_summary_app_count():
                 continue
 
             mapScale = scheAll_match.group(1)
-            interval = scheAll_match.group(2)
+            interval = int(scheAll_match.group(2))
 
             print(f"\tProcessing file: {filename}")
             # === Step 1: Parse vector IDs ===
