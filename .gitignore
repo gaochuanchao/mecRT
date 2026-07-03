@@ -17,9 +17,7 @@ simulations/distributed/result-analysis/failure
 simulations/distributed/result-analysis/normal
 simulations/distributed/result-analysis/ablation-fwd
 simulations/distributed/result-analysis/ablation-nd
-simulations/distributed/result-analysis/EXP1
-simulations/distributed/result-analysis/EXP2
-simulations/distributed/result-analysis/EXP3
+simulations/distributed/result-analysis/EXP*
 simulations/distributed/results2/
 simulations/distributed/runLog.txt
 simulations/distributed/errorLog.txt
