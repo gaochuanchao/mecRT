@@ -112,7 +112,7 @@ def draw_expected_utility():
             )
     ax.set_xlabel(X_LABEL, fontsize=10, fontweight='bold')
     ax.yaxis.set_major_formatter(FuncFormatter(lambda y, _: f'{y/Y_SCALE:.0f}'))
-    ax.set_ylabel("Predicted Utility (x100)", fontsize=9, fontweight='bold',labelpad=0.5)
+    ax.set_ylabel("Predicted Accuracy Gain (x100)", fontsize=9, fontweight='bold',labelpad=0.5)
     ax.set_ylim(0, 1250)
     plt.yticks(np.arange(0, 1250, 200))
     plt.yticks(fontsize=9)
@@ -196,7 +196,7 @@ def draw_measured_utility():
             )
     ax.set_xlabel(X_LABEL, fontsize=10, fontweight='bold')
     ax.yaxis.set_major_formatter(FuncFormatter(lambda y, _: f'{y/Y_SCALE:.0f}'))
-    ax.set_ylabel("Measured Utility (x100)", fontsize=9, fontweight='bold',labelpad=0.5)
+    ax.set_ylabel("Measured Accuracy Gain (x100)", fontsize=9, fontweight='bold',labelpad=0.5)
     ax.set_ylim(0, 1250)
     plt.yticks(np.arange(0, 1250, 200))
     plt.yticks(fontsize=9)
@@ -233,7 +233,10 @@ def draw_offload_percentage():
             scheme = SCHEME_MAP[line[0]]
             if scheme not in expected_job_count:
                 expected_job_count[scheme] = {}
-            expected_job_count[scheme][SCALE_MAP[line[1]]] = float(line[3])
+            if SCALE_MAP[line[1]] not in expected_job_count[scheme]:
+                expected_job_count[scheme][SCALE_MAP[line[1]]] = {}
+            if int(line[2]) not in expected_job_count[scheme][SCALE_MAP[line[1]]]:
+                expected_job_count[scheme][SCALE_MAP[line[1]]][int(line[2])] = float(line[3])
 
     job_count_since_grant = dict()
     actual_job_count = dict()
@@ -253,15 +256,22 @@ def draw_offload_percentage():
             if scheme not in job_count_since_grant:
                 job_count_since_grant[scheme] = {}
                 actual_job_count[scheme] = {}
-            job_count_since_grant[scheme][SCALE_MAP[line[1]]] = float(line[5])
-            actual_job_count[scheme][SCALE_MAP[line[1]]] = float(line[4])
+            if SCALE_MAP[line[1]] not in job_count_since_grant[scheme]:
+                job_count_since_grant[scheme][SCALE_MAP[line[1]]] = {}
+                actual_job_count[scheme][SCALE_MAP[line[1]]] = {}
+            if int(line[2]) not in job_count_since_grant[scheme][SCALE_MAP[line[1]]]:
+                job_count_since_grant[scheme][SCALE_MAP[line[1]]][int(line[2])] = float(line[5])
+                actual_job_count[scheme][SCALE_MAP[line[1]]][int(line[2])] = float(line[4])
 
     loss = {"scheme": [], X_NAME: [], "overhead_loss": [], "network_loss": []}
     for scheme in expected_job_count.keys():
         for mapScale in expected_job_count[scheme].keys():
             expected_count = expected_job_count[scheme][mapScale]
+            expected_count = sum(expected_count.values()) / len(expected_count)
             actual_count = actual_job_count[scheme][mapScale]
+            actual_count = sum(actual_count.values()) / len(actual_count)
             granted_count = job_count_since_grant[scheme][mapScale]
+            granted_count = sum(granted_count.values()) / len(granted_count)
             overhead_loss = (expected_count - granted_count) / expected_count
             network_loss = (granted_count - actual_count) / expected_count
             loss["scheme"].append(scheme)
@@ -340,9 +350,9 @@ def draw_offload_percentage():
 
 
 if __name__ == "__main__":
-    # draw_expected_utility()
-    # draw_measured_utility()
-    draw_offload_percentage()
+    draw_expected_utility()
+    draw_measured_utility()
+    # draw_offload_percentage()
 
     # if len(sys.argv) != 2:
     #     print("Usage: python3 draw_performance_normal.py [4a|4b|4c]")
